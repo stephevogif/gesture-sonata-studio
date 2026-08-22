@@ -779,7 +779,11 @@ export default function GestureSynth() {
             ).map(([id, name, blurb]) => (
               <button
                 key={id}
-                onClick={() => setMode(id)}
+                onClick={() => {
+                  setMode(id);
+                  if (id !== "pinch") setFreeMode(id);
+                }}
+
                 className={mode === id ? "instrument-card instrument-card-active" : "instrument-card"}
               >
                 <span className="font-display text-lg">{name}</span>
