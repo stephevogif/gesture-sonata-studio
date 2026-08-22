@@ -118,9 +118,38 @@ export default function GestureSynth() {
     setRunning(false);
     setHands([]);
     particlesRef.current = [];
+    heldRef.current.clear();
+    smoothRef.current.clear();
+    calibPhaseRef.current = "idle";
+    setCalibPhase("idle");
   }, []);
 
   useEffect(() => () => stop(), [stop]);
+
+  // carica taratura salvata
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CALIB_KEY);
+      if (!raw) return;
+      const v = JSON.parse(raw) as { on: number; off: number; sensitivity?: number };
+      if (typeof v.on === "number" && typeof v.off === "number") {
+        calibRef.current = { on: v.on, off: v.off };
+        setCalib({ on: v.on, off: v.off });
+        setCalibrated(true);
+      }
+      if (typeof v.sensitivity === "number") {
+        setSensitivity(v.sensitivity);
+        sensRef.current = v.sensitivity / 100;
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    sensRef.current = sensitivity / 100;
+  }, [sensitivity]);
+
 
   useEffect(() => {
     engineRef.current?.setScale(scaleSteps(scale), rootPc);
