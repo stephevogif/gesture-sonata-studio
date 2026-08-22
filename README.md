@@ -1,4 +1,4 @@
-# STEPH EVO'S CRAZY THERAMIN — GESTURE MUSIC
+# Steph Evo's Sky Synth — Hand gestures instrument
 
 Suona musica elettronica con le mani nel browser.
 

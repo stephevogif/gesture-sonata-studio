@@ -6,17 +6,17 @@ const GestureSynth = lazy(() => import("@/components/GestureSynth"));
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "STEPH EVO'S CRAZY THERAMIN — GESTURE MUSIC" },
+      { title: "Steph Evo's Sky Synth — Hand gestures instrument" },
       {
         name: "description",
         content:
-          "Steph Evo's Crazy Theramin: suona bassi, pad e fiati nel browser con scale, arpeggiatore ed effetti.",
+          "Steph Evo's Sky Synth: suona pad, fiati, bassi e strumenti zen nel browser con le mani, scale, arpeggiatore ed effetti.",
       },
-      { property: "og:title", content: "STEPH EVO'S CRAZY THERAMIN — GESTURE MUSIC" },
+      { property: "og:title", content: "Steph Evo's Sky Synth — Hand gestures instrument" },
       {
         property: "og:description",
         content:
-          "Bassi aggressivi, arpeggiatori, scale e effetti in tempo reale.",
+          "Synth gestuale interattivo con scale, arpeggiatori e effetti in tempo reale.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
