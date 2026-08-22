@@ -34,6 +34,25 @@ type Particle = {
   hue: number;
 };
 
+type Star = {
+  x: number;
+  y: number;
+  size: number;
+  phase: number;
+  depth: number;
+};
+
+const generateStars = (w: number, h: number): Star[] => {
+  const count = Math.floor((w * h) / 3200);
+  return Array.from({ length: count }, () => ({
+    x: Math.random() * w,
+    y: Math.random() * h,
+    size: Math.random() < 0.85 ? 0.6 + Math.random() * 1.0 : 1.4 + Math.random() * 1.2,
+    phase: Math.random() * Math.PI * 2,
+    depth: 0.3 + Math.random() * 0.7,
+  }));
+};
+
 const PINCH_TIPS = [8, 12, 16, 20];
 const PINCH_OFFSETS = [0, 2, 4, 6];
 
@@ -68,6 +87,9 @@ export default function GestureSynth() {
   const heldRef = useRef<Set<string>>(new Set());
   const smoothRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const liveRatioRef = useRef(0);
+  const starsRef = useRef<Star[]>([]);
+  const musicLevelRef = useRef(0);
+  const lastSizeRef = useRef({ width: 0, height: 0 });
 
 
 
@@ -120,6 +142,7 @@ export default function GestureSynth() {
     particlesRef.current = [];
     heldRef.current.clear();
     smoothRef.current.clear();
+    musicLevelRef.current = 0;
     calibPhaseRef.current = "idle";
     setCalibPhase("idle");
   }, []);
@@ -239,11 +262,38 @@ export default function GestureSynth() {
 
     const ctx = canvas.getContext("2d");
     if (ctx && video.videoWidth) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      if (canvas.width !== w || canvas.height !== h || lastSizeRef.current.width !== w || lastSizeRef.current.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        lastSizeRef.current = { width: w, height: h };
+        starsRef.current = generateStars(w, h);
+      }
 
-      const res = lm.detectForVideo(video, performance.now());
+      const now = performance.now();
+
+      // sfondo scuro del palco
+      ctx.fillStyle = "rgb(16, 16, 23)";
+      ctx.fillRect(0, 0, w, h);
+
+      // stelline lontane che respirano col volume
+      const ml = musicLevelRef.current;
+      const baseStarAlpha = 0.03;
+      const stars = starsRef.current;
+      ctx.save();
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i]!;
+        const breath = 0.5 + 0.5 * Math.sin(now * 0.0025 * s.depth + s.phase);
+        const alpha = baseStarAlpha + 0.35 * ml * s.depth * breath;
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.85, alpha)})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      const res = lm.detectForVideo(video, now);
       const active = new Set<string>();
       const next: HandState[] = [];
       const {
@@ -255,6 +305,7 @@ export default function GestureSynth() {
         arpRight: aR,
       } = cfg.current;
 
+      let maxSoundLevel = 0;
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
         
@@ -334,19 +385,19 @@ export default function GestureSynth() {
               smoothRef.current.set(vid, { x: cx, y: cy });
               glows.push({ x: cx, y: cy, hue: (baseHue + k * 30) % 360, level });
 
-              // scintille dal punto di contatto
-              for (let s = 0; s < 4; s++) {
-                if (list.length > 900) break;
+              // scintille dal punto di contatto: piccole, volanti a lungo
+              for (let s = 0; s < 5; s++) {
+                if (list.length > 1400) break;
                 const a = Math.random() * Math.PI * 2;
-                const sp = 1 + Math.random() * 3 * level;
+                const sp = 1.8 + Math.random() * 4.5 * level;
                 list.push({
                   x: cx,
                   y: cy,
                   vx: Math.cos(a) * sp,
-                  vy: Math.sin(a) * sp - 0.6,
-                  life: 1,
-                  decay: 0.015 + Math.random() * 0.02,
-                  size: 2 + Math.random() * 4,
+                  vy: Math.sin(a) * sp - 0.8,
+                  life: 1.2 + Math.random() * 0.8,
+                  decay: 0.005 + Math.random() * 0.012,
+                  size: 0.8 + Math.random() * 1.6,
                   hue: (hueRef.current + baseHue + k * 30) % 360,
                 });
               }
@@ -383,6 +434,8 @@ export default function GestureSynth() {
             active.delete(id);
           }
         }
+
+        maxSoundLevel = Math.max(maxSoundLevel, soundLevel);
 
         // scheletro ben visibile
         ctx.save();
@@ -443,27 +496,29 @@ export default function GestureSynth() {
           ctx.restore();
         }
 
-        // particelle solo quando esce suono, emesse dalla mano
+        // particelle solo quando esce suono, piccole e volanti a lungo
         if (soundLevel > 0) {
           pts.forEach((p, pi) => {
-            if (list.length > 900) return;
-            if (Math.random() > 0.18 * (0.3 + soundLevel)) return;
+            if (list.length > 1400) return;
+            if (Math.random() > 0.12 * (0.25 + soundLevel)) return;
             const a = Math.random() * Math.PI * 2;
-            const sp = 0.4 + Math.random() * 1.6 * soundLevel;
+            const sp = 1.2 + Math.random() * 3.2 * soundLevel;
             list.push({
               x: (1 - p.x) * canvas.width,
               y: p.y * canvas.height,
               vx: Math.cos(a) * sp,
-              vy: Math.sin(a) * sp - 0.4,
-              life: 1,
-              decay: 0.012 + Math.random() * 0.02,
-              size: 2 + Math.random() * 5 * (0.5 + soundLevel),
+              vy: Math.sin(a) * sp - 0.5,
+              life: 1.4 + Math.random() * 1.0,
+              decay: 0.005 + Math.random() * 0.012,
+              size: 0.6 + Math.random() * 2.2 * (0.4 + soundLevel),
               hue: (hueRef.current + pi * 12 + (isRight ? 120 : 0)) % 360,
             });
           });
         }
 
       });
+
+      musicLevelRef.current = musicLevelRef.current * 0.92 + maxSoundLevel * 0.08;
 
       // update + draw particelle
       hueRef.current = (hueRef.current + 2.5) % 360;
@@ -474,22 +529,22 @@ export default function GestureSynth() {
         const p = parts[i]!;
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.02;
-        p.vx *= 0.985;
-        p.vy *= 0.985;
+        p.vy += 0.015;
+        p.vx *= 0.993;
+        p.vy *= 0.993;
         p.life -= p.decay;
-        p.hue = (p.hue + 4) % 360;
+        p.hue = (p.hue + 3.5) % 360;
         if (p.life <= 0) {
           parts.splice(i, 1);
           continue;
         }
-        const r = p.size * (0.4 + p.life);
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.2);
-        g.addColorStop(0, `hsla(${p.hue}, 100%, 72%, ${0.85 * p.life})`);
-        g.addColorStop(1, `hsla(${(p.hue + 60) % 360}, 100%, 50%, 0)`);
+        const r = p.size * (0.5 + p.life * 0.9);
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.8);
+        g.addColorStop(0, `hsla(${p.hue}, 100%, 76%, ${0.75 * p.life})`);
+        g.addColorStop(1, `hsla(${(p.hue + 60) % 360}, 100%, 55%, 0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, r * 2.2, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, r * 2.8, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
