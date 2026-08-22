@@ -734,7 +734,7 @@ export default function GestureSynth() {
       <header className="text-center">
         <div className="celestial-rule mx-auto mb-3 w-2/3" />
         <h1 className="font-display text-xl leading-tight tracking-[0.16em] text-foreground sm:text-2xl">
-          STEPH EVO&apos;S <span className="text-primary">CRAZY THERAMIN</span>
+          Steph Evo&apos;s <span className="text-primary">Sky Synth</span>
         </h1>
         <p className="mt-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
           Carta sonora · Ed. I
