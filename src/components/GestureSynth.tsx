@@ -153,7 +153,7 @@ export default function GestureSynth() {
 
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
-        const wrist = pts[0]!;
+        
         const indexTip = pts[8]!;
         const thumbTip = pts[4]!;
         const middleTip = pts[12]!;
