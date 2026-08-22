@@ -12,7 +12,7 @@ const MAJOR = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29,
 const MINOR = [6.33, 2.68, 3.52, 5.38, 2.6, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
 
 function rotate(arr: number[], n: number) {
-  return arr.map((_, i) => arr[(i + n) % 12]);
+  return arr.map((_, i) => arr[(i + n) % 12] ?? 0);
 }
 
 function correlation(a: number[], b: number[]) {
@@ -23,8 +23,8 @@ function correlation(a: number[], b: number[]) {
   let da = 0;
   let db = 0;
   for (let i = 0; i < n; i++) {
-    const x = a[i] - ma;
-    const y = b[i] - mb;
+    const x = (a[i] ?? 0) - ma;
+    const y = (b[i] ?? 0) - mb;
     num += x * y;
     da += x * x;
     db += y * y;
@@ -34,7 +34,7 @@ function correlation(a: number[], b: number[]) {
 }
 
 function pickScale(chroma: number[], rootPc: number, mode: "major" | "minor"): ScaleId {
-  const norm = (pc: number) => chroma[(pc + rootPc) % 12];
+  const norm = (pc: number) => chroma[(pc + rootPc) % 12] ?? 0;
   const total = chroma.reduce((s, v) => s + v, 0) || 1;
   const score = (steps: number[]) => steps.reduce((s, st) => s + norm(st), 0) / total;
   if (mode === "minor") {
@@ -66,8 +66,8 @@ export function analyzeChroma(chroma: number[]): KeyDetectResult {
     scores.push({ rootPc: pc, mode: "minor", v: correlation(chroma, rotate(MINOR, (12 - pc) % 12)) });
   }
   scores.sort((a, b) => b.v - a.v);
-  const top = scores[0];
-  const second = scores[1];
+  const top = scores[0]!;
+  const second = scores[1]!;
   const confidence = Math.max(0, Math.min(1, (top.v - second.v) * 4 + top.v * 0.35));
   return {
     rootPc: top.rootPc,
@@ -130,16 +130,16 @@ export async function detectKey(opts: DetectOptions): Promise<KeyDetectResult> {
         for (let i = 1; i < bins; i++) {
           const f = i * binHz;
           if (f < 80 || f > 4000) continue;
-          const db = data[i];
+          const db = data[i] ?? -200;
           if (db < -85) continue;
           const mag = Math.pow(10, db / 20);
           const pc = ((Math.round(12 * Math.log2(f / 440)) + 9) % 12 + 12) % 12;
-          frame[pc] += mag;
+          frame[pc] = (frame[pc] ?? 0) + mag;
           frameEnergy += mag;
           if (mag > level) level = mag;
         }
         if (frameEnergy > 1e-4) {
-          for (let i = 0; i < 12; i++) chroma[i] += frame[i] / frameEnergy;
+          for (let i = 0; i < 12; i++) chroma[i] = (chroma[i] ?? 0) + (frame[i] ?? 0) / frameEnergy;
           frames++;
         }
         const progress = Math.min(1, (performance.now() - start) / durationMs);
