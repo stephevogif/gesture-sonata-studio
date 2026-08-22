@@ -89,6 +89,7 @@ export default function GestureSynth() {
     if (v) v.srcObject = null;
     setRunning(false);
     setHands([]);
+    particlesRef.current = [];
   }, []);
 
   useEffect(() => () => stop(), [stop]);
