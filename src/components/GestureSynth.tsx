@@ -54,9 +54,10 @@ export default function GestureSynth() {
     instrument,
     leftInstrument,
     rightInstrument,
-    arpOn,
+    arpLeft,
+    arpRight,
   });
-  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpOn };
+  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpLeft, arpRight };
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -79,12 +80,13 @@ export default function GestureSynth() {
   useEffect(() => {
     const degrees = ARP_PATTERNS.find((p) => p.id === arpPattern)?.degrees ?? [0];
     engineRef.current?.setArp({
-      enabled: arpOn,
+      enabled: arpLeft || arpRight,
       rate: arpRate,
       degrees,
       random: arpPattern === "random",
     });
-  }, [arpOn, arpRate, arpPattern]);
+  }, [arpLeft, arpRight, arpRate, arpPattern]);
+
 
   const loop = useCallback(() => {
     const video = videoRef.current;
