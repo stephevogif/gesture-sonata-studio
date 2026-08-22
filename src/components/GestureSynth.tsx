@@ -196,8 +196,9 @@ export default function GestureSynth() {
     rightInstrument,
     arpLeft,
     arpRight,
+    freePitch,
   });
-  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpLeft, arpRight };
+  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpLeft, arpRight, freePitch };
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
