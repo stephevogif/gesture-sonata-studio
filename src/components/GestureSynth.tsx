@@ -305,6 +305,7 @@ export default function GestureSynth() {
         arpRight: aR,
       } = cfg.current;
 
+      let maxSoundLevel = 0;
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
         
