@@ -173,6 +173,62 @@ export default function GestureSynth() {
     engineRef.current?.setEq(eqType, eqFreq);
   }, [eqType, eqFreq]);
 
+  const saveCalib = (on: number, off: number) => {
+    try {
+      localStorage.setItem(
+        CALIB_KEY,
+        JSON.stringify({ on, off, sensitivity: sensRef.current * 100 }),
+      );
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const runCalibration = useCallback(() => {
+    calibSamplesRef.current = { open: [], closed: [] };
+    calibPhaseRef.current = "open";
+    setCalibPhase("open");
+    window.setTimeout(() => {
+      calibPhaseRef.current = "closed";
+      setCalibPhase("closed");
+      window.setTimeout(() => {
+        calibPhaseRef.current = "idle";
+        setCalibPhase("idle");
+        const med = (a: number[]) => {
+          if (!a.length) return NaN;
+          const s = [...a].sort((x, y) => x - y);
+          return s[Math.floor(s.length / 2)]!;
+        };
+        const openV = med(calibSamplesRef.current.open);
+        const closedV = med(calibSamplesRef.current.closed);
+        if (!isFinite(openV) || !isFinite(closedV) || openV - closedV < 0.06) {
+          setStatus("Taratura non riuscita: ripeti tenendo la mano ben visibile.");
+          window.setTimeout(() => setStatus(""), 3500);
+          return;
+        }
+        const on = closedV + (openV - closedV) * 0.35;
+        const off = closedV + (openV - closedV) * 0.6;
+        calibRef.current = { on, off };
+        setCalib({ on, off });
+        setCalibrated(true);
+        saveCalib(on, off);
+      }, 3200);
+    }, 3200);
+  }, []);
+
+  const resetCalibration = useCallback(() => {
+    calibRef.current = { ...DEFAULT_CALIB };
+    setCalib({ ...DEFAULT_CALIB });
+    setCalibrated(false);
+    setSensitivity(0);
+    sensRef.current = 0;
+    try {
+      localStorage.removeItem(CALIB_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
 
   const loop = useCallback(() => {
     const video = videoRef.current;
