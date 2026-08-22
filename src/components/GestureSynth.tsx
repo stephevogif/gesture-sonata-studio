@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Crosshair, KeyboardMusic, Music4, Repeat, SlidersHorizontal, Square } from "lucide-react";
+import {
+  Crosshair,
+  Hand,
+  KeyboardMusic,
+  Music4,
+  Repeat,
+  SlidersHorizontal,
+  Square,
+  Sparkles,
+} from "lucide-react";
+
 
 import {
   ARP_PATTERNS,
