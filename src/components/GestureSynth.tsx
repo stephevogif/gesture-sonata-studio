@@ -449,13 +449,23 @@ export default function GestureSynth() {
               Ritmizza automaticamente le note della scala scelta.
             </p>
           </div>
-          <button
-            onClick={() => setArpOn((v) => !v)}
-            className={arpOn ? "btn-hero" : "btn-ghost"}
-            aria-pressed={arpOn}
-          >
-            {arpOn ? "On" : "Off"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setArpLeft((v) => !v)}
+              className={arpLeft ? "btn-hero" : "btn-ghost"}
+              aria-pressed={arpLeft}
+            >
+              Sinistra: {arpLeft ? "On" : "Off"}
+            </button>
+            <button
+              onClick={() => setArpRight((v) => !v)}
+              className={arpRight ? "btn-hero" : "btn-ghost"}
+              aria-pressed={arpRight}
+            >
+              Destra: {arpRight ? "On" : "Off"}
+            </button>
+          </div>
+
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
