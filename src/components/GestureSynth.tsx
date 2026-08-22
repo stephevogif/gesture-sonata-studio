@@ -34,6 +34,25 @@ type Particle = {
   hue: number;
 };
 
+type Star = {
+  x: number;
+  y: number;
+  size: number;
+  phase: number;
+  depth: number;
+};
+
+const generateStars = (w: number, h: number): Star[] => {
+  const count = Math.floor((w * h) / 3200);
+  return Array.from({ length: count }, () => ({
+    x: Math.random() * w,
+    y: Math.random() * h,
+    size: Math.random() < 0.85 ? 0.6 + Math.random() * 1.0 : 1.4 + Math.random() * 1.2,
+    phase: Math.random() * Math.PI * 2,
+    depth: 0.3 + Math.random() * 0.7,
+  }));
+};
+
 const PINCH_TIPS = [8, 12, 16, 20];
 const PINCH_OFFSETS = [0, 2, 4, 6];
 
