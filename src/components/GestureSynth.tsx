@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { KeyboardMusic, Music4, Repeat, SlidersHorizontal, Square } from "lucide-react";
 import {
   ARP_PATTERNS,
   GestureSynthEngine,
@@ -18,6 +19,7 @@ import {
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
+type PanelId = "sound" | "fx" | "scale" | "arp";
 
 const PINCH_TIPS = [8, 12, 16, 20];
 const PINCH_OFFSETS = [0, 2, 4, 6];
@@ -34,6 +36,7 @@ export default function GestureSynth() {
   const voiceIdsRef = useRef<Set<string>>(new Set());
 
 
+  const [panel, setPanel] = useState<PanelId | null>(null);
   const [mode, setMode] = useState<PlayMode>("single");
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
   const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("pads");
@@ -142,7 +145,7 @@ export default function GestureSynth() {
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
 
         if (m === "pinch") {
-          // gesturesynth.com style: pizzica pollice + dito per suonare un grado dell'accordo
+          // tocco: quattro note per lato
           const base = positionToDegree(x, 8);
           PINCH_TIPS.forEach((tipIdx, k) => {
             const tip = pts[tipIdx]!;
@@ -164,7 +167,7 @@ export default function GestureSynth() {
               next.push({
                 note: midiToName(midi),
                 level,
-                hand: isRight ? "Destra" : "Sinistra",
+                hand: isRight ? "Lato B" : "Lato A",
                 inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
               });
               ctx.save();
@@ -195,7 +198,7 @@ export default function GestureSynth() {
             next.push({
               note: midiToName(midi),
               level,
-              hand: isRight ? "Destra" : "Sinistra",
+              hand: isRight ? "Lato B" : "Lato A",
               inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
             });
           } else {
@@ -261,7 +264,7 @@ export default function GestureSynth() {
       await video.play();
 
       if (!landmarkerRef.current) {
-        setStatus("Carico il rilevamento delle mani…");
+        setStatus("Preparazione…");
         const vision = await import("@mediapipe/tasks-vision");
         const files = await vision.FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
@@ -295,23 +298,33 @@ export default function GestureSynth() {
   const selectClass =
     "w-full rounded-xl border border-border bg-background/60 px-3 py-2 text-sm text-foreground";
 
+  const panelBtn = (id: PanelId, label: string, Icon: any) => (
+    <button
+      key={id}
+      onClick={() => setPanel((p) => (p === id ? null : id))}
+      aria-label={label}
+      aria-pressed={panel === id}
+      className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-[11px] transition ${
+        panel === id
+          ? "border-primary bg-primary/15 text-primary"
+          : "border-border bg-card text-muted-foreground"
+      }`}
+    >
+      <Icon className="h-6 w-6" />
+      {label}
+    </button>
+  );
+
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 py-8">
+    <div className="mx-auto w-full max-w-3xl px-4 py-5">
       <header className="text-center">
-        <p className="text-xs uppercase tracking-[0.3em] text-primary">
-          GESTURE MUSIC
-        </p>
-        <h1 className="mt-3 font-display text-4xl leading-tight text-foreground sm:text-6xl">
+        <h1 className="font-display text-2xl leading-tight text-foreground sm:text-3xl">
           STEPH EVO'S <span className="text-primary">CRAZY THERAMIN</span>
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-          Bassi aggressivi, arpeggiatore e modalità split: pad con la sinistra, bass con la destra.
-          Scegli scala e tonica per restare sempre in chiave.
-        </p>
       </header>
 
-      <div className="mt-8 overflow-hidden rounded-3xl border border-border bg-card shadow-glow">
-        <div className="relative aspect-[4/3] w-full bg-stage">
+      <div className="mt-4 overflow-hidden rounded-3xl border border-border bg-card shadow-glow">
+        <div className="relative aspect-[3/4] w-full bg-stage sm:aspect-[4/3]">
           <video ref={videoRef} playsInline muted className="hidden" />
           <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
           {!running && (
@@ -325,14 +338,13 @@ export default function GestureSynth() {
             </div>
           )}
           {running && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-4">
-              <div className="flex flex-wrap gap-2">
-                {hands.length === 0 && (
-                  <span className="rounded-full bg-background/70 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
-                    Apri la mano per produrre suono
-                  </span>
-                )}
-                {hands.map((h, i) => (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-2 p-3">
+              {hands.length === 0 ? (
+                <span className="rounded-full bg-background/70 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
+                  Pronto
+                </span>
+              ) : (
+                hands.map((h, i) => (
                   <span
                     key={i}
                     className="rounded-full bg-background/70 px-3 py-1 text-xs text-foreground backdrop-blur"
@@ -340,93 +352,133 @@ export default function GestureSynth() {
                     {h.hand} · {h.inst}: <strong className="text-primary">{h.note}</strong>{" "}
                     {Math.round(h.level * 100)}%
                   </span>
-                ))}
-              </div>
-              <button onClick={stop} className="pointer-events-auto btn-ghost">
-                Stop
-              </button>
+                ))
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Modalità */}
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        <button
-          onClick={() => setMode("single")}
-          className={mode === "single" ? "instrument-card instrument-card-active" : "instrument-card"}
-        >
-          <span className="font-display text-xl">Strumento singolo</span>
-          <span className="mt-1 block text-xs text-muted-foreground">
-            Entrambe le mani suonano lo stesso patch.
-          </span>
-        </button>
-        <button
-          onClick={() => setMode("split")}
-          className={mode === "split" ? "instrument-card instrument-card-active" : "instrument-card"}
-        >
-          <span className="font-display text-xl">Split: pad + bass</span>
-          <span className="mt-1 block text-xs text-muted-foreground">
-            Mano sinistra e mano destra con strumenti diversi.
-          </span>
-        </button>
-        <button
-          onClick={() => setMode("pinch")}
-          className={mode === "pinch" ? "instrument-card instrument-card-active" : "instrument-card"}
-        >
-          <span className="font-display text-xl">Pinch (gesturesynth)</span>
-          <span className="mt-1 block text-xs text-muted-foreground">
-            Pizzica pollice + dito: 4 note per mano, come gesturesynth.com.
-          </span>
-        </button>
+      {/* Barra icone */}
+      <div className="mt-4 flex gap-2">
+        {panelBtn("sound", "Suono", Music4)}
+        {panelBtn("fx", "Effetti", SlidersHorizontal)}
+        {panelBtn("scale", "Scala", KeyboardMusic)}
+        {panelBtn("arp", "Arp", Repeat)}
+        {running && (
+          <button
+            onClick={stop}
+            aria-label="Stop"
+            className="flex flex-1 flex-col items-center gap-1 rounded-2xl border border-border bg-card px-2 py-3 text-[11px] text-muted-foreground"
+          >
+            <Square className="h-6 w-6" />
+            Stop
+          </button>
+        )}
       </div>
 
+      {/* Pannelli */}
+      {panel === "sound" && (
+        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
+          <div className="grid gap-2 sm:grid-cols-3">
+            {(
+              [
+                ["single", "Strumento singolo", "Un solo patch per tutto."],
+                ["split", "Doppio strumento", "Due strumenti separati, lato A e lato B."],
+                ["pinch", "Tocco note", "Quattro note per lato, sempre in scala."],
+              ] as [PlayMode, string, string][]
+            ).map(([id, name, blurb]) => (
+              <button
+                key={id}
+                onClick={() => setMode(id)}
+                className={mode === id ? "instrument-card instrument-card-active" : "instrument-card"}
+              >
+                <span className="font-display text-lg">{name}</span>
+                <span className="mt-1 block text-xs text-muted-foreground">{blurb}</span>
+              </button>
+            ))}
+          </div>
 
-      {mode !== "split" ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {INSTRUMENTS.map((i) => (
-            <button
-              key={i.id}
-              onClick={() => pickInstrument(i.id)}
-              className={
-                instrument === i.id ? "instrument-card instrument-card-active" : "instrument-card"
-              }
-            >
-              <span className="font-display text-xl">{i.name}</span>
-              <span className="mt-1 block text-xs text-muted-foreground">{i.blurb}</span>
-            </button>
-          ))}
+          {mode !== "split" ? (
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {INSTRUMENTS.map((i) => (
+                <button
+                  key={i.id}
+                  onClick={() => pickInstrument(i.id)}
+                  className={
+                    instrument === i.id ? "instrument-card instrument-card-active" : "instrument-card"
+                  }
+                >
+                  <span className="font-display text-lg">{i.name}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">{i.blurb}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Lato A
+                </label>
+                <select
+                  className={`mt-2 ${selectClass}`}
+                  value={leftInstrument}
+                  onChange={(e) => setLeftInstrument(e.target.value as InstrumentId)}
+                >
+                  {INSTRUMENTS.map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Lato B
+                </label>
+                <select
+                  className={`mt-2 ${selectClass}`}
+                  value={rightInstrument}
+                  onChange={(e) => setRightInstrument(e.target.value as InstrumentId)}
+                >
+                  {INSTRUMENTS.map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Mano sinistra
-            </label>
+      )}
+
+      {panel === "scale" && (
+        <div className="mt-3 grid gap-3 rounded-3xl border border-border bg-card p-4 sm:grid-cols-2">
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">Scala</label>
             <select
               className={`mt-2 ${selectClass}`}
-              value={leftInstrument}
-              onChange={(e) => setLeftInstrument(e.target.value as InstrumentId)}
+              value={scale}
+              onChange={(e) => setScale(e.target.value as ScaleId)}
             >
-              {INSTRUMENTS.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.name}
+              {SCALES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>
           </div>
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Mano destra
-            </label>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">Tonica</label>
             <select
               className={`mt-2 ${selectClass}`}
-              value={rightInstrument}
-              onChange={(e) => setRightInstrument(e.target.value as InstrumentId)}
+              value={rootPc}
+              onChange={(e) => setRootPc(Number(e.target.value))}
             >
-              {INSTRUMENTS.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.name}
+              {NOTE_NAMES.map((n, i) => (
+                <option key={n} value={i}>
+                  {n}
                 </option>
               ))}
             </select>
@@ -434,103 +486,62 @@ export default function GestureSynth() {
         </div>
       )}
 
-      {/* Scala e tonica */}
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <label className="text-xs uppercase tracking-widest text-muted-foreground">Scala</label>
-          <select
-            className={`mt-2 ${selectClass}`}
-            value={scale}
-            onChange={(e) => setScale(e.target.value as ScaleId)}
-          >
-            {SCALES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <label className="text-xs uppercase tracking-widest text-muted-foreground">Tonica</label>
-          <select
-            className={`mt-2 ${selectClass}`}
-            value={rootPc}
-            onChange={(e) => setRootPc(Number(e.target.value))}
-          >
-            {NOTE_NAMES.map((n, i) => (
-              <option key={n} value={i}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Arpeggiatore */}
-      <div className="mt-4 rounded-2xl border border-border bg-card p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="font-display text-xl text-foreground">Arpeggiatore</h2>
-            <p className="text-xs text-muted-foreground">
-              Ritmizza automaticamente le note della scala scelta.
-            </p>
-          </div>
+      {panel === "arp" && (
+        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
           <div className="flex gap-2">
             <button
               onClick={() => setArpLeft((v) => !v)}
               className={arpLeft ? "btn-hero" : "btn-ghost"}
               aria-pressed={arpLeft}
             >
-              Sinistra: {arpLeft ? "On" : "Off"}
+              Lato A: {arpLeft ? "On" : "Off"}
             </button>
             <button
               onClick={() => setArpRight((v) => !v)}
               className={arpRight ? "btn-hero" : "btn-ghost"}
               aria-pressed={arpRight}
             >
-              Destra: {arpRight ? "On" : "Off"}
+              Lato B: {arpRight ? "On" : "Off"}
             </button>
           </div>
 
-        </div>
-
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Pattern
-            </label>
-            <select
-              className={`mt-2 ${selectClass}`}
-              value={arpPattern}
-              onChange={(e) => setArpPattern(e.target.value as ArpPatternId)}
-            >
-              {ARP_PATTERNS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Pattern
+              </label>
+              <select
+                className={`mt-2 ${selectClass}`}
+                value={arpPattern}
+                onChange={(e) => setArpPattern(e.target.value as ArpPatternId)}
+              >
+                {ARP_PATTERNS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Velocità: {arpRate} note/s
+              </label>
+              <input
+                type="range"
+                min={2}
+                max={16}
+                step={1}
+                value={arpRate}
+                onChange={(e) => setArpRate(Number(e.target.value))}
+                className="mt-3 w-full accent-[var(--primary)]"
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Velocità: {arpRate} note/s
-            </label>
-            <input
-              type="range"
-              min={2}
-              max={16}
-              step={1}
-              value={arpRate}
-              onChange={(e) => setArpRate(Number(e.target.value))}
-              className="mt-3 w-full accent-[var(--primary)]"
-            />
-          </div>
         </div>
-      </div>
+      )}
 
-      <div className="mt-6 rounded-3xl border border-border bg-card/60 p-5">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">Effetti</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      {panel === "fx" && (
+        <div className="mt-3 grid gap-4 rounded-3xl border border-border bg-card p-4 sm:grid-cols-3">
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">
               Riverbero: {reverb}%
@@ -573,23 +584,8 @@ export default function GestureSynth() {
             />
           </div>
         </div>
-      </div>
-
-      <section className="mt-10 grid gap-4 sm:grid-cols-3">
-        {[
-          ["Sinistra / destra", "Sposta la mano in orizzontale per cambiare grado della scala."],
-          [
-            "Alto / basso",
-            "Alza la mano per aprire il filtro (e accelerare il wobble), abbassala per scurire.",
-          ],
-          ["Apri / chiudi", "L'apertura fra pollice e medio controlla il volume, come un arco."],
-        ].map(([t, d]) => (
-          <div key={t} className="rounded-2xl border border-border bg-card/60 p-4">
-            <h2 className="font-display text-base text-foreground">{t}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{d}</p>
-          </div>
-        ))}
-      </section>
+      )}
     </div>
   );
 }
+

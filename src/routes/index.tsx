@@ -10,13 +10,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Synth gestuale nel browser: muovi le mani davanti alla webcam per suonare bassi, pads e fiati con Steph Evo's Crazy Theramin.",
+          "Steph Evo's Crazy Theramin: suona bassi, pad e fiati nel browser con scale, arpeggiatore ed effetti.",
       },
       { property: "og:title", content: "STEPH EVO'S CRAZY THERAMIN — GESTURE MUSIC" },
       {
         property: "og:description",
         content:
-          "Controlla nota, timbro e volume con i gesti delle mani. Bassi aggressivi, arpeggiatori e split in tempo reale.",
+          "Bassi aggressivi, arpeggiatori, scale e effetti in tempo reale.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
