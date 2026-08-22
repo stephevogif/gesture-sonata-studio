@@ -545,10 +545,23 @@ export class GestureSynthEngine {
     const v = this.getVoice(id, freq, inst ?? this.instrument);
     const now = ctx.currentTime;
     const glide = v.inst === "pads" ? 0.25 : v.isBass ? 0.04 : 0.08;
-    v.oscs.forEach((o) => o.frequency.setTargetAtTime(freq, now, glide));
+    v.oscs.forEach((o, i) =>
+      o.frequency.setTargetAtTime(freq * (v.ratios[i] ?? 1), now, glide),
+    );
     v.sub?.frequency.setTargetAtTime(freq / 2, now, glide);
     const peak = v.isBass ? 0.5 : 0.34;
-    v.gain.gain.setTargetAtTime(Math.min(peak, amount * peak), now, v.attack);
+    const target = Math.min(peak, amount * peak);
+    if (v.sustain !== undefined) {
+      // plucky patches: quick swell then decay to a soft tail while held
+      const g = v.gain.gain;
+      if (g.value < target * 0.35) {
+        g.setTargetAtTime(target, now, v.attack);
+      } else {
+        g.setTargetAtTime(target * v.sustain, now, v.decay ?? 0.5);
+      }
+    } else {
+      v.gain.gain.setTargetAtTime(target, now, v.attack);
+    }
     this.shapeFilter(v, bright, amount, now);
   }
 
@@ -558,8 +571,9 @@ export class GestureSynthEngine {
     const ctx = this.ctx;
     const v = this.getVoice(id, freq, inst);
     const now = ctx.currentTime;
-    v.oscs.forEach((o) => o.frequency.setValueAtTime(freq, now));
+    v.oscs.forEach((o, i) => o.frequency.setValueAtTime(freq * (v.ratios[i] ?? 1), now));
     v.sub?.frequency.setValueAtTime(freq / 2, now);
+
     const peak = (v.isBass ? 0.5 : 0.34) * Math.min(1, amount);
     const g = v.gain.gain;
     g.cancelScheduledValues(now);
