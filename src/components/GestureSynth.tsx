@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   GestureSynthEngine,
   INSTRUMENTS,
+  INSTRUMENT_SHIFT,
   midiToFreq,
   midiToName,
   positionToMidi,
@@ -17,7 +18,7 @@ export default function GestureSynth() {
   const rafRef = useRef<number | null>(null);
   const landmarkerRef = useRef<any>(null);
 
-  const [instrument, setInstrument] = useState<InstrumentId>("violin");
+  const [instrument, setInstrument] = useState<InstrumentId>("reese");
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [hands, setHands] = useState<HandState[]>([]);
@@ -63,7 +64,7 @@ export default function GestureSynth() {
 
         // horizontal position (mirrored) -> pitch
         const x = 1 - indexTip.x;
-        const midi = positionToMidi(x);
+        const midi = positionToMidi(x, 21, INSTRUMENT_SHIFT[engine.instrument] ?? 0);
         // vertical -> brightness, hand openness -> loudness
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
         const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y);
@@ -165,8 +166,8 @@ export default function GestureSynth() {
           Gesture <span className="text-primary">Synth</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-          Suona violino, fiati e pads muovendo le mani davanti alla fotocamera. Nessun contatto,
-          solo aria.
+          Bassi elettronici aggressivi — reese, acid e growl — più violino, fiati e pads. Muovi le
+          mani davanti alla fotocamera: nessun contatto, solo aria.
         </p>
       </header>
 
@@ -228,7 +229,10 @@ export default function GestureSynth() {
       <section className="mt-10 grid gap-4 sm:grid-cols-3">
         {[
           ["Sinistra / destra", "Sposta la mano in orizzontale per cambiare nota sulla scala."],
-          ["Alto / basso", "Alza la mano per un timbro più brillante, abbassala per scurirlo."],
+          [
+            "Alto / basso",
+            "Alza la mano per aprire il filtro (e accelerare il wobble), abbassala per scurire.",
+          ],
           ["Apri / chiudi", "L'apertura fra pollice e medio controlla il volume, come un arco."],
         ].map(([t, d]) => (
           <div key={t} className="rounded-2xl border border-border bg-card/60 p-4">
