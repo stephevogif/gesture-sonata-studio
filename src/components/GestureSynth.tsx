@@ -364,8 +364,10 @@ export default function GestureSynth() {
             engine.rootPc,
             INSTRUMENT_SHIFT[inst] ?? 0,
           );
-          const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y);
-          const level = Math.min(1, Math.max(0, (span - 0.05) / 0.22));
+          // normalizzato sulla dimensione della mano + taratura
+          const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y) / handSize;
+          const level = Math.min(1, Math.max(0, (span - thrOn) / Math.max(0.2, thrOff * 1.8)));
+
 
           if (level > 0.06) {
             soundLevel = level;
