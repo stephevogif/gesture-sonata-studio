@@ -48,6 +48,8 @@ const HAND_CONNECTIONS: [number, number][] = [
 
 const STEPS = 21;
 
+const CALIB_KEY = "cth-calibration-v1";
+const DEFAULT_CALIB = { on: 0.42, off: 0.62 };
 
 export default function GestureSynth() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -58,6 +60,15 @@ export default function GestureSynth() {
   const voiceIdsRef = useRef<Set<string>>(new Set());
   const particlesRef = useRef<Particle[]>([]);
   const hueRef = useRef(0);
+  // taratura tocco dita-pollice (distanze normalizzate sulla dimensione della mano)
+  const calibRef = useRef({ ...DEFAULT_CALIB });
+  const sensRef = useRef(0); // -0.15 .. +0.15
+  const calibPhaseRef = useRef<CalibPhase>("idle");
+  const calibSamplesRef = useRef<{ open: number[]; closed: number[] }>({ open: [], closed: [] });
+  const heldRef = useRef<Set<string>>(new Set());
+  const smoothRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const liveRatioRef = useRef(0);
+
 
 
   const [panel, setPanel] = useState<PanelId | null>(null);
