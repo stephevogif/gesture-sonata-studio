@@ -969,6 +969,33 @@ export default function GestureSynth() {
 
           <div className="sm:col-span-2">
             <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Intonazione (modalità Libero)
+            </label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                { id: "scale", name: "Segui la scala" },
+                { id: "glide", name: "Libera (glissando)" },
+              ] as const).map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setFreePitch(o.id)}
+                  aria-pressed={freePitch === o.id}
+                  className={`rounded-sm border px-3 py-2 text-sm transition-colors ${
+                    freePitch === o.id
+                      ? "border-primary bg-primary/15 text-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {o.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="sm:col-span-2 celestial-rule" />
+
+          <div className="sm:col-span-2">
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
               Ascolto automatico
             </label>
             <div className="mt-2 flex flex-wrap items-center gap-2">
