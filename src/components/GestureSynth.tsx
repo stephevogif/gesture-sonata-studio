@@ -1,15 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ARP_PATTERNS,
   GestureSynthEngine,
   INSTRUMENTS,
   INSTRUMENT_SHIFT,
+  NOTE_NAMES,
+  SCALES,
+  degreeToMidi,
   midiToFreq,
   midiToName,
-  positionToMidi,
+  positionToDegree,
+  scaleSteps,
+  type ArpPatternId,
   type InstrumentId,
+  type ScaleId,
 } from "@/lib/synth";
 
-type HandState = { note: string; level: number; hand: string };
+type HandState = { note: string; level: number; hand: string; inst: string };
+type PlayMode = "single" | "split";
+
+const STEPS = 21;
 
 export default function GestureSynth() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -18,10 +28,29 @@ export default function GestureSynth() {
   const rafRef = useRef<number | null>(null);
   const landmarkerRef = useRef<any>(null);
 
+  const [mode, setMode] = useState<PlayMode>("single");
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
+  const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("pads");
+  const [rightInstrument, setRightInstrument] = useState<InstrumentId>("reese");
+  const [scale, setScale] = useState<ScaleId>("minorPent");
+  const [rootPc, setRootPc] = useState(2);
+  const [arpOn, setArpOn] = useState(false);
+  const [arpRate, setArpRate] = useState(8);
+  const [arpPattern, setArpPattern] = useState<ArpPatternId>("up");
+
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [hands, setHands] = useState<HandState[]>([]);
+
+  // keep latest settings readable inside the rAF loop
+  const cfg = useRef({
+    mode,
+    instrument,
+    leftInstrument,
+    rightInstrument,
+    arpOn,
+  });
+  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpOn };
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -36,6 +65,20 @@ export default function GestureSynth() {
   }, []);
 
   useEffect(() => () => stop(), [stop]);
+
+  useEffect(() => {
+    engineRef.current?.setScale(scaleSteps(scale), rootPc);
+  }, [scale, rootPc]);
+
+  useEffect(() => {
+    const degrees = ARP_PATTERNS.find((p) => p.id === arpPattern)?.degrees ?? [0];
+    engineRef.current?.setArp({
+      enabled: arpOn,
+      rate: arpRate,
+      degrees,
+      random: arpPattern === "random",
+    });
+  }, [arpOn, arpRate, arpPattern]);
 
   const loop = useCallback(() => {
     const video = videoRef.current;
@@ -53,6 +96,8 @@ export default function GestureSynth() {
       const res = lm.detectForVideo(video, performance.now());
       const active = new Set<string>();
       const next: HandState[] = [];
+      const { mode: m, instrument: single, leftInstrument: li, rightInstrument: ri, arpOn: arp } =
+        cfg.current;
 
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
@@ -62,26 +107,31 @@ export default function GestureSynth() {
         const thumbTip = pts[4]!;
         const middleTip = pts[12]!;
 
-        // horizontal position (mirrored) -> pitch
+        // mirrored view: MediaPipe "Left" is the user's right hand
+        const isRight = res.handedness?.[i]?.[0]?.categoryName === "Left";
+        const inst: InstrumentId = m === "split" ? (isRight ? ri : li) : single;
+
         const x = 1 - indexTip.x;
-        const midi = positionToMidi(x, 21, INSTRUMENT_SHIFT[engine.instrument] ?? 0);
-        // vertical -> brightness, hand openness -> loudness
+        const degree = positionToDegree(x, STEPS);
+        const midi = degreeToMidi(degree, engine.scale, engine.rootPc, INSTRUMENT_SHIFT[inst] ?? 0);
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
         const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y);
         const level = Math.min(1, Math.max(0, (span - 0.05) / 0.22));
 
         if (level > 0.06) {
-          engine.noteOn(id, midiToFreq(midi), level, bright);
+          if (arp) engine.setArpTarget(id, degree, level, bright, inst);
+          else engine.noteOn(id, midiToFreq(midi), level, bright, inst);
           next.push({
             note: midiToName(midi),
             level,
-            hand: res.handedness?.[i]?.[0]?.categoryName === "Left" ? "Destra" : "Sinistra",
+            hand: isRight ? "Destra" : "Sinistra",
+            inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
           });
         } else {
+          engine.clearArpTarget(id);
           engine.noteOff(id);
         }
 
-        // draw
         ctx.save();
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
@@ -90,7 +140,7 @@ export default function GestureSynth() {
         pts.forEach((p) => {
           ctx.beginPath();
           ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${35 + level * 180}, 90%, 60%, 0.85)`;
+          ctx.fillStyle = `hsla(${(isRight ? 20 : 190) + level * 120}, 90%, 60%, 0.85)`;
           ctx.fill();
         });
         ctx.beginPath();
@@ -101,7 +151,10 @@ export default function GestureSynth() {
       });
 
       ["h0", "h1"].forEach((id) => {
-        if (!active.has(id)) engine.noteOff(id);
+        if (!active.has(id)) {
+          engine.clearArpTarget(id);
+          engine.noteOff(id);
+        }
       });
       setHands(next);
     }
@@ -113,8 +166,15 @@ export default function GestureSynth() {
       setStatus("Avvio audio e fotocamera…");
       const engine = engineRef.current ?? new GestureSynthEngine();
       engineRef.current = engine;
-      engine.setInstrument(instrument);
+      engine.instrument = instrument;
+      engine.setScale(scaleSteps(scale), rootPc);
       await engine.start();
+      engine.setArp({
+        enabled: arpOn,
+        rate: arpRate,
+        degrees: ARP_PATTERNS.find((p) => p.id === arpPattern)?.degrees ?? [0],
+        random: arpPattern === "random",
+      });
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 640, height: 480 },
@@ -149,12 +209,15 @@ export default function GestureSynth() {
       setStatus("Impossibile accedere alla fotocamera o all'audio.");
       setRunning(false);
     }
-  }, [instrument, loop]);
+  }, [instrument, scale, rootPc, arpOn, arpRate, arpPattern, loop]);
 
   const pickInstrument = (id: InstrumentId) => {
     setInstrument(id);
     engineRef.current?.setInstrument(id);
   };
+
+  const selectClass =
+    "w-full rounded-xl border border-border bg-background/60 px-3 py-2 text-sm text-foreground";
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-8">
@@ -166,8 +229,8 @@ export default function GestureSynth() {
           Gesture <span className="text-primary">Synth</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-          Bassi elettronici aggressivi — reese, acid e growl — più violino, fiati e pads. Muovi le
-          mani davanti alla fotocamera: nessun contatto, solo aria.
+          Bassi aggressivi, arpeggiatore e modalità split: pad con la sinistra, bass con la destra.
+          Scegli scala e tonica per restare sempre in chiave.
         </p>
       </header>
 
@@ -187,7 +250,7 @@ export default function GestureSynth() {
           )}
           {running && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-4">
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {hands.length === 0 && (
                   <span className="rounded-full bg-background/70 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
                     Apri la mano per produrre suono
@@ -198,7 +261,7 @@ export default function GestureSynth() {
                     key={i}
                     className="rounded-full bg-background/70 px-3 py-1 text-xs text-foreground backdrop-blur"
                   >
-                    {h.hand}: <strong className="text-primary">{h.note}</strong>{" "}
+                    {h.hand} · {h.inst}: <strong className="text-primary">{h.note}</strong>{" "}
                     {Math.round(h.level * 100)}%
                   </span>
                 ))}
@@ -211,24 +274,167 @@ export default function GestureSynth() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        {INSTRUMENTS.map((i) => (
-          <button
-            key={i.id}
-            onClick={() => pickInstrument(i.id)}
-            className={
-              instrument === i.id ? "instrument-card instrument-card-active" : "instrument-card"
-            }
+      {/* Modalità */}
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <button
+          onClick={() => setMode("single")}
+          className={mode === "single" ? "instrument-card instrument-card-active" : "instrument-card"}
+        >
+          <span className="font-display text-xl">Strumento singolo</span>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Entrambe le mani suonano lo stesso patch.
+          </span>
+        </button>
+        <button
+          onClick={() => setMode("split")}
+          className={mode === "split" ? "instrument-card instrument-card-active" : "instrument-card"}
+        >
+          <span className="font-display text-xl">Split: pad + bass</span>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Mano sinistra e mano destra con strumenti diversi.
+          </span>
+        </button>
+      </div>
+
+      {mode === "single" ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {INSTRUMENTS.map((i) => (
+            <button
+              key={i.id}
+              onClick={() => pickInstrument(i.id)}
+              className={
+                instrument === i.id ? "instrument-card instrument-card-active" : "instrument-card"
+              }
+            >
+              <span className="font-display text-xl">{i.name}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">{i.blurb}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Mano sinistra
+            </label>
+            <select
+              className={`mt-2 ${selectClass}`}
+              value={leftInstrument}
+              onChange={(e) => setLeftInstrument(e.target.value as InstrumentId)}
+            >
+              {INSTRUMENTS.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Mano destra
+            </label>
+            <select
+              className={`mt-2 ${selectClass}`}
+              value={rightInstrument}
+              onChange={(e) => setRightInstrument(e.target.value as InstrumentId)}
+            >
+              {INSTRUMENTS.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Scala e tonica */}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <label className="text-xs uppercase tracking-widest text-muted-foreground">Scala</label>
+          <select
+            className={`mt-2 ${selectClass}`}
+            value={scale}
+            onChange={(e) => setScale(e.target.value as ScaleId)}
           >
-            <span className="font-display text-xl">{i.name}</span>
-            <span className="mt-1 block text-xs text-muted-foreground">{i.blurb}</span>
+            {SCALES.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <label className="text-xs uppercase tracking-widest text-muted-foreground">Tonica</label>
+          <select
+            className={`mt-2 ${selectClass}`}
+            value={rootPc}
+            onChange={(e) => setRootPc(Number(e.target.value))}
+          >
+            {NOTE_NAMES.map((n, i) => (
+              <option key={n} value={i}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Arpeggiatore */}
+      <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-display text-xl text-foreground">Arpeggiatore</h2>
+            <p className="text-xs text-muted-foreground">
+              Ritmizza automaticamente le note della scala scelta.
+            </p>
+          </div>
+          <button
+            onClick={() => setArpOn((v) => !v)}
+            className={arpOn ? "btn-hero" : "btn-ghost"}
+            aria-pressed={arpOn}
+          >
+            {arpOn ? "On" : "Off"}
           </button>
-        ))}
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Pattern
+            </label>
+            <select
+              className={`mt-2 ${selectClass}`}
+              value={arpPattern}
+              onChange={(e) => setArpPattern(e.target.value as ArpPatternId)}
+            >
+              {ARP_PATTERNS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Velocità: {arpRate} note/s
+            </label>
+            <input
+              type="range"
+              min={2}
+              max={16}
+              step={1}
+              value={arpRate}
+              onChange={(e) => setArpRate(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
+        </div>
       </div>
 
       <section className="mt-10 grid gap-4 sm:grid-cols-3">
         {[
-          ["Sinistra / destra", "Sposta la mano in orizzontale per cambiare nota sulla scala."],
+          ["Sinistra / destra", "Sposta la mano in orizzontale per cambiare grado della scala."],
           [
             "Alto / basso",
             "Alza la mano per aprire il filtro (e accelerare il wobble), abbassala per scurire.",
