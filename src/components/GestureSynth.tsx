@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Crosshair, KeyboardMusic, Music4, Repeat, SlidersHorizontal, Square } from "lucide-react";
+import {
+  Crosshair,
+  Hand,
+  KeyboardMusic,
+  Music4,
+  Repeat,
+  SlidersHorizontal,
+  Square,
+  Sparkles,
+} from "lucide-react";
+
 
 import {
   ARP_PATTERNS,
@@ -95,6 +105,8 @@ export default function GestureSynth() {
 
   const [panel, setPanel] = useState<PanelId | null>(null);
   const [mode, setMode] = useState<PlayMode>("split");
+  const [freeMode, setFreeMode] = useState<Exclude<PlayMode, "pinch">>("split");
+
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
   const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("violin");
   const [rightInstrument, setRightInstrument] = useState<InstrumentId>("winds");
@@ -279,13 +291,14 @@ export default function GestureSynth() {
 
       // stelline lontane che respirano col volume
       const ml = musicLevelRef.current;
-      const baseStarAlpha = 0.03;
+      const baseStarAlpha = 0.1;
       const stars = starsRef.current;
       ctx.save();
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i]!;
         const breath = 0.5 + 0.5 * Math.sin(now * 0.0025 * s.depth + s.phase);
-        const alpha = baseStarAlpha + 0.35 * ml * s.depth * breath;
+        const alpha = baseStarAlpha + 0.1 * s.depth * breath + 0.5 * ml * s.depth * breath;
+
         ctx.fillStyle = `rgba(240, 214, 160, ${Math.min(0.85, alpha)})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
@@ -415,15 +428,18 @@ export default function GestureSynth() {
             engine.rootPc,
             INSTRUMENT_SHIFT[inst] ?? 0,
           );
-          // normalizzato sulla dimensione della mano + taratura
+          // apertura della mano -> brillantezza / filtro
           const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y) / handSize;
-          const level = Math.min(1, Math.max(0, (span - thrOn) / Math.max(0.2, thrOff * 1.8)));
-
+          const open = Math.min(1, Math.max(0, (span - thrOn) / Math.max(0.2, thrOff * 1.8)));
+          const freeBright = 0.05 + open * 0.95;
+          // altezza -> volume: in basso piano, al 70% dello schermo pieno
+          const height = 1 - Math.min(1, Math.max(0, indexTip.y));
+          const level = Math.min(1, Math.max(0, height / 0.7));
 
           if (level > 0.06) {
             soundLevel = level;
-            if (arp) engine.setArpTarget(id, degree, level, bright, inst);
-            else engine.noteOn(id, midiToFreq(midi), level, bright, inst);
+            if (arp) engine.setArpTarget(id, degree, level, freeBright, inst);
+            else engine.noteOn(id, midiToFreq(midi), level, freeBright, inst);
             next.push({
               note: midiToName(midi),
               level,
@@ -434,6 +450,7 @@ export default function GestureSynth() {
             active.delete(id);
           }
         }
+
 
         maxSoundLevel = Math.max(maxSoundLevel, soundLevel);
 
@@ -653,7 +670,37 @@ export default function GestureSynth() {
         <div className="celestial-rule mx-auto mt-3 w-2/3" />
       </header>
 
-      <div className="celestial-frame mt-4 rounded-sm shadow-glow">
+      <div className="mt-4 flex items-center justify-center gap-2">
+        <button
+          onClick={() => setMode("pinch")}
+          aria-label="Tocco note"
+          className={
+            (mode === "pinch"
+              ? "border-primary bg-primary/15 text-primary"
+              : "border-border bg-card/60 text-muted-foreground") +
+            " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+          }
+        >
+          <Sparkles className="h-5 w-5" />
+          Tocco
+        </button>
+        <button
+          onClick={() => setMode(freeMode)}
+          aria-label="Libero"
+          className={
+            (mode !== "pinch"
+              ? "border-primary bg-primary/15 text-primary"
+              : "border-border bg-card/60 text-muted-foreground") +
+            " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+          }
+        >
+          <Hand className="h-5 w-5" />
+          Libero
+        </button>
+      </div>
+
+      <div className="celestial-frame mt-3 rounded-sm shadow-glow">
+
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-stage sm:aspect-[4/3]">
           <video ref={videoRef} playsInline muted className="hidden" />
           <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
@@ -732,7 +779,11 @@ export default function GestureSynth() {
             ).map(([id, name, blurb]) => (
               <button
                 key={id}
-                onClick={() => setMode(id)}
+                onClick={() => {
+                  setMode(id);
+                  if (id !== "pinch") setFreeMode(id);
+                }}
+
                 className={mode === id ? "instrument-card instrument-card-active" : "instrument-card"}
               >
                 <span className="font-display text-lg">{name}</span>
