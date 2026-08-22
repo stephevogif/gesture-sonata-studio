@@ -17,7 +17,11 @@ import {
 } from "@/lib/synth";
 
 type HandState = { note: string; level: number; hand: string; inst: string };
-type PlayMode = "single" | "split";
+type PlayMode = "single" | "split" | "pinch";
+
+const PINCH_TIPS = [8, 12, 16, 20];
+const PINCH_OFFSETS = [0, 2, 4, 6];
+
 
 const STEPS = 21;
 
@@ -27,6 +31,8 @@ export default function GestureSynth() {
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const rafRef = useRef<number | null>(null);
   const landmarkerRef = useRef<any>(null);
+  const voiceIdsRef = useRef<Set<string>>(new Set());
+
 
   const [mode, setMode] = useState<PlayMode>("single");
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
@@ -34,9 +40,11 @@ export default function GestureSynth() {
   const [rightInstrument, setRightInstrument] = useState<InstrumentId>("reese");
   const [scale, setScale] = useState<ScaleId>("minorPent");
   const [rootPc, setRootPc] = useState(2);
-  const [arpOn, setArpOn] = useState(false);
+  const [arpLeft, setArpLeft] = useState(false);
+  const [arpRight, setArpRight] = useState(false);
   const [arpRate, setArpRate] = useState(8);
   const [arpPattern, setArpPattern] = useState<ArpPatternId>("up");
+
 
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string>("");
@@ -48,9 +56,10 @@ export default function GestureSynth() {
     instrument,
     leftInstrument,
     rightInstrument,
-    arpOn,
+    arpLeft,
+    arpRight,
   });
-  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpOn };
+  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpLeft, arpRight };
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -73,12 +82,13 @@ export default function GestureSynth() {
   useEffect(() => {
     const degrees = ARP_PATTERNS.find((p) => p.id === arpPattern)?.degrees ?? [0];
     engineRef.current?.setArp({
-      enabled: arpOn,
+      enabled: arpLeft || arpRight,
       rate: arpRate,
       degrees,
       random: arpPattern === "random",
     });
-  }, [arpOn, arpRate, arpPattern]);
+  }, [arpLeft, arpRight, arpRate, arpPattern]);
+
 
   const loop = useCallback(() => {
     const video = videoRef.current;
@@ -96,12 +106,17 @@ export default function GestureSynth() {
       const res = lm.detectForVideo(video, performance.now());
       const active = new Set<string>();
       const next: HandState[] = [];
-      const { mode: m, instrument: single, leftInstrument: li, rightInstrument: ri, arpOn: arp } =
-        cfg.current;
+      const {
+        mode: m,
+        instrument: single,
+        leftInstrument: li,
+        rightInstrument: ri,
+        arpLeft: aL,
+        arpRight: aR,
+      } = cfg.current;
 
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
-        active.add(id);
         const wrist = pts[0]!;
         const indexTip = pts[8]!;
         const thumbTip = pts[4]!;
@@ -110,26 +125,71 @@ export default function GestureSynth() {
         // mirrored view: MediaPipe "Left" is the user's right hand
         const isRight = res.handedness?.[i]?.[0]?.categoryName === "Left";
         const inst: InstrumentId = m === "split" ? (isRight ? ri : li) : single;
+        const arp = isRight ? aR : aL;
 
         const x = 1 - indexTip.x;
-        const degree = positionToDegree(x, STEPS);
-        const midi = degreeToMidi(degree, engine.scale, engine.rootPc, INSTRUMENT_SHIFT[inst] ?? 0);
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
-        const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y);
-        const level = Math.min(1, Math.max(0, (span - 0.05) / 0.22));
 
-        if (level > 0.06) {
-          if (arp) engine.setArpTarget(id, degree, level, bright, inst);
-          else engine.noteOn(id, midiToFreq(midi), level, bright, inst);
-          next.push({
-            note: midiToName(midi),
-            level,
-            hand: isRight ? "Destra" : "Sinistra",
-            inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
+        if (m === "pinch") {
+          // gesturesynth.com style: pizzica pollice + dito per suonare un grado dell'accordo
+          const base = positionToDegree(x, 8);
+          PINCH_TIPS.forEach((tipIdx, k) => {
+            const tip = pts[tipIdx]!;
+            const vid = `${id}f${k}`;
+            const d = Math.hypot(tip.x - thumbTip.x, tip.y - thumbTip.y);
+            const on = d < 0.07;
+            if (on) {
+              active.add(vid);
+              const level = Math.min(1, Math.max(0.35, 1 - d / 0.07));
+              const degree = base + (PINCH_OFFSETS[k] ?? 0);
+              const midi = degreeToMidi(
+                degree,
+                engine.scale,
+                engine.rootPc,
+                INSTRUMENT_SHIFT[inst] ?? 0,
+              );
+              if (arp) engine.setArpTarget(vid, degree, level, bright, inst);
+              else engine.noteOn(vid, midiToFreq(midi), level, bright, inst);
+              next.push({
+                note: midiToName(midi),
+                level,
+                hand: isRight ? "Destra" : "Sinistra",
+                inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
+              });
+              ctx.save();
+              ctx.translate(canvas.width, 0);
+              ctx.scale(-1, 1);
+              ctx.beginPath();
+              ctx.arc(tip.x * canvas.width, tip.y * canvas.height, 16, 0, Math.PI * 2);
+              ctx.fillStyle = `hsla(${(isRight ? 20 : 190) + k * 30}, 90%, 60%, 0.35)`;
+              ctx.fill();
+              ctx.restore();
+            }
           });
         } else {
-          engine.clearArpTarget(id);
-          engine.noteOff(id);
+          active.add(id);
+          const degree = positionToDegree(x, STEPS);
+          const midi = degreeToMidi(
+            degree,
+            engine.scale,
+            engine.rootPc,
+            INSTRUMENT_SHIFT[inst] ?? 0,
+          );
+          const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y);
+          const level = Math.min(1, Math.max(0, (span - 0.05) / 0.22));
+
+          if (level > 0.06) {
+            if (arp) engine.setArpTarget(id, degree, level, bright, inst);
+            else engine.noteOn(id, midiToFreq(midi), level, bright, inst);
+            next.push({
+              note: midiToName(midi),
+              level,
+              hand: isRight ? "Destra" : "Sinistra",
+              inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
+            });
+          } else {
+            active.delete(id);
+          }
         }
 
         ctx.save();
@@ -140,7 +200,7 @@ export default function GestureSynth() {
         pts.forEach((p) => {
           ctx.beginPath();
           ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${(isRight ? 20 : 190) + level * 120}, 90%, 60%, 0.85)`;
+          ctx.fillStyle = `hsla(${isRight ? 20 : 190}, 90%, 60%, 0.85)`;
           ctx.fill();
         });
         ctx.beginPath();
@@ -150,13 +210,15 @@ export default function GestureSynth() {
         ctx.restore();
       });
 
-      ["h0", "h1"].forEach((id) => {
+      voiceIdsRef.current.forEach((id) => {
         if (!active.has(id)) {
           engine.clearArpTarget(id);
           engine.noteOff(id);
         }
       });
+      voiceIdsRef.current = active;
       setHands(next);
+
     }
     rafRef.current = requestAnimationFrame(loop);
   }, []);
@@ -170,7 +232,7 @@ export default function GestureSynth() {
       engine.setScale(scaleSteps(scale), rootPc);
       await engine.start();
       engine.setArp({
-        enabled: arpOn,
+        enabled: arpLeft || arpRight,
         rate: arpRate,
         degrees: ARP_PATTERNS.find((p) => p.id === arpPattern)?.degrees ?? [0],
         random: arpPattern === "random",
@@ -209,7 +271,7 @@ export default function GestureSynth() {
       setStatus("Impossibile accedere alla fotocamera o all'audio.");
       setRunning(false);
     }
-  }, [instrument, scale, rootPc, arpOn, arpRate, arpPattern, loop]);
+  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, loop]);
 
   const pickInstrument = (id: InstrumentId) => {
     setInstrument(id);
@@ -275,7 +337,7 @@ export default function GestureSynth() {
       </div>
 
       {/* Modalità */}
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <button
           onClick={() => setMode("single")}
           className={mode === "single" ? "instrument-card instrument-card-active" : "instrument-card"}
@@ -294,9 +356,19 @@ export default function GestureSynth() {
             Mano sinistra e mano destra con strumenti diversi.
           </span>
         </button>
+        <button
+          onClick={() => setMode("pinch")}
+          className={mode === "pinch" ? "instrument-card instrument-card-active" : "instrument-card"}
+        >
+          <span className="font-display text-xl">Pinch (gesturesynth)</span>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Pizzica pollice + dito: 4 note per mano, come gesturesynth.com.
+          </span>
+        </button>
       </div>
 
-      {mode === "single" ? (
+
+      {mode !== "split" ? (
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {INSTRUMENTS.map((i) => (
             <button
@@ -389,13 +461,23 @@ export default function GestureSynth() {
               Ritmizza automaticamente le note della scala scelta.
             </p>
           </div>
-          <button
-            onClick={() => setArpOn((v) => !v)}
-            className={arpOn ? "btn-hero" : "btn-ghost"}
-            aria-pressed={arpOn}
-          >
-            {arpOn ? "On" : "Off"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setArpLeft((v) => !v)}
+              className={arpLeft ? "btn-hero" : "btn-ghost"}
+              aria-pressed={arpLeft}
+            >
+              Sinistra: {arpLeft ? "On" : "Off"}
+            </button>
+            <button
+              onClick={() => setArpRight((v) => !v)}
+              className={arpRight ? "btn-hero" : "btn-ghost"}
+              aria-pressed={arpRight}
+            >
+              Destra: {arpRight ? "On" : "Off"}
+            </button>
+          </div>
+
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
