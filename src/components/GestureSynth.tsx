@@ -482,12 +482,13 @@ export default function GestureSynth() {
         } else {
           active.add(id);
           const degree = positionToDegree(x, STEPS);
-          const midi = degreeToMidi(
-            degree,
-            engine.scale,
-            engine.rootPc,
-            INSTRUMENT_SHIFT[inst] ?? 0,
-          );
+          const shift = INSTRUMENT_SHIFT[inst] ?? 0;
+          const midi = degreeToMidi(degree, engine.scale, engine.rootPc, shift);
+          // glide: altezza continua tra la prima e l'ultima nota della stessa estensione
+          const lowMidi = degreeToMidi(0, engine.scale, engine.rootPc, shift);
+          const highMidi = degreeToMidi(STEPS - 1, engine.scale, engine.rootPc, shift);
+          const glideMidi = lowMidi + Math.min(1, Math.max(0, x)) * (highMidi - lowMidi);
+          const playMidi = fp === "glide" ? glideMidi : midi;
           // apertura della mano -> brillantezza / filtro
           const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y) / handSize;
           const open = Math.min(1, Math.max(0, (span - thrOn) / Math.max(0.2, thrOff * 1.8)));
