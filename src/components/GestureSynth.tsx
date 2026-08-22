@@ -128,7 +128,7 @@ export default function GestureSynth() {
   const [listening, setListening] = useState(false);
   const [listenProgress, setListenProgress] = useState(0);
   const [listenLevel, setListenLevel] = useState(0);
-  const [listenDuration, setListenDuration] = useState(6000);
+  const [listenDuration, setListenDuration] = useState(16000);
   const [listenMsg, setListenMsg] = useState<string | null>(null);
   const listenAbortRef = useRef<AbortController | null>(null);
 
@@ -172,7 +172,7 @@ export default function GestureSynth() {
   }, []);
 
   const startListening = useCallback(() => runListening(listenDuration), [runListening, listenDuration]);
-  const quickListen = useCallback(() => runListening(3000), [runListening]);
+  const quickListen = useCallback(() => runListening(16000), [runListening]);
 
 
   useEffect(() => () => listenAbortRef.current?.abort(), []);
@@ -1012,9 +1012,9 @@ export default function GestureSynth() {
                 disabled={listening}
                 onChange={(e) => setListenDuration(Number(e.target.value))}
               >
-                <option value={3000}>3 s</option>
-                <option value={6000}>6 s</option>
-                <option value={10000}>10 s</option>
+                <option value={16000}>16 s</option>
+                <option value={24000}>24 s</option>
+                <option value={32000}>32 s</option>
               </select>
               {listening && (
                 <span className="text-xs tabular-nums text-muted-foreground">
