@@ -927,7 +927,59 @@ export default function GestureSynth() {
               ))}
             </select>
           </div>
+
+          <div className="sm:col-span-2 celestial-rule" />
+
+          <div className="sm:col-span-2">
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Ascolto automatico
+            </label>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                onClick={listening ? () => listenAbortRef.current?.abort() : startListening}
+                className={listening ? "btn-ghost" : "btn-hero"}
+              >
+                <Mic className="mr-2 inline h-4 w-4" />
+                {listening ? "Annulla" : "Ascolta"}
+              </button>
+              <select
+                className={selectClass}
+                value={listenDuration}
+                disabled={listening}
+                onChange={(e) => setListenDuration(Number(e.target.value))}
+              >
+                <option value={3000}>3 s</option>
+                <option value={6000}>6 s</option>
+                <option value={10000}>10 s</option>
+              </select>
+              {listening && (
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {Math.ceil((listenDuration / 1000) * (1 - listenProgress))} s
+                </span>
+              )}
+            </div>
+            {listening && (
+              <div className="mt-3 space-y-2">
+                <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full bg-primary transition-[width] duration-100"
+                    style={{ width: `${listenProgress * 100}%` }}
+                  />
+                </div>
+                <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full bg-accent"
+                    style={{ width: `${Math.min(100, listenLevel * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            {!listening && listenMsg && (
+              <p className="mt-2 text-xs text-muted-foreground">{listenMsg}</p>
+            )}
+          </div>
         </div>
+
       )}
 
       {panel === "arp" && (
