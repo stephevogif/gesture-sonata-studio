@@ -142,6 +142,7 @@ export default function GestureSynth() {
     particlesRef.current = [];
     heldRef.current.clear();
     smoothRef.current.clear();
+    musicLevelRef.current = 0;
     calibPhaseRef.current = "idle";
     setCalibPhase("idle");
   }, []);
