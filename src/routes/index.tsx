@@ -6,17 +6,17 @@ const GestureSynth = lazy(() => import("@/components/GestureSynth"));
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Gesture Synth — Suona violino, fiati e pads con le mani" },
+      { title: "STEPH EVO'S CRAZY THERAMIN — GESTURE MUSIC" },
       {
         name: "description",
         content:
-          "Synth gestuale nel browser: muovi le mani davanti alla webcam per suonare violino, fiati e pads. Nessun contatto, solo aria.",
+          "Synth gestuale nel browser: muovi le mani davanti alla webcam per suonare bassi, pads e fiati con Steph Evo's Crazy Theramin.",
       },
-      { property: "og:title", content: "Gesture Synth — Strumento gestuale nel browser" },
+      { property: "og:title", content: "STEPH EVO'S CRAZY THERAMIN — GESTURE MUSIC" },
       {
         property: "og:description",
         content:
-          "Controlla nota, timbro e volume con i gesti delle mani. Violino, fiati e pads dal vivo nel browser.",
+          "Controlla nota, timbro e volume con i gesti delle mani. Bassi aggressivi, arpeggiatori e split in tempo reale.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

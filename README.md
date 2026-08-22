@@ -1,6 +1,6 @@
-# Welcome to your Lovable project
+# STEPH EVO'S CRAZY THERAMIN — GESTURE MUSIC
 
-This project was built with [Lovable](https://lovable.dev).
+Suona musica elettronica con le mani nel browser.
 
 ## Build with Lovable
 

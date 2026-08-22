@@ -284,11 +284,11 @@ export default function GestureSynth() {
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-8">
       <header className="text-center">
-        <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-          Strumento gestuale
+        <p className="text-xs uppercase tracking-[0.3em] text-primary">
+          GESTURE MUSIC
         </p>
         <h1 className="mt-3 font-display text-4xl leading-tight text-foreground sm:text-6xl">
-          Gesture <span className="text-primary">Synth</span>
+          STEPH EVO'S <span className="text-primary">CRAZY THERAMIN</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
           Bassi aggressivi, arpeggiatore e modalità split: pad con la sinistra, bass con la destra.
