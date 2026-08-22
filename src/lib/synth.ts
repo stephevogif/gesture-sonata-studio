@@ -385,6 +385,98 @@ export class GestureSynthEngine {
       subG.gain.value = 0.55;
       sub.connect(subG).connect(gain);
       sub.start(now);
+    } else if (inst === "harp") {
+      addOsc("triangle", 0, 0.5);
+      addOsc("sine", 4, 0.35, 2);
+      addOsc("sine", -4, 0.12, 3);
+      filter.frequency.value = 5200;
+      filter.Q.value = 0.7;
+      vibrato.frequency.value = 3.2;
+      vibratoGain.gain.value = 2;
+      attack = 0.006;
+      release = 1.1;
+      sustain = 0.12;
+      decay = 0.55;
+    } else if (inst === "piano") {
+      addOsc("triangle", 0, 0.55);
+      addOsc("sine", 0, 0.3, 2);
+      addOsc("sine", 3, 0.1, 4);
+      filter.frequency.value = 3200;
+      filter.Q.value = 0.6;
+      vibrato.frequency.value = 1.2;
+      vibratoGain.gain.value = 1;
+      attack = 0.02;
+      release = 1.4;
+      sustain = 0.2;
+      decay = 0.9;
+    } else if (inst === "kalimba") {
+      addOsc("sine", 0, 0.6);
+      addOsc("sine", 0, 0.18, 2.76);
+      addOsc("sine", 0, 0.08, 5.4);
+      filter.frequency.value = 4200;
+      vibrato.frequency.value = 2.4;
+      vibratoGain.gain.value = 1;
+      attack = 0.004;
+      release = 0.7;
+      sustain = 0.08;
+      decay = 0.28;
+    } else if (inst === "bowl") {
+      addOsc("sine", 0, 0.5);
+      addOsc("sine", 0, 0.24, 2.4);
+      addOsc("sine", 0, 0.14, 4.3);
+      addOsc("sine", 6, 0.08, 6.7);
+      filter.frequency.value = 3000;
+      vibrato.frequency.value = 0.45;
+      vibratoGain.gain.value = 4;
+      attack = 0.25;
+      release = 3.2;
+      sustain = 0.45;
+      decay = 2.4;
+    } else if (inst === "glocken") {
+      addOsc("sine", 0, 0.5);
+      addOsc("sine", 0, 0.28, 3.01);
+      addOsc("sine", 0, 0.12, 6.2);
+      filter.frequency.value = 8000;
+      vibrato.frequency.value = 1.6;
+      vibratoGain.gain.value = 1;
+      attack = 0.003;
+      release = 1.6;
+      sustain = 0.1;
+      decay = 0.5;
+    } else if (inst === "choir") {
+      addOsc("sawtooth", -8, 0.18);
+      addOsc("sawtooth", 8, 0.18);
+      addOsc("triangle", 0, 0.3);
+      addOsc("sine", 0, 0.2, 2);
+      filter.type = "lowpass";
+      filter.frequency.value = 1600;
+      filter.Q.value = 2.5;
+      vibrato.frequency.value = 4.8;
+      vibratoGain.gain.value = 7;
+      attack = 0.55;
+      release = 1.8;
+    } else if (inst === "pluckAmb") {
+      addOsc("square", 0, 0.3);
+      addOsc("triangle", 7, 0.35);
+      addOsc("sine", -7, 0.2, 2);
+      filter.frequency.value = 3600;
+      filter.Q.value = 2;
+      vibrato.frequency.value = 5;
+      vibratoGain.gain.value = 3;
+      attack = 0.005;
+      release = 0.9;
+      sustain = 0.14;
+      decay = 0.35;
+    } else if (inst === "subpad") {
+      addOsc("sine", 0, 0.55);
+      addOsc("triangle", -6, 0.2);
+      addOsc("sine", 6, 0.18, 2);
+      filter.frequency.value = 900;
+      filter.Q.value = 0.8;
+      vibrato.frequency.value = 0.35;
+      vibratoGain.gain.value = 4;
+      attack = 0.7;
+      release = 1.8;
     } else {
       addOsc("sawtooth", -9, 0.3);
       addOsc("sawtooth", 9, 0.3);
@@ -410,6 +502,7 @@ export class GestureSynthEngine {
 
     return {
       oscs,
+      ratios,
       gain,
       filter,
       vibrato,
@@ -422,10 +515,13 @@ export class GestureSynthEngine {
       lfoGain,
       sub,
       isBass,
+      sustain,
+      decay,
       inst,
       attack,
       release,
     };
+
   }
 
   private getVoice(id: string, freq: number, inst: InstrumentId) {
