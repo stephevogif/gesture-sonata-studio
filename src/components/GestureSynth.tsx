@@ -38,9 +38,11 @@ export default function GestureSynth() {
   const [rightInstrument, setRightInstrument] = useState<InstrumentId>("reese");
   const [scale, setScale] = useState<ScaleId>("minorPent");
   const [rootPc, setRootPc] = useState(2);
-  const [arpOn, setArpOn] = useState(false);
+  const [arpLeft, setArpLeft] = useState(false);
+  const [arpRight, setArpRight] = useState(false);
   const [arpRate, setArpRate] = useState(8);
   const [arpPattern, setArpPattern] = useState<ArpPatternId>("up");
+
 
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string>("");
