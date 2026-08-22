@@ -149,18 +149,20 @@ export default function GestureSynth() {
           setListenLevel(level);
         },
       });
+      // applica subito tonica e scala (anche mentre stai suonando)
       setRootPc(res.rootPc);
       setScale(res.scaleId);
-      const name = `${NOTE_NAMES[res.rootPc]} ${res.mode === "minor" ? "minore" : "maggiore"}`;
-      const conf = res.confidence > 0.6 ? "alta" : res.confidence > 0.3 ? "media" : "bassa";
+      engineRef.current?.setScale(scaleSteps(res.scaleId), res.rootPc);
+      const scaleName = SCALES.find((s) => s.id === res.scaleId)?.name ?? "";
+      const name = `${NOTE_NAMES[res.rootPc]} ${scaleName}`;
       setListenMsg(
         res.confidence > 0.3
-          ? `Rilevato: ${name} — confidenza ${conf}`
-          : `Rilevato: ${name} — confidenza bassa, prova di nuovo con più suono`,
+          ? `Applicato: ${name}`
+          : `Applicato: ${name} — confidenza bassa, riprova con più suono`,
       );
     } catch (e) {
       const err = e as Error;
-      if (err.name === "AbortError") setListenMsg("Ascolto annullato.");
+      if (err.name === "AbortError") setListenMsg("Ascolto interrotto.");
       else if (err.name === "NotAllowedError")
         setListenMsg("Permesso microfono negato.");
       else setListenMsg(err.message || "Non è stato possibile ascoltare.");
@@ -172,7 +174,11 @@ export default function GestureSynth() {
   }, []);
 
   const startListening = useCallback(() => runListening(listenDuration), [runListening, listenDuration]);
-  const quickListen = useCallback(() => runListening(16000), [runListening]);
+  const toggleListen = useCallback(() => {
+    if (listening) listenAbortRef.current?.abort();
+    else void runListening(listenDuration);
+  }, [listening, runListening, listenDuration]);
+
 
 
   useEffect(() => () => listenAbortRef.current?.abort(), []);
