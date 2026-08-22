@@ -230,7 +230,7 @@ export default function GestureSynth() {
       engine.setScale(scaleSteps(scale), rootPc);
       await engine.start();
       engine.setArp({
-        enabled: arpOn,
+        enabled: arpLeft || arpRight,
         rate: arpRate,
         degrees: ARP_PATTERNS.find((p) => p.id === arpPattern)?.degrees ?? [0],
         random: arpPattern === "random",
