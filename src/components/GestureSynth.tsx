@@ -368,7 +368,7 @@ export default function GestureSynth() {
       </div>
 
 
-      {mode === "single" ? (
+      {mode !== "split" ? (
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {INSTRUMENTS.map((i) => (
             <button
