@@ -1,43 +1,40 @@
-# Pianificazione: App Windows e smartphone per Steph Evo's Crazy Theramin
+# App più semplice: schermo pieno + icone
 
 ## Obiettivo
-Rendere **STEPH EVO'S CRAZY THERAMIN — GESTURE MUSIC** installabile su Windows e utilizzabile come app sullo smartphone, senza rompere la preview Lovable.
+La prima schermata mostra solo la vista live (il "track") con il pulsante di avvio. Tutti i controlli spariscono dalla pagina e vivono dentro pannelli che si aprono da una barra di icone sotto lo schermo.
 
-## Decisioni prese
-- **Windows**: pacchettizzazione con Electron, output come cartella `.zip` con `.exe` pronto all'uso (gli installer richiedono tool non disponibili in questa sandbox).
-- **Android / smartphone**: supporto PWA installabile (manifest + service worker offline). Questo è il modo più diretto per un'app web e permette "Aggiungi alla schermata home" e funzionamento offline. Un **vero APK nativo** richiede Capacitor ed è un passo separato; possiamo affrontarlo in un secondo momento se serve.
+## Nuova schermata
 
-## Cosa costruire
+```text
++--------------------------------------+
+|                                      |
+|         VISTA LIVE (camera)          |
+|        [ Inizia a suonare ]          |
+|                                      |
++--------------------------------------+
+|  [♪]   [FX]   [scala]  [arp]  [◼]    |
++--------------------------------------+
+```
 
-### 1. PWA installabile e offline
-- Creare `public/manifest.webmanifest` con nome, icone, colori, `display: "standalone"`, `start_url`, `scope`.
-- Aggiungere icone PWA in `public/` (almeno 192x192, 512x512).
-- Aggiungere tag `<link rel="manifest">`, `<meta name="theme-color">`, `apple-touch-icon` nel head in `src/routes/__root.tsx`.
-- Installare `vite-plugin-pwa` e configurarlo in `vite.config.ts`:
-  - `registerType: "autoUpdate"`
-  - `injectRegister: null`
-  - `devOptions: { enabled: false }`
-  - `filename: "sw.js"`
-  - strategia `NetworkFirst` per navigazioni HTML
-  - strategia `CacheFirst` solo per asset hashati stesso-origin
-  - escludere `/~oauth` dal fallback
-- Creare un wrapper `src/lib/pwa-register.ts` che registra il service worker solo in produzione, solo quando non è in iframe, e non sui domini Lovable preview (`id-preview--`, `lovableproject.com`, `lovableproject-dev.com`, `beta.lovable.dev`). Se il contesto è vietato, cancella eventuali registrazioni `/sw.js` esistenti.
-- Importare e chiamare il wrapper in `src/routes/__root.tsx` in modo sicuro per SSR (es. `useEffect` o dopo hydration).
+- Titolo compatto in alto (STEPH EVO'S CRAZY THERAMIN), niente paragrafo descrittivo.
+- Sotto lo schermo, 4 icone + stop:
+  - Suono: modalità di gioco e scelta strumenti (incluso split A/B)
+  - Effetti: riverbero, tipo filtro, cutoff
+  - Scala: scala musicale e tonica
+  - Arp: on/off per lato, pattern, velocità
+- Toccando un'icona si apre un pannello a scomparsa sotto la barra (uno alla volta, richiudibile). Nessun controllo visibile finché non si apre un pannello.
+- Layout ottimizzato per telefono: schermo alto, icone grandi tappabili, pannelli scrollabili.
 
-### 2. Pacchetto Windows con Electron
-- Modificare `vite.config.ts` impostando `base: "./"` per supportare il caricamento `file://`.
-- Creare `electron/main.cjs` (CommonJS) con `BrowserWindow` che carica `dist/index.html`, `contextIsolation: true`, `nodeIntegration: false`.
-- Aggiungere `"main": "electron/main.cjs"` in `package.json`.
-- Installare dev dependencies: `electron` e `@electron/packager`.
-- Aggiungere script npm per build Windows: `npm run build:win` che lancia `vite build` seguito da `@electron/packager` con `--platform=win32 --arch=x64 --out=electron-release`.
-- Archiviare l'output in `/mnt/documents/StephEvoTheremin-win32-x64.zip`.
+## Testi
+Rimossi tutti i riferimenti scritti a mani/gesti:
+- Sezione finale con le 3 spiegazioni ("Sinistra/destra", "Alto/basso", "Apri/chiudi"): eliminata.
+- "Pinch (gesturesynth)" → "Tocco note"; "Split: pad + bass" → "Doppio strumento"; "Strumento singolo" resta.
+- "Mano sinistra" / "Mano destra" → "Lato A" / "Lato B" (anche nell'arpeggiatore e nelle etichette a schermo durante l'esecuzione).
+- "Apri la mano per produrre suono" → "Pronto".
+- Sottotitolo header e descrizioni delle modalità riscritti senza parole come mano, gesto, pinch.
+- Aggiornati anche titolo/descrizione SEO della pagina se contengono quei termini.
 
-### 3. Verifica e consegna
-- Eseguire `npm run build` per confermare che la PWA e il build Vite non si rompano.
-- Generare il pacchetto Windows e mostrare il link di download per l'archivio.
-- Testare in preview che il manifest e i meta tag siano presenti.
-- Spiegare all'utente che la PWA funziona solo dopo la pubblicazione, non nella preview Lovable, e che il download Windows è un `.zip` con `.exe` pronto.
-
-## Nota sui limiti
-- Non possiamo produrre installer `.exe` nativo o `.dmg` / `.AppImage` da questa sandbox.
-- Non possiamo produrre un vero APK nativo senza aggiungere Capacitor: per ora proponiamo la PWA installabile. Se vuoi l'APK, serve un passo successivo.
+## Note tecniche
+- Modifiche solo in `src/components/GestureSynth.tsx` (nuova struttura UI + stato `openPanel`), più eventuali stili in `src/styles.css` per la barra icone e il pannello.
+- Nessun cambiamento al motore audio (`src/lib/synth.ts`) né alla logica di tracciamento: stessi parametri, solo riorganizzazione dell'interfaccia e dei testi.
+- Icone da `lucide-react` (già disponibile), con `aria-label` per accessibilità.
