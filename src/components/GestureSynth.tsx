@@ -416,15 +416,18 @@ export default function GestureSynth() {
             engine.rootPc,
             INSTRUMENT_SHIFT[inst] ?? 0,
           );
-          // normalizzato sulla dimensione della mano + taratura
+          // apertura della mano -> brillantezza / filtro
           const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y) / handSize;
-          const level = Math.min(1, Math.max(0, (span - thrOn) / Math.max(0.2, thrOff * 1.8)));
-
+          const open = Math.min(1, Math.max(0, (span - thrOn) / Math.max(0.2, thrOff * 1.8)));
+          const freeBright = 0.05 + open * 0.95;
+          // altezza -> volume: in basso piano, al 70% dello schermo pieno
+          const height = 1 - Math.min(1, Math.max(0, indexTip.y));
+          const level = Math.min(1, Math.max(0, height / 0.7));
 
           if (level > 0.06) {
             soundLevel = level;
-            if (arp) engine.setArpTarget(id, degree, level, bright, inst);
-            else engine.noteOn(id, midiToFreq(midi), level, bright, inst);
+            if (arp) engine.setArpTarget(id, degree, level, freeBright, inst);
+            else engine.noteOn(id, midiToFreq(midi), level, freeBright, inst);
             next.push({
               note: midiToName(midi),
               level,
@@ -435,6 +438,7 @@ export default function GestureSynth() {
             active.delete(id);
           }
         }
+
 
         maxSoundLevel = Math.max(maxSoundLevel, soundLevel);
 
