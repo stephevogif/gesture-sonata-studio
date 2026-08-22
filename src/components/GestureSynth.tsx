@@ -529,22 +529,22 @@ export default function GestureSynth() {
         const p = parts[i]!;
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.02;
-        p.vx *= 0.985;
-        p.vy *= 0.985;
+        p.vy += 0.015;
+        p.vx *= 0.993;
+        p.vy *= 0.993;
         p.life -= p.decay;
-        p.hue = (p.hue + 4) % 360;
+        p.hue = (p.hue + 3.5) % 360;
         if (p.life <= 0) {
           parts.splice(i, 1);
           continue;
         }
-        const r = p.size * (0.4 + p.life);
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.2);
-        g.addColorStop(0, `hsla(${p.hue}, 100%, 72%, ${0.85 * p.life})`);
-        g.addColorStop(1, `hsla(${(p.hue + 60) % 360}, 100%, 50%, 0)`);
+        const r = p.size * (0.5 + p.life * 0.9);
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.8);
+        g.addColorStop(0, `hsla(${p.hue}, 100%, 76%, ${0.75 * p.life})`);
+        g.addColorStop(1, `hsla(${(p.hue + 60) % 360}, 100%, 55%, 0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, r * 2.2, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, r * 2.8, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
