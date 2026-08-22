@@ -1,12 +1,41 @@
-export type InstrumentId = "violin" | "winds" | "pads" | "reese" | "acid" | "growl";
+export type InstrumentId =
+  | "violin"
+  | "winds"
+  | "pads"
+  | "reese"
+  | "acid"
+  | "growl"
+  | "harp"
+  | "piano"
+  | "kalimba"
+  | "bowl"
+  | "glocken"
+  | "choir"
+  | "pluckAmb"
+  | "subpad";
 
-export const INSTRUMENTS: { id: InstrumentId; name: string; blurb: string }[] = [
-  { id: "reese", name: "Reese Bass", blurb: "Basso detunato, sporco e profondo" },
-  { id: "acid", name: "Acid 303", blurb: "Squelch acido con filtro urlante" },
-  { id: "growl", name: "Growl / Dubstep", blurb: "Wobble aggressivo e distorto" },
-  { id: "violin", name: "Violino", blurb: "Archi espressivi con vibrato" },
-  { id: "winds", name: "Fiati", blurb: "Legni ariosi e soffiati" },
-  { id: "pads", name: "Pads", blurb: "Tappeti ampi e riverberati" },
+export type InstrumentGroup = "zen" | "electro";
+
+export const INSTRUMENTS: {
+  id: InstrumentId;
+  name: string;
+  blurb: string;
+  group: InstrumentGroup;
+}[] = [
+  { id: "harp", name: "Arpa di cristallo", blurb: "Pizzicato brillante, coda lunga", group: "zen" },
+  { id: "piano", name: "Pianoforte notturno", blurb: "Feltro morbido, attacco dolce", group: "zen" },
+  { id: "kalimba", name: "Kalimba", blurb: "Pizzicato legnoso, meditativo", group: "zen" },
+  { id: "bowl", name: "Campane tibetane", blurb: "Metallo profondo, note infinite", group: "zen" },
+  { id: "glocken", name: "Glockenspiel", blurb: "Cristallino e luminoso", group: "zen" },
+  { id: "choir", name: "Coro etereo", blurb: "Voci ampie e riverberate", group: "zen" },
+  { id: "violin", name: "Violino", blurb: "Archi espressivi con vibrato", group: "zen" },
+  { id: "winds", name: "Fiati", blurb: "Legni ariosi e soffiati", group: "zen" },
+  { id: "pads", name: "Pads", blurb: "Tappeti ampi e riverberati", group: "zen" },
+  { id: "pluckAmb", name: "Ambient pluck", blurb: "Pluck digitale downtempo", group: "electro" },
+  { id: "subpad", name: "Warm sub pad", blurb: "Basso morbido e continuo", group: "electro" },
+  { id: "reese", name: "Reese Bass", blurb: "Basso detunato, sporco e profondo", group: "electro" },
+  { id: "acid", name: "Acid 303", blurb: "Squelch acido con filtro urlante", group: "electro" },
+  { id: "growl", name: "Growl / Dubstep", blurb: "Wobble aggressivo e distorto", group: "electro" },
 ];
 
 /** Semitone transpose per instrument (bass patches play way lower). */
@@ -17,7 +46,16 @@ export const INSTRUMENT_SHIFT: Record<InstrumentId, number> = {
   reese: -24,
   acid: -12,
   growl: -24,
+  harp: 12,
+  piano: 0,
+  kalimba: 12,
+  bowl: 0,
+  glocken: 24,
+  choir: 0,
+  pluckAmb: 12,
+  subpad: -12,
 };
+
 
 export type ScaleId =
   | "minorPent"
