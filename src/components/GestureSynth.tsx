@@ -37,19 +37,19 @@ export default function GestureSynth() {
 
 
   const [panel, setPanel] = useState<PanelId | null>(null);
-  const [mode, setMode] = useState<PlayMode>("single");
+  const [mode, setMode] = useState<PlayMode>("split");
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
-  const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("pads");
-  const [rightInstrument, setRightInstrument] = useState<InstrumentId>("reese");
+  const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("violin");
+  const [rightInstrument, setRightInstrument] = useState<InstrumentId>("winds");
   const [scale, setScale] = useState<ScaleId>("minorPent");
   const [rootPc, setRootPc] = useState(2);
   const [arpLeft, setArpLeft] = useState(false);
   const [arpRight, setArpRight] = useState(false);
   const [arpRate, setArpRate] = useState(8);
   const [arpPattern, setArpPattern] = useState<ArpPatternId>("up");
-  const [reverb, setReverb] = useState(35);
+  const [reverb, setReverb] = useState(93);
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
-  const [eqFreq, setEqFreq] = useState(12000);
+  const [eqFreq, setEqFreq] = useState(1200);
 
 
   const [running, setRunning] = useState(false);
