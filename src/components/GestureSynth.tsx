@@ -274,7 +274,7 @@ export default function GestureSynth() {
       const now = performance.now();
 
       // sfondo scuro del palco
-      ctx.fillStyle = "rgb(16, 16, 23)";
+      ctx.fillStyle = "rgb(9, 18, 38)";
       ctx.fillRect(0, 0, w, h);
 
       // stelline lontane che respirano col volume
@@ -286,7 +286,7 @@ export default function GestureSynth() {
         const s = stars[i]!;
         const breath = 0.5 + 0.5 * Math.sin(now * 0.0025 * s.depth + s.phase);
         const alpha = baseStarAlpha + 0.35 * ml * s.depth * breath;
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.85, alpha)})`;
+        ctx.fillStyle = `rgba(240, 214, 160, ${Math.min(0.85, alpha)})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fill();
@@ -444,8 +444,8 @@ export default function GestureSynth() {
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctx.shadowBlur = 18;
-        ctx.shadowColor = `hsla(${baseHue}, 100%, 60%, 0.9)`;
-        ctx.strokeStyle = `hsla(${baseHue}, 100%, 70%, ${0.55 + soundLevel * 0.45})`;
+        ctx.shadowColor = `hsla(${baseHue}, 80%, 55%, 0.9)`;
+        ctx.strokeStyle = `hsla(${baseHue}, 72%, 62%, ${0.55 + soundLevel * 0.45})`;
         ctx.lineWidth = 5;
         HAND_CONNECTIONS.forEach(([a, b]) => {
           const p1 = pts[a];
@@ -456,7 +456,7 @@ export default function GestureSynth() {
           ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
           ctx.stroke();
         });
-        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.strokeStyle = "rgba(247, 233, 200, 0.92)";
         ctx.lineWidth = 1.5;
         ctx.shadowBlur = 0;
         HAND_CONNECTIONS.forEach(([a, b]) => {
@@ -469,11 +469,11 @@ export default function GestureSynth() {
           ctx.stroke();
         });
         ctx.shadowBlur = 12;
-        ctx.shadowColor = `hsla(${baseHue}, 100%, 65%, 0.9)`;
+        ctx.shadowColor = `hsla(${baseHue}, 80%, 60%, 0.9)`;
         pts.forEach((p) => {
           ctx.beginPath();
           ctx.arc(p.x * canvas.width, p.y * canvas.height, 6, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255,255,255,0.95)";
+          ctx.fillStyle = "rgba(247, 233, 200, 0.95)";
           ctx.fill();
         });
         ctx.restore();
@@ -485,9 +485,9 @@ export default function GestureSynth() {
           glows.forEach((gl) => {
             const r = 26 + gl.level * 34;
             const grd = ctx.createRadialGradient(gl.x, gl.y, 0, gl.x, gl.y, r);
-            grd.addColorStop(0, `hsla(${gl.hue}, 100%, 92%, ${0.9 * gl.level})`);
-            grd.addColorStop(0.35, `hsla(${gl.hue}, 100%, 65%, ${0.5 * gl.level})`);
-            grd.addColorStop(1, `hsla(${gl.hue}, 100%, 50%, 0)`);
+            grd.addColorStop(0, `hsla(${gl.hue}, 90%, 92%, ${0.9 * gl.level})`);
+            grd.addColorStop(0.35, `hsla(${gl.hue}, 85%, 62%, ${0.5 * gl.level})`);
+            grd.addColorStop(1, `hsla(${gl.hue}, 85%, 50%, 0)`);
             ctx.fillStyle = grd;
             ctx.beginPath();
             ctx.arc(gl.x, gl.y, r, 0, Math.PI * 2);
