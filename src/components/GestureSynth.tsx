@@ -754,6 +754,20 @@ export default function GestureSynth() {
           <Hand className="h-5 w-5" />
           Libero
         </button>
+        <button
+          onClick={quickListen}
+          disabled={listening}
+          aria-label="Rileva scala dal microfono"
+          className={
+            (listening
+              ? "border-primary bg-primary/15 text-primary animate-pulse"
+              : "border-border bg-card/60 text-muted-foreground") +
+            " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+          }
+        >
+          <Mic className="h-5 w-5" />
+          {listening ? "Ascolto…" : "Rileva"}
+        </button>
       </div>
 
       <div className="celestial-frame mt-3 rounded-sm shadow-glow">
