@@ -131,7 +131,7 @@ export default function GestureSynth() {
   const [listenMsg, setListenMsg] = useState<string | null>(null);
   const listenAbortRef = useRef<AbortController | null>(null);
 
-  const startListening = useCallback(async () => {
+  const runListening = useCallback(async (durationMs: number) => {
     listenAbortRef.current?.abort();
     const ac = new AbortController();
     listenAbortRef.current = ac;
@@ -141,7 +141,7 @@ export default function GestureSynth() {
     setListenMsg(null);
     try {
       const res = await detectKey({
-        durationMs: listenDuration,
+        durationMs,
         signal: ac.signal,
         onProgress: ({ progress, level }) => {
           setListenProgress(progress);
@@ -168,7 +168,11 @@ export default function GestureSynth() {
       setListenProgress(0);
       setListenLevel(0);
     }
-  }, [listenDuration]);
+  }, []);
+
+  const startListening = useCallback(() => runListening(listenDuration), [runListening, listenDuration]);
+  const quickListen = useCallback(() => runListening(3000), [runListening]);
+
 
   useEffect(() => () => listenAbortRef.current?.abort(), []);
 
@@ -750,6 +754,20 @@ export default function GestureSynth() {
           <Hand className="h-5 w-5" />
           Libero
         </button>
+        <button
+          onClick={quickListen}
+          disabled={listening}
+          aria-label="Rileva scala dal microfono"
+          className={
+            (listening
+              ? "border-primary bg-primary/15 text-primary animate-pulse"
+              : "border-border bg-card/60 text-muted-foreground") +
+            " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+          }
+        >
+          <Mic className="h-5 w-5" />
+          {listening ? "Ascolto…" : "Rileva"}
+        </button>
       </div>
 
       <div className="celestial-frame mt-3 rounded-sm shadow-glow">
@@ -769,6 +787,19 @@ export default function GestureSynth() {
           )}
           {running && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-2 p-3">
+              {(listening || listenMsg) && (
+                <span
+                  className={`rounded-sm border px-3 py-1 text-[9px] tracking-wide backdrop-blur ${
+                    listening
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border bg-background/70 text-muted-foreground"
+                  }`}
+                >
+                  {listening
+                    ? `🎙️ Ascolto ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s…`
+                    : listenMsg}
+                </span>
+              )}
               {hands.length === 0 ? (
                 <span className="rounded-sm border border-border bg-background/70 px-3 py-1 text-[11px] tracking-wide text-muted-foreground backdrop-blur">
                   Pronto
