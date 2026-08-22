@@ -496,27 +496,29 @@ export default function GestureSynth() {
           ctx.restore();
         }
 
-        // particelle solo quando esce suono, emesse dalla mano
+        // particelle solo quando esce suono, piccole e volanti a lungo
         if (soundLevel > 0) {
           pts.forEach((p, pi) => {
-            if (list.length > 900) return;
-            if (Math.random() > 0.18 * (0.3 + soundLevel)) return;
+            if (list.length > 1400) return;
+            if (Math.random() > 0.12 * (0.25 + soundLevel)) return;
             const a = Math.random() * Math.PI * 2;
-            const sp = 0.4 + Math.random() * 1.6 * soundLevel;
+            const sp = 1.2 + Math.random() * 3.2 * soundLevel;
             list.push({
               x: (1 - p.x) * canvas.width,
               y: p.y * canvas.height,
               vx: Math.cos(a) * sp,
-              vy: Math.sin(a) * sp - 0.4,
-              life: 1,
-              decay: 0.012 + Math.random() * 0.02,
-              size: 2 + Math.random() * 5 * (0.5 + soundLevel),
+              vy: Math.sin(a) * sp - 0.5,
+              life: 1.4 + Math.random() * 1.0,
+              decay: 0.005 + Math.random() * 0.012,
+              size: 0.6 + Math.random() * 2.2 * (0.4 + soundLevel),
               hue: (hueRef.current + pi * 12 + (isRight ? 120 : 0)) % 360,
             });
           });
         }
 
       });
+
+      musicLevelRef.current = musicLevelRef.current * 0.92 + maxSoundLevel * 0.08;
 
       // update + draw particelle
       hueRef.current = (hueRef.current + 2.5) % 360;
