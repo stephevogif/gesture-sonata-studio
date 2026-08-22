@@ -575,7 +575,7 @@ export default function GestureSynth() {
       onClick={() => setPanel((p) => (p === id ? null : id))}
       aria-label={label}
       aria-pressed={panel === id}
-      className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-[11px] transition ${
+      className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-[11px] transition ${
         panel === id
           ? "border-primary bg-primary/15 text-primary"
           : "border-border bg-card text-muted-foreground"
