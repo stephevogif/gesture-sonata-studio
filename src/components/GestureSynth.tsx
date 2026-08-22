@@ -274,7 +274,7 @@ export default function GestureSynth() {
       const now = performance.now();
 
       // sfondo scuro del palco
-      ctx.fillStyle = "rgb(16, 16, 23)";
+      ctx.fillStyle = "rgb(9, 18, 38)";
       ctx.fillRect(0, 0, w, h);
 
       // stelline lontane che respirano col volume
@@ -286,7 +286,7 @@ export default function GestureSynth() {
         const s = stars[i]!;
         const breath = 0.5 + 0.5 * Math.sin(now * 0.0025 * s.depth + s.phase);
         const alpha = baseStarAlpha + 0.35 * ml * s.depth * breath;
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.85, alpha)})`;
+        ctx.fillStyle = `rgba(240, 214, 160, ${Math.min(0.85, alpha)})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fill();
@@ -336,7 +336,7 @@ export default function GestureSynth() {
         const thrOff = Math.max(thrOn + 0.04, calibRef.current.off * (1 - sens));
 
         const list = particlesRef.current;
-        const baseHue = isRight ? 20 : 190;
+        const baseHue = isRight ? 44 : 36;
         let soundLevel = 0;
         const glows: { x: number; y: number; hue: number; level: number }[] = [];
 
@@ -383,10 +383,10 @@ export default function GestureSynth() {
               const cx = prev ? prev.x + (rawX - prev.x) * 0.45 : rawX;
               const cy = prev ? prev.y + (rawY - prev.y) * 0.45 : rawY;
               smoothRef.current.set(vid, { x: cx, y: cy });
-              glows.push({ x: cx, y: cy, hue: (baseHue + k * 30) % 360, level });
+              glows.push({ x: cx, y: cy, hue: 38 + k * 3, level });
 
-              // scintille dal punto di contatto: piccole, volanti a lungo
-              for (let s = 0; s < 5; s++) {
+              // scintille dal punto di contatto: minuscole e brevissime
+              for (let s = 0; s < 6; s++) {
                 if (list.length > 1400) break;
                 const a = Math.random() * Math.PI * 2;
                 const sp = 1.8 + Math.random() * 4.5 * level;
@@ -395,10 +395,10 @@ export default function GestureSynth() {
                   y: cy,
                   vx: Math.cos(a) * sp,
                   vy: Math.sin(a) * sp - 0.8,
-                  life: 1.2 + Math.random() * 0.8,
-                  decay: 0.005 + Math.random() * 0.012,
-                  size: 0.8 + Math.random() * 1.6,
-                  hue: (hueRef.current + baseHue + k * 30) % 360,
+                  life: 0.35 + Math.random() * 0.25,
+                  decay: 0.03 + Math.random() * 0.035,
+                  size: 0.25 + Math.random() * 0.5,
+                  hue: 34 + Math.random() * 16,
                 });
               }
             } else {
@@ -444,8 +444,8 @@ export default function GestureSynth() {
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctx.shadowBlur = 18;
-        ctx.shadowColor = `hsla(${baseHue}, 100%, 60%, 0.9)`;
-        ctx.strokeStyle = `hsla(${baseHue}, 100%, 70%, ${0.55 + soundLevel * 0.45})`;
+        ctx.shadowColor = `hsla(${baseHue}, 80%, 55%, 0.9)`;
+        ctx.strokeStyle = `hsla(${baseHue}, 72%, 62%, ${0.55 + soundLevel * 0.45})`;
         ctx.lineWidth = 5;
         HAND_CONNECTIONS.forEach(([a, b]) => {
           const p1 = pts[a];
@@ -456,7 +456,7 @@ export default function GestureSynth() {
           ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
           ctx.stroke();
         });
-        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.strokeStyle = "rgba(247, 233, 200, 0.92)";
         ctx.lineWidth = 1.5;
         ctx.shadowBlur = 0;
         HAND_CONNECTIONS.forEach(([a, b]) => {
@@ -469,11 +469,11 @@ export default function GestureSynth() {
           ctx.stroke();
         });
         ctx.shadowBlur = 12;
-        ctx.shadowColor = `hsla(${baseHue}, 100%, 65%, 0.9)`;
+        ctx.shadowColor = `hsla(${baseHue}, 80%, 60%, 0.9)`;
         pts.forEach((p) => {
           ctx.beginPath();
           ctx.arc(p.x * canvas.width, p.y * canvas.height, 6, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255,255,255,0.95)";
+          ctx.fillStyle = "rgba(247, 233, 200, 0.95)";
           ctx.fill();
         });
         ctx.restore();
@@ -485,9 +485,9 @@ export default function GestureSynth() {
           glows.forEach((gl) => {
             const r = 26 + gl.level * 34;
             const grd = ctx.createRadialGradient(gl.x, gl.y, 0, gl.x, gl.y, r);
-            grd.addColorStop(0, `hsla(${gl.hue}, 100%, 92%, ${0.9 * gl.level})`);
-            grd.addColorStop(0.35, `hsla(${gl.hue}, 100%, 65%, ${0.5 * gl.level})`);
-            grd.addColorStop(1, `hsla(${gl.hue}, 100%, 50%, 0)`);
+            grd.addColorStop(0, `hsla(${gl.hue}, 90%, 92%, ${0.9 * gl.level})`);
+            grd.addColorStop(0.35, `hsla(${gl.hue}, 85%, 62%, ${0.5 * gl.level})`);
+            grd.addColorStop(1, `hsla(${gl.hue}, 85%, 50%, 0)`);
             ctx.fillStyle = grd;
             ctx.beginPath();
             ctx.arc(gl.x, gl.y, r, 0, Math.PI * 2);
@@ -508,10 +508,10 @@ export default function GestureSynth() {
               y: p.y * canvas.height,
               vx: Math.cos(a) * sp,
               vy: Math.sin(a) * sp - 0.5,
-              life: 1.4 + Math.random() * 1.0,
-              decay: 0.005 + Math.random() * 0.012,
-              size: 0.6 + Math.random() * 2.2 * (0.4 + soundLevel),
-              hue: (hueRef.current + pi * 12 + (isRight ? 120 : 0)) % 360,
+              life: 0.4 + Math.random() * 0.3,
+              decay: 0.028 + Math.random() * 0.035,
+              size: 0.22 + Math.random() * 0.6 * (0.4 + soundLevel),
+              hue: 32 + Math.random() * 18 + pi * 0.2,
             });
           });
         }
@@ -533,18 +533,17 @@ export default function GestureSynth() {
         p.vx *= 0.993;
         p.vy *= 0.993;
         p.life -= p.decay;
-        p.hue = (p.hue + 3.5) % 360;
         if (p.life <= 0) {
           parts.splice(i, 1);
           continue;
         }
-        const r = p.size * (0.5 + p.life * 0.9);
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.8);
-        g.addColorStop(0, `hsla(${p.hue}, 100%, 76%, ${0.75 * p.life})`);
-        g.addColorStop(1, `hsla(${(p.hue + 60) % 360}, 100%, 55%, 0)`);
+        const r = p.size * (0.4 + p.life * 0.8);
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.4);
+        g.addColorStop(0, `hsla(${p.hue}, 80%, 82%, ${0.85 * p.life})`);
+        g.addColorStop(1, `hsla(${p.hue}, 75%, 55%, 0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, r * 2.8, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, r * 2.4, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
@@ -622,7 +621,7 @@ export default function GestureSynth() {
   };
 
   const selectClass =
-    "w-full rounded-xl border border-border bg-background/60 px-3 py-2 text-sm text-foreground";
+    "w-full rounded-sm border border-border bg-background/60 px-3 py-2 text-sm tracking-wide text-foreground";
 
   const panelBtn = (id: PanelId, label: string, Icon: any) => (
     <button
@@ -630,10 +629,10 @@ export default function GestureSynth() {
       onClick={() => setPanel((p) => (p === id ? null : id))}
       aria-label={label}
       aria-pressed={panel === id}
-      className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-[11px] transition ${
+      className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-sm border px-2 py-3 text-[10px] uppercase tracking-[0.18em] transition ${
         panel === id
           ? "border-primary bg-primary/15 text-primary"
-          : "border-border bg-card text-muted-foreground"
+          : "border-border bg-card/70 text-muted-foreground"
       }`}
     >
       <Icon className="h-6 w-6" />
@@ -644,13 +643,18 @@ export default function GestureSynth() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-5">
       <header className="text-center">
-        <h1 className="font-display text-2xl leading-tight text-foreground sm:text-3xl">
-          STEPH EVO'S <span className="text-primary">CRAZY THERAMIN</span>
+        <div className="celestial-rule mx-auto mb-3 w-2/3" />
+        <h1 className="font-display text-xl leading-tight tracking-[0.16em] text-foreground sm:text-2xl">
+          STEPH EVO&apos;S <span className="text-primary">CRAZY THERAMIN</span>
         </h1>
+        <p className="mt-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
+          Carta sonora · Ed. I
+        </p>
+        <div className="celestial-rule mx-auto mt-3 w-2/3" />
       </header>
 
-      <div className="mt-4 overflow-hidden rounded-3xl border border-border bg-card shadow-glow">
-        <div className="relative aspect-[3/4] w-full bg-stage sm:aspect-[4/3]">
+      <div className="celestial-frame mt-4 rounded-sm shadow-glow">
+        <div className="relative aspect-[3/4] w-full overflow-hidden bg-stage sm:aspect-[4/3]">
           <video ref={videoRef} playsInline muted className="hidden" />
           <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
           {!running && (
@@ -666,14 +670,14 @@ export default function GestureSynth() {
           {running && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-2 p-3">
               {hands.length === 0 ? (
-                <span className="rounded-full bg-background/70 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
+                <span className="rounded-sm border border-border bg-background/70 px-3 py-1 text-[11px] tracking-wide text-muted-foreground backdrop-blur">
                   Pronto
                 </span>
               ) : (
                 hands.map((h, i) => (
                   <span
                     key={i}
-                    className="rounded-full bg-background/70 px-3 py-1 text-xs text-foreground backdrop-blur"
+                    className="rounded-sm border border-border bg-background/70 px-3 py-1 text-[11px] tracking-wide text-foreground backdrop-blur"
                   >
                     {h.hand} · {h.inst}: <strong className="text-primary">{h.note}</strong>{" "}
                     {Math.round(h.level * 100)}%
@@ -707,7 +711,7 @@ export default function GestureSynth() {
           <button
             onClick={stop}
             aria-label="Stop"
-            className="flex flex-1 flex-col items-center gap-1 rounded-2xl border border-border bg-card px-2 py-3 text-[11px] text-muted-foreground"
+            className="flex flex-1 flex-col items-center gap-1 rounded-sm border border-border bg-card/70 px-2 py-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
           >
             <Square className="h-6 w-6" />
             Stop
@@ -717,7 +721,7 @@ export default function GestureSynth() {
 
       {/* Pannelli */}
       {panel === "sound" && (
-        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
+        <div className="mt-3 celestial-panel rounded-sm p-4">
           <div className="grid gap-2 sm:grid-cols-3">
             {(
               [
@@ -792,7 +796,7 @@ export default function GestureSynth() {
       )}
 
       {panel === "scale" && (
-        <div className="mt-3 grid gap-3 rounded-3xl border border-border bg-card p-4 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 celestial-panel rounded-sm p-4 sm:grid-cols-2">
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">Scala</label>
             <select
@@ -825,7 +829,7 @@ export default function GestureSynth() {
       )}
 
       {panel === "arp" && (
-        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
+        <div className="mt-3 celestial-panel rounded-sm p-4">
           <div className="flex gap-2">
             <button
               onClick={() => setArpLeft((v) => !v)}
@@ -879,7 +883,7 @@ export default function GestureSynth() {
       )}
 
       {panel === "fx" && (
-        <div className="mt-3 grid gap-4 rounded-3xl border border-border bg-card p-4 sm:grid-cols-3">
+        <div className="mt-3 grid gap-4 celestial-panel rounded-sm p-4 sm:grid-cols-3">
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">
               Riverbero: {reverb}%
@@ -925,7 +929,7 @@ export default function GestureSynth() {
       )}
 
       {panel === "calib" && (
-        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
+        <div className="mt-3 celestial-panel rounded-sm p-4">
           <p className="text-sm text-muted-foreground">
             La taratura misura la tua mano e regola quando il contatto tra pollice e dito viene
             riconosciuto. Serve la fotocamera attiva.
