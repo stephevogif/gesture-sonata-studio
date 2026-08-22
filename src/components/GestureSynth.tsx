@@ -765,9 +765,8 @@ export default function GestureSynth() {
           Libero
         </button>
         <button
-          onClick={quickListen}
-          disabled={listening}
-          aria-label="Rileva scala dal microfono"
+          onClick={toggleListen}
+          aria-label={listening ? "Ferma il microfono" : "Rileva scala dal microfono"}
           className={
             (listening
               ? "border-primary bg-primary/15 text-primary animate-pulse"
@@ -775,9 +774,16 @@ export default function GestureSynth() {
             " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
           }
         >
-          <Mic className="h-5 w-5" />
-          {listening ? "Ascolto…" : "Rileva"}
+          {listening ? (
+            <span className="h-4 w-4 rounded-[2px] bg-primary" />
+          ) : (
+            <Mic className="h-5 w-5" />
+          )}
+          {listening
+            ? `Stop ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s`
+            : "Rileva"}
         </button>
+
       </div>
 
       <div className="celestial-frame mt-3 rounded-sm shadow-glow">
