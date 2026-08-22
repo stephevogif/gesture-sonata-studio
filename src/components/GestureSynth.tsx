@@ -20,6 +20,16 @@ import {
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
 type PanelId = "sound" | "fx" | "scale" | "arp";
+type Particle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  decay: number;
+  size: number;
+  hue: number;
+};
 
 const PINCH_TIPS = [8, 12, 16, 20];
 const PINCH_OFFSETS = [0, 2, 4, 6];
