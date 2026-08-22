@@ -20,6 +20,16 @@ import {
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
 type PanelId = "sound" | "fx" | "scale" | "arp";
+type Particle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  decay: number;
+  size: number;
+  hue: number;
+};
 
 const PINCH_TIPS = [8, 12, 16, 20];
 const PINCH_OFFSETS = [0, 2, 4, 6];
@@ -34,22 +44,24 @@ export default function GestureSynth() {
   const rafRef = useRef<number | null>(null);
   const landmarkerRef = useRef<any>(null);
   const voiceIdsRef = useRef<Set<string>>(new Set());
+  const particlesRef = useRef<Particle[]>([]);
+  const hueRef = useRef(0);
 
 
   const [panel, setPanel] = useState<PanelId | null>(null);
-  const [mode, setMode] = useState<PlayMode>("single");
+  const [mode, setMode] = useState<PlayMode>("split");
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
-  const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("pads");
-  const [rightInstrument, setRightInstrument] = useState<InstrumentId>("reese");
+  const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("violin");
+  const [rightInstrument, setRightInstrument] = useState<InstrumentId>("winds");
   const [scale, setScale] = useState<ScaleId>("minorPent");
   const [rootPc, setRootPc] = useState(2);
   const [arpLeft, setArpLeft] = useState(false);
   const [arpRight, setArpRight] = useState(false);
   const [arpRate, setArpRate] = useState(8);
   const [arpPattern, setArpPattern] = useState<ArpPatternId>("up");
-  const [reverb, setReverb] = useState(35);
+  const [reverb, setReverb] = useState(93);
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
-  const [eqFreq, setEqFreq] = useState(12000);
+  const [eqFreq, setEqFreq] = useState(1200);
 
 
   const [running, setRunning] = useState(false);
@@ -77,6 +89,7 @@ export default function GestureSynth() {
     if (v) v.srcObject = null;
     setRunning(false);
     setHands([]);
+    particlesRef.current = [];
   }, []);
 
   useEffect(() => () => stop(), [stop]);
@@ -222,7 +235,56 @@ export default function GestureSynth() {
         ctx.lineTo(indexTip.x * canvas.width, indexTip.y * canvas.height);
         ctx.stroke();
         ctx.restore();
+
+        // particelle psichedeliche dai punti di tracciamento
+        const list = particlesRef.current;
+        pts.forEach((p, pi) => {
+          if (list.length > 900) return;
+          if (Math.random() > 0.35) return;
+          const a = Math.random() * Math.PI * 2;
+          const sp = 0.4 + Math.random() * 1.6;
+          list.push({
+            x: (1 - p.x) * canvas.width,
+            y: p.y * canvas.height,
+            vx: Math.cos(a) * sp,
+            vy: Math.sin(a) * sp - 0.4,
+            life: 1,
+            decay: 0.012 + Math.random() * 0.02,
+            size: 2 + Math.random() * 5,
+            hue: (hueRef.current + pi * 12 + (isRight ? 120 : 0)) % 360,
+          });
+        });
       });
+
+      // update + draw particelle
+      hueRef.current = (hueRef.current + 2.5) % 360;
+      const parts = particlesRef.current;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i]!;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.02;
+        p.vx *= 0.985;
+        p.vy *= 0.985;
+        p.life -= p.decay;
+        p.hue = (p.hue + 4) % 360;
+        if (p.life <= 0) {
+          parts.splice(i, 1);
+          continue;
+        }
+        const r = p.size * (0.4 + p.life);
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.2);
+        g.addColorStop(0, `hsla(${p.hue}, 100%, 72%, ${0.85 * p.life})`);
+        g.addColorStop(1, `hsla(${(p.hue + 60) % 360}, 100%, 50%, 0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
 
       voiceIdsRef.current.forEach((id) => {
         if (!active.has(id)) {
