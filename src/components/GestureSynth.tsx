@@ -500,9 +500,9 @@ export default function GestureSynth() {
           if (level > 0.06) {
             soundLevel = level;
             if (arp) engine.setArpTarget(id, degree, level, freeBright, inst);
-            else engine.noteOn(id, midiToFreq(midi), level, freeBright, inst);
+            else engine.noteOn(id, midiToFreq(playMidi), level, freeBright, inst);
             next.push({
-              note: midiToName(midi),
+              note: midiToName(Math.round(playMidi)),
               level,
               hand: isRight ? "Lato B" : "Lato A",
               inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
