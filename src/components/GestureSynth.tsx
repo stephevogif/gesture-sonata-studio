@@ -34,6 +34,8 @@ export default function GestureSynth() {
   const rafRef = useRef<number | null>(null);
   const landmarkerRef = useRef<any>(null);
   const voiceIdsRef = useRef<Set<string>>(new Set());
+  const particlesRef = useRef<Particle[]>([]);
+  const hueRef = useRef(0);
 
 
   const [panel, setPanel] = useState<PanelId | null>(null);
