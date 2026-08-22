@@ -145,7 +145,7 @@ export default function GestureSynth() {
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
 
         if (m === "pinch") {
-          // gesturesynth.com style: pizzica pollice + dito per suonare un grado dell'accordo
+          // tocco: quattro note per lato
           const base = positionToDegree(x, 8);
           PINCH_TIPS.forEach((tipIdx, k) => {
             const tip = pts[tipIdx]!;
