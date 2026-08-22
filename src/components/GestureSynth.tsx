@@ -110,6 +110,7 @@ export default function GestureSynth() {
   const [panel, setPanel] = useState<PanelId | null>(null);
   const [mode, setMode] = useState<PlayMode>("split");
   const [freeMode, setFreeMode] = useState<Exclude<PlayMode, "pinch">>("split");
+  const [freePitch, setFreePitch] = useState<"scale" | "glide">("scale");
 
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
   const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("violin");
@@ -195,8 +196,9 @@ export default function GestureSynth() {
     rightInstrument,
     arpLeft,
     arpRight,
+    freePitch,
   });
-  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpLeft, arpRight };
+  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpLeft, arpRight, freePitch };
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -373,6 +375,7 @@ export default function GestureSynth() {
         rightInstrument: ri,
         arpLeft: aL,
         arpRight: aR,
+        freePitch: fp,
       } = cfg.current;
 
       let maxSoundLevel = 0;
@@ -479,12 +482,13 @@ export default function GestureSynth() {
         } else {
           active.add(id);
           const degree = positionToDegree(x, STEPS);
-          const midi = degreeToMidi(
-            degree,
-            engine.scale,
-            engine.rootPc,
-            INSTRUMENT_SHIFT[inst] ?? 0,
-          );
+          const shift = INSTRUMENT_SHIFT[inst] ?? 0;
+          const midi = degreeToMidi(degree, engine.scale, engine.rootPc, shift);
+          // glide: altezza continua tra la prima e l'ultima nota della stessa estensione
+          const lowMidi = degreeToMidi(0, engine.scale, engine.rootPc, shift);
+          const highMidi = degreeToMidi(STEPS - 1, engine.scale, engine.rootPc, shift);
+          const glideMidi = lowMidi + Math.min(1, Math.max(0, x)) * (highMidi - lowMidi);
+          const playMidi = fp === "glide" ? glideMidi : midi;
           // apertura della mano -> brillantezza / filtro
           const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y) / handSize;
           const open = Math.min(1, Math.max(0, (span - thrOn) / Math.max(0.2, thrOff * 1.8)));
@@ -496,9 +500,9 @@ export default function GestureSynth() {
           if (level > 0.06) {
             soundLevel = level;
             if (arp) engine.setArpTarget(id, degree, level, freeBright, inst);
-            else engine.noteOn(id, midiToFreq(midi), level, freeBright, inst);
+            else engine.noteOn(id, midiToFreq(playMidi), level, freeBright, inst);
             next.push({
-              note: midiToName(midi),
+              note: midiToName(Math.round(playMidi)),
               level,
               hand: isRight ? "Lato B" : "Lato A",
               inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
@@ -959,6 +963,33 @@ export default function GestureSynth() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="sm:col-span-2 celestial-rule" />
+
+          <div className="sm:col-span-2">
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Intonazione (modalità Libero)
+            </label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                { id: "scale", name: "Segui la scala" },
+                { id: "glide", name: "Libera (glissando)" },
+              ] as const).map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setFreePitch(o.id)}
+                  aria-pressed={freePitch === o.id}
+                  className={`rounded-sm border px-3 py-2 text-sm transition-colors ${
+                    freePitch === o.id
+                      ? "border-primary bg-primary/15 text-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {o.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="sm:col-span-2 celestial-rule" />
