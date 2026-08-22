@@ -270,6 +270,20 @@ export default function GestureSynth() {
         const x = 1 - indexTip.x;
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
 
+        // dimensione della mano: rende le soglie indipendenti dalla distanza dalla camera
+        const wrist = pts[0]!;
+        const midMcp = pts[9]!;
+        const handSize =
+          Math.hypot(wrist.x - midMcp.x, wrist.y - midMcp.y) || 0.12;
+        const indexRatio = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y) / handSize;
+        if (i === 0) liveRatioRef.current = indexRatio;
+        if (calibPhaseRef.current === "open") calibSamplesRef.current.open.push(indexRatio);
+        else if (calibPhaseRef.current === "closed") calibSamplesRef.current.closed.push(indexRatio);
+
+        const sens = sensRef.current;
+        const thrOn = calibRef.current.on * (1 - sens);
+        const thrOff = Math.max(thrOn + 0.04, calibRef.current.off * (1 - sens));
+
         const list = particlesRef.current;
         const baseHue = isRight ? 20 : 190;
         let soundLevel = 0;
@@ -281,11 +295,15 @@ export default function GestureSynth() {
           PINCH_TIPS.forEach((tipIdx, k) => {
             const tip = pts[tipIdx]!;
             const vid = `${id}f${k}`;
-            const d = Math.hypot(tip.x - thumbTip.x, tip.y - thumbTip.y);
-            const on = d < 0.07;
+            const ratio = Math.hypot(tip.x - thumbTip.x, tip.y - thumbTip.y) / handSize;
+            // isteresi: entra sotto thrOn, resta attivo fino a thrOff
+            const wasOn = heldRef.current.has(vid);
+            const on = wasOn ? ratio < thrOff : ratio < thrOn;
+            if (on) heldRef.current.add(vid);
+            else heldRef.current.delete(vid);
             if (on) {
               active.add(vid);
-              const level = Math.min(1, Math.max(0.35, 1 - d / 0.07));
+              const level = Math.min(1, Math.max(0.35, 1 - ratio / thrOff));
               soundLevel = Math.max(soundLevel, level);
               const degree = base + (PINCH_OFFSETS[k] ?? 0);
               const midi = degreeToMidi(
@@ -302,9 +320,18 @@ export default function GestureSynth() {
                 hand: isRight ? "Lato B" : "Lato A",
                 inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
               });
-              // punto di contatto (fra pollice e dito)
-              const cx = (1 - (tip.x + thumbTip.x) / 2) * canvas.width;
-              const cy = ((tip.y + thumbTip.y) / 2) * canvas.height;
+              // punto di contatto: media pesata polpastrelli + smoothing temporale
+              const thumbIp = pts[3] ?? thumbTip;
+              const tipDip = pts[tipIdx - 1] ?? tip;
+              const rawX =
+                (1 - (tip.x * 0.4 + thumbTip.x * 0.4 + tipDip.x * 0.1 + thumbIp.x * 0.1)) *
+                canvas.width;
+              const rawY =
+                (tip.y * 0.4 + thumbTip.y * 0.4 + tipDip.y * 0.1 + thumbIp.y * 0.1) * canvas.height;
+              const prev = smoothRef.current.get(vid);
+              const cx = prev ? prev.x + (rawX - prev.x) * 0.45 : rawX;
+              const cy = prev ? prev.y + (rawY - prev.y) * 0.45 : rawY;
+              smoothRef.current.set(vid, { x: cx, y: cy });
               glows.push({ x: cx, y: cy, hue: (baseHue + k * 30) % 360, level });
 
               // scintille dal punto di contatto
@@ -323,8 +350,11 @@ export default function GestureSynth() {
                   hue: (hueRef.current + baseHue + k * 30) % 360,
                 });
               }
+            } else {
+              smoothRef.current.delete(vid);
             }
           });
+
         } else {
           active.add(id);
           const degree = positionToDegree(x, STEPS);
