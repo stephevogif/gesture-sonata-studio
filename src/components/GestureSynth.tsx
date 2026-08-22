@@ -166,6 +166,11 @@ export default function GestureSynth() {
         const x = 1 - indexTip.x;
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
 
+        const list = particlesRef.current;
+        const baseHue = isRight ? 20 : 190;
+        let soundLevel = 0;
+        const glows: { x: number; y: number; hue: number; level: number }[] = [];
+
         if (m === "pinch") {
           // tocco: quattro note per lato
           const base = positionToDegree(x, 8);
@@ -177,6 +182,7 @@ export default function GestureSynth() {
             if (on) {
               active.add(vid);
               const level = Math.min(1, Math.max(0.35, 1 - d / 0.07));
+              soundLevel = Math.max(soundLevel, level);
               const degree = base + (PINCH_OFFSETS[k] ?? 0);
               const midi = degreeToMidi(
                 degree,
@@ -192,14 +198,27 @@ export default function GestureSynth() {
                 hand: isRight ? "Lato B" : "Lato A",
                 inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
               });
-              ctx.save();
-              ctx.translate(canvas.width, 0);
-              ctx.scale(-1, 1);
-              ctx.beginPath();
-              ctx.arc(tip.x * canvas.width, tip.y * canvas.height, 16, 0, Math.PI * 2);
-              ctx.fillStyle = `hsla(${(isRight ? 20 : 190) + k * 30}, 90%, 60%, 0.35)`;
-              ctx.fill();
-              ctx.restore();
+              // punto di contatto (fra pollice e dito)
+              const cx = (1 - (tip.x + thumbTip.x) / 2) * canvas.width;
+              const cy = ((tip.y + thumbTip.y) / 2) * canvas.height;
+              glows.push({ x: cx, y: cy, hue: (baseHue + k * 30) % 360, level });
+
+              // scintille dal punto di contatto
+              for (let s = 0; s < 4; s++) {
+                if (list.length > 900) break;
+                const a = Math.random() * Math.PI * 2;
+                const sp = 1 + Math.random() * 3 * level;
+                list.push({
+                  x: cx,
+                  y: cy,
+                  vx: Math.cos(a) * sp,
+                  vy: Math.sin(a) * sp - 0.6,
+                  life: 1,
+                  decay: 0.015 + Math.random() * 0.02,
+                  size: 2 + Math.random() * 4,
+                  hue: (hueRef.current + baseHue + k * 30) % 360,
+                });
+              }
             }
           });
         } else {
@@ -215,6 +234,7 @@ export default function GestureSynth() {
           const level = Math.min(1, Math.max(0, (span - 0.05) / 0.22));
 
           if (level > 0.06) {
+            soundLevel = level;
             if (arp) engine.setArpTarget(id, degree, level, bright, inst);
             else engine.noteOn(id, midiToFreq(midi), level, bright, inst);
             next.push({
@@ -228,41 +248,85 @@ export default function GestureSynth() {
           }
         }
 
+        // scheletro ben visibile
         ctx.save();
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
-        ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = `hsla(${baseHue}, 100%, 60%, 0.9)`;
+        ctx.strokeStyle = `hsla(${baseHue}, 100%, 70%, ${0.55 + soundLevel * 0.45})`;
+        ctx.lineWidth = 5;
+        HAND_CONNECTIONS.forEach(([a, b]) => {
+          const p1 = pts[a];
+          const p2 = pts[b];
+          if (!p1 || !p2) return;
+          ctx.beginPath();
+          ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+          ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+          ctx.stroke();
+        });
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.lineWidth = 1.5;
+        ctx.shadowBlur = 0;
+        HAND_CONNECTIONS.forEach(([a, b]) => {
+          const p1 = pts[a];
+          const p2 = pts[b];
+          if (!p1 || !p2) return;
+          ctx.beginPath();
+          ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+          ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+          ctx.stroke();
+        });
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = `hsla(${baseHue}, 100%, 65%, 0.9)`;
         pts.forEach((p) => {
           ctx.beginPath();
-          ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${isRight ? 20 : 190}, 90%, 60%, 0.85)`;
+          ctx.arc(p.x * canvas.width, p.y * canvas.height, 6, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,0.95)";
           ctx.fill();
         });
-        ctx.beginPath();
-        ctx.moveTo(wrist.x * canvas.width, wrist.y * canvas.height);
-        ctx.lineTo(indexTip.x * canvas.width, indexTip.y * canvas.height);
-        ctx.stroke();
         ctx.restore();
 
-        // particelle psichedeliche dai punti di tracciamento
-        const list = particlesRef.current;
-        pts.forEach((p, pi) => {
-          if (list.length > 900) return;
-          if (Math.random() > 0.35) return;
-          const a = Math.random() * Math.PI * 2;
-          const sp = 0.4 + Math.random() * 1.6;
-          list.push({
-            x: (1 - p.x) * canvas.width,
-            y: p.y * canvas.height,
-            vx: Math.cos(a) * sp,
-            vy: Math.sin(a) * sp - 0.4,
-            life: 1,
-            decay: 0.012 + Math.random() * 0.02,
-            size: 2 + Math.random() * 5,
-            hue: (hueRef.current + pi * 12 + (isRight ? 120 : 0)) % 360,
+        // bagliore sul punto di contatto
+        if (glows.length) {
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          glows.forEach((gl) => {
+            const r = 26 + gl.level * 34;
+            const grd = ctx.createRadialGradient(gl.x, gl.y, 0, gl.x, gl.y, r);
+            grd.addColorStop(0, `hsla(${gl.hue}, 100%, 92%, ${0.9 * gl.level})`);
+            grd.addColorStop(0.35, `hsla(${gl.hue}, 100%, 65%, ${0.5 * gl.level})`);
+            grd.addColorStop(1, `hsla(${gl.hue}, 100%, 50%, 0)`);
+            ctx.fillStyle = grd;
+            ctx.beginPath();
+            ctx.arc(gl.x, gl.y, r, 0, Math.PI * 2);
+            ctx.fill();
           });
-        });
+          ctx.restore();
+        }
+
+        // particelle solo quando esce suono, emesse dalla mano
+        if (soundLevel > 0) {
+          pts.forEach((p, pi) => {
+            if (list.length > 900) return;
+            if (Math.random() > 0.18 * (0.3 + soundLevel)) return;
+            const a = Math.random() * Math.PI * 2;
+            const sp = 0.4 + Math.random() * 1.6 * soundLevel;
+            list.push({
+              x: (1 - p.x) * canvas.width,
+              y: p.y * canvas.height,
+              vx: Math.cos(a) * sp,
+              vy: Math.sin(a) * sp - 0.4,
+              life: 1,
+              decay: 0.012 + Math.random() * 0.02,
+              size: 2 + Math.random() * 5 * (0.5 + soundLevel),
+              hue: (hueRef.current + pi * 12 + (isRight ? 120 : 0)) % 360,
+            });
+          });
+        }
+
       });
 
       // update + draw particelle
