@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { KeyboardMusic, Music4, Repeat, SlidersHorizontal, Square } from "lucide-react";
 import {
   ARP_PATTERNS,
   GestureSynthEngine,
@@ -18,6 +19,7 @@ import {
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
+type PanelId = "sound" | "fx" | "scale" | "arp";
 
 const PINCH_TIPS = [8, 12, 16, 20];
 const PINCH_OFFSETS = [0, 2, 4, 6];
@@ -34,6 +36,7 @@ export default function GestureSynth() {
   const voiceIdsRef = useRef<Set<string>>(new Set());
 
 
+  const [panel, setPanel] = useState<PanelId | null>(null);
   const [mode, setMode] = useState<PlayMode>("single");
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
   const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("pads");
@@ -164,7 +167,7 @@ export default function GestureSynth() {
               next.push({
                 note: midiToName(midi),
                 level,
-                hand: isRight ? "Destra" : "Sinistra",
+                hand: isRight ? "Lato B" : "Lato A",
                 inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
               });
               ctx.save();
@@ -195,7 +198,7 @@ export default function GestureSynth() {
             next.push({
               note: midiToName(midi),
               level,
-              hand: isRight ? "Destra" : "Sinistra",
+              hand: isRight ? "Lato B" : "Lato A",
               inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
             });
           } else {
@@ -261,7 +264,7 @@ export default function GestureSynth() {
       await video.play();
 
       if (!landmarkerRef.current) {
-        setStatus("Carico il rilevamento delle mani…");
+        setStatus("Preparazione…");
         const vision = await import("@mediapipe/tasks-vision");
         const files = await vision.FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
