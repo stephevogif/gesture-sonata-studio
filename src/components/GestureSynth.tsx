@@ -893,18 +893,29 @@ export default function GestureSynth() {
           </div>
 
           {mode !== "split" ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              {INSTRUMENTS.map((i) => (
-                <button
-                  key={i.id}
-                  onClick={() => pickInstrument(i.id)}
-                  className={
-                    instrument === i.id ? "instrument-card instrument-card-active" : "instrument-card"
-                  }
-                >
-                  <span className="font-display text-lg">{i.name}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">{i.blurb}</span>
-                </button>
+            <div className="mt-3 space-y-3">
+              {INSTRUMENT_GROUPS.map((g) => (
+                <div key={g.id}>
+                  <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                    {g.label}
+                  </span>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    {INSTRUMENTS.filter((i) => i.group === g.id).map((i) => (
+                      <button
+                        key={i.id}
+                        onClick={() => pickInstrument(i.id)}
+                        className={
+                          instrument === i.id
+                            ? "instrument-card instrument-card-active"
+                            : "instrument-card"
+                        }
+                      >
+                        <span className="font-display text-lg">{i.name}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">{i.blurb}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
@@ -918,10 +929,14 @@ export default function GestureSynth() {
                   value={leftInstrument}
                   onChange={(e) => setLeftInstrument(e.target.value as InstrumentId)}
                 >
-                  {INSTRUMENTS.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
+                  {INSTRUMENT_GROUPS.map((g) => (
+                    <optgroup key={g.id} label={g.label}>
+                      {INSTRUMENTS.filter((i) => i.group === g.id).map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -934,15 +949,20 @@ export default function GestureSynth() {
                   value={rightInstrument}
                   onChange={(e) => setRightInstrument(e.target.value as InstrumentId)}
                 >
-                  {INSTRUMENTS.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
+                  {INSTRUMENT_GROUPS.map((g) => (
+                    <optgroup key={g.id} label={g.label}>
+                      {INSTRUMENTS.filter((i) => i.group === g.id).map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
             </div>
           )}
+
         </div>
       )}
 
