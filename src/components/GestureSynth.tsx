@@ -31,6 +31,8 @@ export default function GestureSynth() {
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const rafRef = useRef<number | null>(null);
   const landmarkerRef = useRef<any>(null);
+  const voiceIdsRef = useRef<Set<string>>(new Set());
+
 
   const [mode, setMode] = useState<PlayMode>("single");
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
