@@ -32,6 +32,11 @@ import {
 import { detectKey } from "@/lib/keyDetect";
 
 
+const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
+  { id: "zen", label: "Zen / Calmi" },
+  { id: "electro", label: "Elettronici / Bass" },
+];
+
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
 type PanelId = "sound" | "fx" | "scale" | "arp" | "calib";
