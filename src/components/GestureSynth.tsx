@@ -337,7 +337,7 @@ export default function GestureSynth() {
       </div>
 
       {/* Modalità */}
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <button
           onClick={() => setMode("single")}
           className={mode === "single" ? "instrument-card instrument-card-active" : "instrument-card"}
@@ -356,7 +356,17 @@ export default function GestureSynth() {
             Mano sinistra e mano destra con strumenti diversi.
           </span>
         </button>
+        <button
+          onClick={() => setMode("pinch")}
+          className={mode === "pinch" ? "instrument-card instrument-card-active" : "instrument-card"}
+        >
+          <span className="font-display text-xl">Pinch (gesturesynth)</span>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Pizzica pollice + dito: 4 note per mano, come gesturesynth.com.
+          </span>
+        </button>
       </div>
+
 
       {mode === "single" ? (
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
