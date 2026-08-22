@@ -20,7 +20,9 @@ import {
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
-type PanelId = "sound" | "fx" | "scale" | "arp";
+type PanelId = "sound" | "fx" | "scale" | "arp" | "calib";
+type CalibPhase = "idle" | "open" | "closed";
+
 type Particle = {
   x: number;
   y: number;
