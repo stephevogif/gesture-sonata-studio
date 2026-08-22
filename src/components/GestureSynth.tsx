@@ -3,7 +3,9 @@ import {
   Crosshair,
   Hand,
   KeyboardMusic,
+  Mic,
   Music4,
+
   Repeat,
   SlidersHorizontal,
   Square,
