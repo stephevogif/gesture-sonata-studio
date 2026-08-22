@@ -13,7 +13,7 @@ const ROOT_MIDI = 50; // D3
 export function positionToMidi(x: number, steps = 21): number {
   const i = Math.min(steps - 1, Math.max(0, Math.round(x * (steps - 1))));
   const octave = Math.floor(i / SCALE.length);
-  return ROOT_MIDI + octave * 12 + SCALE[i % SCALE.length];
+  return ROOT_MIDI + octave * 12 + (SCALE[i % SCALE.length] ?? 0);
 }
 
 export function midiToFreq(m: number): number {
@@ -22,7 +22,7 @@ export function midiToFreq(m: number): number {
 
 export function midiToName(m: number): string {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  return `${names[m % 12]}${Math.floor(m / 12) - 1}`;
+  return `${names[m % 12] ?? "C"}${Math.floor(m / 12) - 1}`;
 }
 
 type VoiceNodes = {
@@ -31,8 +31,8 @@ type VoiceNodes = {
   filter: BiquadFilterNode;
   vibrato: OscillatorNode;
   vibratoGain: GainNode;
-  noise?: AudioBufferSourceNode;
-  noiseGain?: GainNode;
+  noise?: AudioBufferSourceNode | undefined;
+  noiseGain?: GainNode | undefined;
   attack: number;
   release: number;
 };
