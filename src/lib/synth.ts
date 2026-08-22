@@ -141,10 +141,17 @@ type VoiceNodes = {
   lfoGain?: GainNode | undefined;
   sub?: OscillatorNode | undefined;
   isBass?: boolean | undefined;
+  /** plucky patches decay toward this fraction of the peak while held */
+  sustain?: number | undefined;
+  /** time constant of the plucky decay */
+  decay?: number | undefined;
+  /** oscillator frequency ratios (index-aligned with oscs) */
+  ratios: number[];
   inst: InstrumentId;
   attack: number;
   release: number;
 };
+
 
 type ArpTarget = {
   degree: number;
