@@ -627,15 +627,27 @@ export default function GestureSynth() {
               )}
             </div>
           )}
+          {calibPhase !== "idle" && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-1 bg-background/70 p-3 text-center backdrop-blur">
+              <span className="font-display text-lg text-primary">
+                {calibPhase === "open" ? "1/2 · Dita aperte" : "2/2 · Unisci pollice e indice"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Tieni la posizione per qualche secondo…
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Barra icone */}
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         {panelBtn("sound", "Suono", Music4)}
         {panelBtn("fx", "Effetti", SlidersHorizontal)}
         {panelBtn("scale", "Scala", KeyboardMusic)}
         {panelBtn("arp", "Arp", Repeat)}
+        {panelBtn("calib", "Taratura", Crosshair)}
+
         {running && (
           <button
             onClick={stop}
