@@ -27,6 +27,8 @@ import {
   type InstrumentId,
   type ScaleId,
 } from "@/lib/synth";
+import { detectKey } from "@/lib/keyDetect";
+
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
