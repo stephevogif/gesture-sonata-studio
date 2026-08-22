@@ -104,12 +104,17 @@ export default function GestureSynth() {
       const res = lm.detectForVideo(video, performance.now());
       const active = new Set<string>();
       const next: HandState[] = [];
-      const { mode: m, instrument: single, leftInstrument: li, rightInstrument: ri, arpOn: arp } =
-        cfg.current;
+      const {
+        mode: m,
+        instrument: single,
+        leftInstrument: li,
+        rightInstrument: ri,
+        arpLeft: aL,
+        arpRight: aR,
+      } = cfg.current;
 
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
-        active.add(id);
         const wrist = pts[0]!;
         const indexTip = pts[8]!;
         const thumbTip = pts[4]!;
@@ -118,26 +123,71 @@ export default function GestureSynth() {
         // mirrored view: MediaPipe "Left" is the user's right hand
         const isRight = res.handedness?.[i]?.[0]?.categoryName === "Left";
         const inst: InstrumentId = m === "split" ? (isRight ? ri : li) : single;
+        const arp = isRight ? aR : aL;
 
         const x = 1 - indexTip.x;
-        const degree = positionToDegree(x, STEPS);
-        const midi = degreeToMidi(degree, engine.scale, engine.rootPc, INSTRUMENT_SHIFT[inst] ?? 0);
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
-        const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y);
-        const level = Math.min(1, Math.max(0, (span - 0.05) / 0.22));
 
-        if (level > 0.06) {
-          if (arp) engine.setArpTarget(id, degree, level, bright, inst);
-          else engine.noteOn(id, midiToFreq(midi), level, bright, inst);
-          next.push({
-            note: midiToName(midi),
-            level,
-            hand: isRight ? "Destra" : "Sinistra",
-            inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
+        if (m === "pinch") {
+          // gesturesynth.com style: pizzica pollice + dito per suonare un grado dell'accordo
+          const base = positionToDegree(x, 8);
+          PINCH_TIPS.forEach((tipIdx, k) => {
+            const tip = pts[tipIdx]!;
+            const vid = `${id}f${k}`;
+            const d = Math.hypot(tip.x - thumbTip.x, tip.y - thumbTip.y);
+            const on = d < 0.07;
+            if (on) {
+              active.add(vid);
+              const level = Math.min(1, Math.max(0.35, 1 - d / 0.07));
+              const degree = base + (PINCH_OFFSETS[k] ?? 0);
+              const midi = degreeToMidi(
+                degree,
+                engine.scale,
+                engine.rootPc,
+                INSTRUMENT_SHIFT[inst] ?? 0,
+              );
+              if (arp) engine.setArpTarget(vid, degree, level, bright, inst);
+              else engine.noteOn(vid, midiToFreq(midi), level, bright, inst);
+              next.push({
+                note: midiToName(midi),
+                level,
+                hand: isRight ? "Destra" : "Sinistra",
+                inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
+              });
+              ctx.save();
+              ctx.translate(canvas.width, 0);
+              ctx.scale(-1, 1);
+              ctx.beginPath();
+              ctx.arc(tip.x * canvas.width, tip.y * canvas.height, 16, 0, Math.PI * 2);
+              ctx.fillStyle = `hsla(${(isRight ? 20 : 190) + k * 30}, 90%, 60%, 0.35)`;
+              ctx.fill();
+              ctx.restore();
+            }
           });
         } else {
-          engine.clearArpTarget(id);
-          engine.noteOff(id);
+          active.add(id);
+          const degree = positionToDegree(x, STEPS);
+          const midi = degreeToMidi(
+            degree,
+            engine.scale,
+            engine.rootPc,
+            INSTRUMENT_SHIFT[inst] ?? 0,
+          );
+          const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y);
+          const level = Math.min(1, Math.max(0, (span - 0.05) / 0.22));
+
+          if (level > 0.06) {
+            if (arp) engine.setArpTarget(id, degree, level, bright, inst);
+            else engine.noteOn(id, midiToFreq(midi), level, bright, inst);
+            next.push({
+              note: midiToName(midi),
+              level,
+              hand: isRight ? "Destra" : "Sinistra",
+              inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
+            });
+          } else {
+            active.delete(id);
+          }
         }
 
         ctx.save();
@@ -148,7 +198,7 @@ export default function GestureSynth() {
         pts.forEach((p) => {
           ctx.beginPath();
           ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${(isRight ? 20 : 190) + level * 120}, 90%, 60%, 0.85)`;
+          ctx.fillStyle = `hsla(${isRight ? 20 : 190}, 90%, 60%, 0.85)`;
           ctx.fill();
         });
         ctx.beginPath();
@@ -158,13 +208,15 @@ export default function GestureSynth() {
         ctx.restore();
       });
 
-      ["h0", "h1"].forEach((id) => {
+      voiceIdsRef.current.forEach((id) => {
         if (!active.has(id)) {
           engine.clearArpTarget(id);
           engine.noteOff(id);
         }
       });
+      voiceIdsRef.current = active;
       setHands(next);
+
     }
     rafRef.current = requestAnimationFrame(loop);
   }, []);
