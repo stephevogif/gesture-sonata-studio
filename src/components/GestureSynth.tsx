@@ -508,10 +508,10 @@ export default function GestureSynth() {
               y: p.y * canvas.height,
               vx: Math.cos(a) * sp,
               vy: Math.sin(a) * sp - 0.5,
-              life: 1.4 + Math.random() * 1.0,
-              decay: 0.005 + Math.random() * 0.012,
-              size: 0.6 + Math.random() * 2.2 * (0.4 + soundLevel),
-              hue: (hueRef.current + pi * 12 + (isRight ? 120 : 0)) % 360,
+              life: 0.4 + Math.random() * 0.3,
+              decay: 0.028 + Math.random() * 0.035,
+              size: 0.22 + Math.random() * 0.6 * (0.4 + soundLevel),
+              hue: 32 + Math.random() * 18 + pi * 0.2,
             });
           });
         }
