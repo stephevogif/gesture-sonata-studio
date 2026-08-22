@@ -385,19 +385,19 @@ export default function GestureSynth() {
               smoothRef.current.set(vid, { x: cx, y: cy });
               glows.push({ x: cx, y: cy, hue: (baseHue + k * 30) % 360, level });
 
-              // scintille dal punto di contatto
-              for (let s = 0; s < 4; s++) {
-                if (list.length > 900) break;
+              // scintille dal punto di contatto: piccole, volanti a lungo
+              for (let s = 0; s < 5; s++) {
+                if (list.length > 1400) break;
                 const a = Math.random() * Math.PI * 2;
-                const sp = 1 + Math.random() * 3 * level;
+                const sp = 1.8 + Math.random() * 4.5 * level;
                 list.push({
                   x: cx,
                   y: cy,
                   vx: Math.cos(a) * sp,
-                  vy: Math.sin(a) * sp - 0.6,
-                  life: 1,
-                  decay: 0.015 + Math.random() * 0.02,
-                  size: 2 + Math.random() * 4,
+                  vy: Math.sin(a) * sp - 0.8,
+                  life: 1.2 + Math.random() * 0.8,
+                  decay: 0.005 + Math.random() * 0.012,
+                  size: 0.8 + Math.random() * 1.6,
                   hue: (hueRef.current + baseHue + k * 30) % 360,
                 });
               }
