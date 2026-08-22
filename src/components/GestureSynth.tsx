@@ -336,7 +336,7 @@ export default function GestureSynth() {
         const thrOff = Math.max(thrOn + 0.04, calibRef.current.off * (1 - sens));
 
         const list = particlesRef.current;
-        const baseHue = isRight ? 20 : 190;
+        const baseHue = isRight ? 44 : 36;
         let soundLevel = 0;
         const glows: { x: number; y: number; hue: number; level: number }[] = [];
 
