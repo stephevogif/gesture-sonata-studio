@@ -670,7 +670,37 @@ export default function GestureSynth() {
         <div className="celestial-rule mx-auto mt-3 w-2/3" />
       </header>
 
-      <div className="celestial-frame mt-4 rounded-sm shadow-glow">
+      <div className="mt-4 flex items-center justify-center gap-2">
+        <button
+          onClick={() => setMode("pinch")}
+          aria-label="Tocco note"
+          className={
+            (mode === "pinch"
+              ? "border-primary bg-primary/15 text-primary"
+              : "border-border bg-card/60 text-muted-foreground") +
+            " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+          }
+        >
+          <Sparkles className="h-5 w-5" />
+          Tocco
+        </button>
+        <button
+          onClick={() => setMode(freeMode)}
+          aria-label="Libero"
+          className={
+            (mode !== "pinch"
+              ? "border-primary bg-primary/15 text-primary"
+              : "border-border bg-card/60 text-muted-foreground") +
+            " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+          }
+        >
+          <Hand className="h-5 w-5" />
+          Libero
+        </button>
+      </div>
+
+      <div className="celestial-frame mt-3 rounded-sm shadow-glow">
+
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-stage sm:aspect-[4/3]">
           <video ref={videoRef} playsInline muted className="hidden" />
           <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
