@@ -86,10 +86,15 @@ export default function GestureSynth() {
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
   const [eqFreq, setEqFreq] = useState(1200);
 
+  const [sensitivity, setSensitivity] = useState(0); // -15..+15 (%)
+  const [calibPhase, setCalibPhase] = useState<CalibPhase>("idle");
+  const [calib, setCalib] = useState({ ...DEFAULT_CALIB });
+  const [calibrated, setCalibrated] = useState(false);
 
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [hands, setHands] = useState<HandState[]>([]);
+
 
   // keep latest settings readable inside the rAF loop
   const cfg = useRef({
