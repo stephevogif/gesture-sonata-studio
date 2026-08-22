@@ -120,6 +120,55 @@ export default function GestureSynth() {
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
   const [eqFreq, setEqFreq] = useState(1200);
 
+  const [listening, setListening] = useState(false);
+  const [listenProgress, setListenProgress] = useState(0);
+  const [listenLevel, setListenLevel] = useState(0);
+  const [listenDuration, setListenDuration] = useState(6000);
+  const [listenMsg, setListenMsg] = useState<string | null>(null);
+  const listenAbortRef = useRef<AbortController | null>(null);
+
+  const startListening = useCallback(async () => {
+    listenAbortRef.current?.abort();
+    const ac = new AbortController();
+    listenAbortRef.current = ac;
+    setListening(true);
+    setListenProgress(0);
+    setListenLevel(0);
+    setListenMsg(null);
+    try {
+      const res = await detectKey({
+        durationMs: listenDuration,
+        signal: ac.signal,
+        onProgress: ({ progress, level }) => {
+          setListenProgress(progress);
+          setListenLevel(level);
+        },
+      });
+      setRootPc(res.rootPc);
+      setScale(res.scaleId);
+      const name = `${NOTE_NAMES[res.rootPc]} ${res.mode === "minor" ? "minore" : "maggiore"}`;
+      const conf = res.confidence > 0.6 ? "alta" : res.confidence > 0.3 ? "media" : "bassa";
+      setListenMsg(
+        res.confidence > 0.3
+          ? `Rilevato: ${name} — confidenza ${conf}`
+          : `Rilevato: ${name} — confidenza bassa, prova di nuovo con più suono`,
+      );
+    } catch (e) {
+      const err = e as Error;
+      if (err.name === "AbortError") setListenMsg("Ascolto annullato.");
+      else if (err.name === "NotAllowedError")
+        setListenMsg("Permesso microfono negato.");
+      else setListenMsg(err.message || "Non è stato possibile ascoltare.");
+    } finally {
+      setListening(false);
+      setListenProgress(0);
+      setListenLevel(0);
+    }
+  }, [listenDuration]);
+
+  useEffect(() => () => listenAbortRef.current?.abort(), []);
+
+
   const [sensitivity, setSensitivity] = useState(0); // -15..+15 (%)
   const [calibPhase, setCalibPhase] = useState<CalibPhase>("idle");
   const [calib, setCalib] = useState({ ...DEFAULT_CALIB });
