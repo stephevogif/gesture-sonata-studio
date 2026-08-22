@@ -279,13 +279,14 @@ export default function GestureSynth() {
 
       // stelline lontane che respirano col volume
       const ml = musicLevelRef.current;
-      const baseStarAlpha = 0.03;
+      const baseStarAlpha = 0.1;
       const stars = starsRef.current;
       ctx.save();
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i]!;
         const breath = 0.5 + 0.5 * Math.sin(now * 0.0025 * s.depth + s.phase);
-        const alpha = baseStarAlpha + 0.35 * ml * s.depth * breath;
+        const alpha = baseStarAlpha + 0.1 * s.depth * breath + 0.5 * ml * s.depth * breath;
+
         ctx.fillStyle = `rgba(240, 214, 160, ${Math.min(0.85, alpha)})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
