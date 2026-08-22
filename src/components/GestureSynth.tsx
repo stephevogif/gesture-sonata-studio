@@ -621,7 +621,7 @@ export default function GestureSynth() {
   };
 
   const selectClass =
-    "w-full rounded-xl border border-border bg-background/60 px-3 py-2 text-sm text-foreground";
+    "w-full rounded-sm border border-border bg-background/60 px-3 py-2 text-sm tracking-wide text-foreground";
 
   const panelBtn = (id: PanelId, label: string, Icon: any) => (
     <button
@@ -629,10 +629,10 @@ export default function GestureSynth() {
       onClick={() => setPanel((p) => (p === id ? null : id))}
       aria-label={label}
       aria-pressed={panel === id}
-      className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-[11px] transition ${
+      className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-sm border px-2 py-3 text-[10px] uppercase tracking-[0.18em] transition ${
         panel === id
           ? "border-primary bg-primary/15 text-primary"
-          : "border-border bg-card text-muted-foreground"
+          : "border-border bg-card/70 text-muted-foreground"
       }`}
     >
       <Icon className="h-6 w-6" />
@@ -643,13 +643,18 @@ export default function GestureSynth() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-5">
       <header className="text-center">
-        <h1 className="font-display text-2xl leading-tight text-foreground sm:text-3xl">
-          STEPH EVO'S <span className="text-primary">CRAZY THERAMIN</span>
+        <div className="celestial-rule mx-auto mb-3 w-2/3" />
+        <h1 className="font-display text-xl leading-tight tracking-[0.16em] text-foreground sm:text-2xl">
+          STEPH EVO&apos;S <span className="text-primary">CRAZY THERAMIN</span>
         </h1>
+        <p className="mt-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
+          Carta sonora · Ed. I
+        </p>
+        <div className="celestial-rule mx-auto mt-3 w-2/3" />
       </header>
 
-      <div className="mt-4 overflow-hidden rounded-3xl border border-border bg-card shadow-glow">
-        <div className="relative aspect-[3/4] w-full bg-stage sm:aspect-[4/3]">
+      <div className="celestial-frame mt-4 rounded-sm shadow-glow">
+        <div className="relative aspect-[3/4] w-full overflow-hidden bg-stage sm:aspect-[4/3]">
           <video ref={videoRef} playsInline muted className="hidden" />
           <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
           {!running && (
@@ -665,14 +670,14 @@ export default function GestureSynth() {
           {running && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-2 p-3">
               {hands.length === 0 ? (
-                <span className="rounded-full bg-background/70 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
+                <span className="rounded-sm border border-border bg-background/70 px-3 py-1 text-[11px] tracking-wide text-muted-foreground backdrop-blur">
                   Pronto
                 </span>
               ) : (
                 hands.map((h, i) => (
                   <span
                     key={i}
-                    className="rounded-full bg-background/70 px-3 py-1 text-xs text-foreground backdrop-blur"
+                    className="rounded-sm border border-border bg-background/70 px-3 py-1 text-[11px] tracking-wide text-foreground backdrop-blur"
                   >
                     {h.hand} · {h.inst}: <strong className="text-primary">{h.note}</strong>{" "}
                     {Math.round(h.level * 100)}%
@@ -706,7 +711,7 @@ export default function GestureSynth() {
           <button
             onClick={stop}
             aria-label="Stop"
-            className="flex flex-1 flex-col items-center gap-1 rounded-2xl border border-border bg-card px-2 py-3 text-[11px] text-muted-foreground"
+            className="flex flex-1 flex-col items-center gap-1 rounded-sm border border-border bg-card/70 px-2 py-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
           >
             <Square className="h-6 w-6" />
             Stop
@@ -716,7 +721,7 @@ export default function GestureSynth() {
 
       {/* Pannelli */}
       {panel === "sound" && (
-        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
+        <div className="mt-3 celestial-panel rounded-sm p-4">
           <div className="grid gap-2 sm:grid-cols-3">
             {(
               [
@@ -791,7 +796,7 @@ export default function GestureSynth() {
       )}
 
       {panel === "scale" && (
-        <div className="mt-3 grid gap-3 rounded-3xl border border-border bg-card p-4 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 celestial-panel rounded-sm p-4 sm:grid-cols-2">
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">Scala</label>
             <select
@@ -824,7 +829,7 @@ export default function GestureSynth() {
       )}
 
       {panel === "arp" && (
-        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
+        <div className="mt-3 celestial-panel rounded-sm p-4">
           <div className="flex gap-2">
             <button
               onClick={() => setArpLeft((v) => !v)}
@@ -878,7 +883,7 @@ export default function GestureSynth() {
       )}
 
       {panel === "fx" && (
-        <div className="mt-3 grid gap-4 rounded-3xl border border-border bg-card p-4 sm:grid-cols-3">
+        <div className="mt-3 grid gap-4 celestial-panel rounded-sm p-4 sm:grid-cols-3">
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">
               Riverbero: {reverb}%
@@ -924,7 +929,7 @@ export default function GestureSynth() {
       )}
 
       {panel === "calib" && (
-        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
+        <div className="mt-3 celestial-panel rounded-sm p-4">
           <p className="text-sm text-muted-foreground">
             La taratura misura la tua mano e regola quando il contatto tra pollice e dito viene
             riconosciuto. Serve la fotocamera attiva.
