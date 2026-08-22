@@ -19,14 +19,56 @@ export const INSTRUMENT_SHIFT: Record<InstrumentId, number> = {
   growl: -24,
 };
 
-// D minor pentatonic-ish scale over 3 octaves for always-musical results
-const SCALE = [0, 2, 3, 5, 7, 9, 10];
-const ROOT_MIDI = 50; // D3
+export type ScaleId =
+  | "minorPent"
+  | "majorPent"
+  | "naturalMinor"
+  | "harmonicMinor"
+  | "phrygian"
+  | "dorian"
+  | "major"
+  | "blues"
+  | "chromatic";
 
-export function positionToMidi(x: number, steps = 21, shift = 0): number {
-  const i = Math.min(steps - 1, Math.max(0, Math.round(x * (steps - 1))));
-  const octave = Math.floor(i / SCALE.length);
-  return ROOT_MIDI + shift + octave * 12 + (SCALE[i % SCALE.length] ?? 0);
+export const SCALES: { id: ScaleId; name: string; steps: number[] }[] = [
+  { id: "minorPent", name: "Pentatonica minore", steps: [0, 3, 5, 7, 10] },
+  { id: "majorPent", name: "Pentatonica maggiore", steps: [0, 2, 4, 7, 9] },
+  { id: "naturalMinor", name: "Minore naturale", steps: [0, 2, 3, 5, 7, 8, 10] },
+  { id: "harmonicMinor", name: "Minore armonica", steps: [0, 2, 3, 5, 7, 8, 11] },
+  { id: "phrygian", name: "Frigia", steps: [0, 1, 3, 5, 7, 8, 10] },
+  { id: "dorian", name: "Dorica", steps: [0, 2, 3, 5, 7, 9, 10] },
+  { id: "major", name: "Maggiore", steps: [0, 2, 4, 5, 7, 9, 11] },
+  { id: "blues", name: "Blues", steps: [0, 3, 5, 6, 7, 10] },
+  { id: "chromatic", name: "Cromatica", steps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] },
+];
+
+export const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+export function scaleSteps(id: ScaleId): number[] {
+  return SCALES.find((s) => s.id === id)?.steps ?? [0, 3, 5, 7, 10];
+}
+
+/** degree index (can exceed scale length -> wraps up an octave) to semitones */
+export function degreeToSemitones(steps: number[], degree: number): number {
+  const len = steps.length;
+  const oct = Math.floor(degree / len);
+  const idx = ((degree % len) + len) % len;
+  return (steps[idx] ?? 0) + oct * 12;
+}
+
+const BASE_OCTAVE_MIDI = 48; // C3
+
+export function positionToDegree(x: number, steps = 21): number {
+  return Math.min(steps - 1, Math.max(0, Math.round(x * (steps - 1))));
+}
+
+export function degreeToMidi(
+  degree: number,
+  scale: number[],
+  rootPc: number,
+  shift = 0,
+): number {
+  return BASE_OCTAVE_MIDI + rootPc + shift + degreeToSemitones(scale, degree);
 }
 
 export function midiToFreq(m: number): number {
@@ -34,9 +76,18 @@ export function midiToFreq(m: number): number {
 }
 
 export function midiToName(m: number): string {
-  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  return `${names[m % 12] ?? "C"}${Math.floor(m / 12) - 1}`;
+  return `${NOTE_NAMES[((m % 12) + 12) % 12] ?? "C"}${Math.floor(m / 12) - 1}`;
 }
+
+export type ArpPatternId = "up" | "down" | "updown" | "octaves" | "random";
+
+export const ARP_PATTERNS: { id: ArpPatternId; name: string; degrees: number[] }[] = [
+  { id: "up", name: "Su", degrees: [0, 1, 2, 3] },
+  { id: "down", name: "Giù", degrees: [3, 2, 1, 0] },
+  { id: "updown", name: "Su / Giù", degrees: [0, 1, 2, 3, 2, 1] },
+  { id: "octaves", name: "Ottave", degrees: [0, 2, 5, 7] },
+  { id: "random", name: "Random", degrees: [0, 1, 2, 3, 4, 5] },
+];
 
 type VoiceNodes = {
   oscs: OscillatorNode[];
@@ -52,8 +103,17 @@ type VoiceNodes = {
   lfoGain?: GainNode | undefined;
   sub?: OscillatorNode | undefined;
   isBass?: boolean | undefined;
+  inst: InstrumentId;
   attack: number;
   release: number;
+};
+
+type ArpTarget = {
+  degree: number;
+  amount: number;
+  bright: number;
+  inst: InstrumentId;
+  step: number;
 };
 
 export class GestureSynthEngine {
@@ -62,7 +122,20 @@ export class GestureSynthEngine {
   private wet: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
   private voices = new Map<string, VoiceNodes>();
+  private buildInst: InstrumentId = "violin";
   instrument: InstrumentId = "violin";
+
+  // musical settings
+  scale: number[] = scaleSteps("minorPent");
+  rootPc = 2; // D
+
+  // arpeggiator
+  arpEnabled = false;
+  arpRate = 8; // notes per second
+  arpDegrees: number[] = ARP_PATTERNS[0]!.degrees;
+  arpRandom = false;
+  private arpTargets = new Map<string, ArpTarget>();
+  private arpTimer: ReturnType<typeof setInterval> | null = null;
 
   async start() {
     if (this.ctx) {
@@ -76,7 +149,6 @@ export class GestureSynthEngine {
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 1024;
 
-    // simple stereo-ish ambience with two delays
     const wet = ctx.createGain();
     wet.gain.value = 0.35;
     const d1 = ctx.createDelay(1);
@@ -101,6 +173,7 @@ export class GestureSynthEngine {
     this.wet = wet;
     this.analyser = analyser;
     await ctx.resume();
+    this.syncArpTimer();
   }
 
   getAnalyser() {
@@ -131,6 +204,7 @@ export class GestureSynthEngine {
   private buildVoice(freq: number): VoiceNodes {
     const ctx = this.ctx!;
     const now = ctx.currentTime;
+    const inst = this.buildInst;
     const gain = ctx.createGain();
     gain.gain.value = 0;
     const filter = ctx.createBiquadFilter();
@@ -152,7 +226,7 @@ export class GestureSynthEngine {
     let lfoGain: GainNode | undefined;
     let sub: OscillatorNode | undefined;
     const bassPatches: InstrumentId[] = ["reese", "acid", "growl"];
-    const isBass = bassPatches.includes(this.instrument);
+    const isBass = bassPatches.includes(inst);
 
     const addOsc = (type: OscillatorType, detune = 0, level = 1) => {
       const o = ctx.createOscillator();
@@ -167,7 +241,7 @@ export class GestureSynthEngine {
       return o;
     };
 
-    if (this.instrument === "violin") {
+    if (inst === "violin") {
       addOsc("sawtooth", 0, 0.55);
       addOsc("sawtooth", 7, 0.35);
       filter.frequency.value = 2600;
@@ -176,7 +250,7 @@ export class GestureSynthEngine {
       vibratoGain.gain.value = 16;
       attack = 0.14;
       release = 0.28;
-    } else if (this.instrument === "winds") {
+    } else if (inst === "winds") {
       addOsc("triangle", 0, 0.6);
       addOsc("sine", -5, 0.4);
       filter.frequency.value = 1800;
@@ -198,7 +272,7 @@ export class GestureSynthEngine {
       driveGain = ctx.createGain();
       drive.oversample = "4x";
 
-      if (this.instrument === "reese") {
+      if (inst === "reese") {
         addOsc("sawtooth", -14, 0.5);
         addOsc("sawtooth", 14, 0.5);
         addOsc("sawtooth", 0, 0.35);
@@ -211,7 +285,7 @@ export class GestureSynthEngine {
         vibratoGain.gain.value = 6;
         attack = 0.02;
         release = 0.18;
-      } else if (this.instrument === "acid") {
+      } else if (inst === "acid") {
         addOsc("sawtooth", 0, 0.7);
         addOsc("square", -6, 0.3);
         filter.type = "lowpass";
@@ -235,7 +309,6 @@ export class GestureSynthEngine {
         vibratoGain.gain.value = 4;
         attack = 0.01;
         release = 0.14;
-        // wobble LFO on the filter cutoff
         lfo = ctx.createOscillator();
         lfo.type = "sine";
         lfo.frequency.value = 5.5;
@@ -245,7 +318,6 @@ export class GestureSynthEngine {
         lfo.start(now);
       }
 
-      // sub oscillator one octave down for weight
       sub = ctx.createOscillator();
       sub.type = "sine";
       sub.frequency.value = freq / 2;
@@ -290,26 +362,58 @@ export class GestureSynthEngine {
       lfoGain,
       sub,
       isBass,
+      inst,
       attack,
       release,
     };
   }
 
-  /** amount: 0..1 loudness/expression, freq in Hz, bright: 0..1 */
-  noteOn(id: string, freq: number, amount: number, bright = 0.5) {
-    if (!this.ctx) return;
-    const ctx = this.ctx;
+  private getVoice(id: string, freq: number, inst: InstrumentId) {
     let v = this.voices.get(id);
+    if (v && v.inst !== inst) {
+      this.noteOff(id);
+      v = undefined;
+    }
     if (!v) {
+      this.buildInst = inst;
       v = this.buildVoice(freq);
       this.voices.set(id, v);
     }
+    return v;
+  }
+
+  /** amount: 0..1 loudness/expression, freq in Hz, bright: 0..1 */
+  noteOn(id: string, freq: number, amount: number, bright = 0.5, inst?: InstrumentId) {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const v = this.getVoice(id, freq, inst ?? this.instrument);
     const now = ctx.currentTime;
-    const glide = this.instrument === "pads" ? 0.25 : v.isBass ? 0.04 : 0.08;
+    const glide = v.inst === "pads" ? 0.25 : v.isBass ? 0.04 : 0.08;
     v.oscs.forEach((o) => o.frequency.setTargetAtTime(freq, now, glide));
     v.sub?.frequency.setTargetAtTime(freq / 2, now, glide);
     const peak = v.isBass ? 0.5 : 0.34;
     v.gain.gain.setTargetAtTime(Math.min(peak, amount * peak), now, v.attack);
+    this.shapeFilter(v, bright, amount, now);
+  }
+
+  /** short retriggered note used by the arpeggiator */
+  pluck(id: string, freq: number, amount: number, bright: number, inst: InstrumentId, gate: number) {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const v = this.getVoice(id, freq, inst);
+    const now = ctx.currentTime;
+    v.oscs.forEach((o) => o.frequency.setValueAtTime(freq, now));
+    v.sub?.frequency.setValueAtTime(freq / 2, now);
+    const peak = (v.isBass ? 0.5 : 0.34) * Math.min(1, amount);
+    const g = v.gain.gain;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(Math.max(0.0001, g.value), now);
+    g.linearRampToValueAtTime(peak, now + Math.min(0.02, gate * 0.2));
+    g.linearRampToValueAtTime(0.0001, now + gate);
+    this.shapeFilter(v, bright, amount, now);
+  }
+
+  private shapeFilter(v: VoiceNodes, bright: number, amount: number, now: number) {
     if (v.isBass) {
       v.filter.frequency.setTargetAtTime(120 + bright * 2600, now, 0.05);
       if (v.lfo) v.lfo.frequency.setTargetAtTime(1.5 + bright * 9, now, 0.1);
@@ -323,6 +427,8 @@ export class GestureSynthEngine {
     const v = this.voices.get(id);
     if (!v || !this.ctx) return;
     const now = this.ctx.currentTime;
+    v.gain.gain.cancelScheduledValues(now);
+    v.gain.gain.setValueAtTime(Math.max(0.0001, v.gain.gain.value), now);
     v.gain.gain.setTargetAtTime(0, now, v.release / 3);
     this.voices.delete(id);
     const stopAt = now + v.release + 1.2;
@@ -334,6 +440,7 @@ export class GestureSynthEngine {
   }
 
   allOff() {
+    this.arpTargets.clear();
     [...this.voices.keys()].forEach((k) => this.noteOff(k));
   }
 
@@ -342,8 +449,71 @@ export class GestureSynthEngine {
     this.instrument = i;
   }
 
+  setScale(steps: number[], rootPc: number) {
+    this.scale = steps;
+    this.rootPc = rootPc;
+  }
+
+  setArp(opts: { enabled?: boolean; rate?: number; degrees?: number[]; random?: boolean }) {
+    if (opts.enabled !== undefined) {
+      this.arpEnabled = opts.enabled;
+      if (!opts.enabled) {
+        this.arpTargets.clear();
+        [...this.voices.keys()].forEach((k) => this.noteOff(k));
+      }
+    }
+    if (opts.rate !== undefined) this.arpRate = opts.rate;
+    if (opts.degrees) this.arpDegrees = opts.degrees;
+    if (opts.random !== undefined) this.arpRandom = opts.random;
+    this.syncArpTimer();
+  }
+
+  /** feed the arpeggiator with the current gesture state for one hand */
+  setArpTarget(id: string, degree: number, amount: number, bright: number, inst: InstrumentId) {
+    const prev = this.arpTargets.get(id);
+    this.arpTargets.set(id, { degree, amount, bright, inst, step: prev?.step ?? 0 });
+  }
+
+  clearArpTarget(id: string) {
+    if (this.arpTargets.delete(id)) this.noteOff(id);
+  }
+
+  private syncArpTimer() {
+    if (this.arpTimer) {
+      clearInterval(this.arpTimer);
+      this.arpTimer = null;
+    }
+    if (!this.arpEnabled || !this.ctx) return;
+    const period = 1000 / Math.max(1, this.arpRate);
+    this.arpTimer = setInterval(() => this.tickArp(period / 1000), period);
+  }
+
+  private tickArp(periodSec: number) {
+    if (!this.ctx) return;
+    this.arpTargets.forEach((t, id) => {
+      const seq = this.arpDegrees.length ? this.arpDegrees : [0];
+      const offset = this.arpRandom
+        ? (seq[Math.floor(Math.random() * seq.length)] ?? 0)
+        : (seq[t.step % seq.length] ?? 0);
+      t.step += 1;
+      const midi =
+        BASE_OCTAVE_MIDI +
+        this.rootPc +
+        (INSTRUMENT_SHIFT[t.inst] ?? 0) +
+        degreeToSemitones(this.scale, t.degree + offset);
+      this.pluck(id, midiToFreq(midi), t.amount, t.bright, t.inst, periodSec * 0.9);
+    });
+  }
+
+  /** midi note the arpeggiator (or a hand) is currently centred on */
+  midiFor(degree: number, inst: InstrumentId) {
+    return degreeToMidi(degree, this.scale, this.rootPc, INSTRUMENT_SHIFT[inst] ?? 0);
+  }
+
   async dispose() {
     this.allOff();
+    if (this.arpTimer) clearInterval(this.arpTimer);
+    this.arpTimer = null;
     await this.ctx?.close();
     this.ctx = null;
   }
