@@ -44,6 +44,9 @@ export default function GestureSynth() {
   const [arpRight, setArpRight] = useState(false);
   const [arpRate, setArpRate] = useState(8);
   const [arpPattern, setArpPattern] = useState<ArpPatternId>("up");
+  const [reverb, setReverb] = useState(35);
+  const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
+  const [eqFreq, setEqFreq] = useState(12000);
 
 
   const [running, setRunning] = useState(false);
@@ -88,6 +91,14 @@ export default function GestureSynth() {
       random: arpPattern === "random",
     });
   }, [arpLeft, arpRight, arpRate, arpPattern]);
+
+  useEffect(() => {
+    engineRef.current?.setReverb(reverb / 100);
+  }, [reverb]);
+
+  useEffect(() => {
+    engineRef.current?.setEq(eqType, eqFreq);
+  }, [eqType, eqFreq]);
 
 
   const loop = useCallback(() => {
@@ -230,6 +241,9 @@ export default function GestureSynth() {
       engineRef.current = engine;
       engine.instrument = instrument;
       engine.setScale(scaleSteps(scale), rootPc);
+      engine.reverbAmount = reverb / 100;
+      engine.eqType = eqType;
+      engine.eqFreq = eqFreq;
       await engine.start();
       engine.setArp({
         enabled: arpLeft || arpRight,
@@ -271,7 +285,7 @@ export default function GestureSynth() {
       setStatus("Impossibile accedere alla fotocamera o all'audio.");
       setRunning(false);
     }
-  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, loop]);
+  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, reverb, eqType, eqFreq, loop]);
 
   const pickInstrument = (id: InstrumentId) => {
     setInstrument(id);
@@ -508,6 +522,53 @@ export default function GestureSynth() {
               step={1}
               value={arpRate}
               onChange={(e) => setArpRate(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-3xl border border-border bg-card/60 p-5">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">Effetti</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Riverbero: {reverb}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={reverb}
+              onChange={(e) => setReverb(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Filtro EQ
+            </label>
+            <select
+              className={`mt-2 ${selectClass}`}
+              value={eqType}
+              onChange={(e) => setEqType(e.target.value as "lowpass" | "highpass")}
+            >
+              <option value="lowpass">Low pass</option>
+              <option value="highpass">High pass</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Cutoff: {eqFreq >= 1000 ? `${(eqFreq / 1000).toFixed(1)} kHz` : `${eqFreq} Hz`}
+            </label>
+            <input
+              type="range"
+              min={60}
+              max={16000}
+              step={20}
+              value={eqFreq}
+              onChange={(e) => setEqFreq(Number(e.target.value))}
               className="mt-3 w-full accent-[var(--primary)]"
             />
           </div>

@@ -121,6 +121,10 @@ export class GestureSynthEngine {
   private master: GainNode | null = null;
   private wet: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
+  private eq: BiquadFilterNode | null = null;
+  reverbAmount = 0.35;
+  eqType: BiquadFilterType = "lowpass";
+  eqFreq = 12000;
   private voices = new Map<string, VoiceNodes>();
   private buildInst: InstrumentId = "violin";
   instrument: InstrumentId = "violin";
@@ -150,7 +154,7 @@ export class GestureSynthEngine {
     analyser.fftSize = 1024;
 
     const wet = ctx.createGain();
-    wet.gain.value = 0.35;
+    wet.gain.value = this.reverbAmount;
     const d1 = ctx.createDelay(1);
     d1.delayTime.value = 0.19;
     const d2 = ctx.createDelay(1);
@@ -166,12 +170,18 @@ export class GestureSynthEngine {
     d1.connect(master);
     d2.connect(master);
 
-    master.connect(analyser).connect(ctx.destination);
+    const eq = ctx.createBiquadFilter();
+    eq.type = this.eqType;
+    eq.frequency.value = this.eqFreq;
+    eq.Q.value = 0.7;
+
+    master.connect(eq).connect(analyser).connect(ctx.destination);
 
     this.ctx = ctx;
     this.master = master;
     this.wet = wet;
     this.analyser = analyser;
+    this.eq = eq;
     await ctx.resume();
     this.syncArpTimer();
   }
@@ -447,6 +457,24 @@ export class GestureSynthEngine {
   setInstrument(i: InstrumentId) {
     this.allOff();
     this.instrument = i;
+  }
+
+  /** 0..1 amount of the delay/reverb send */
+  setReverb(amount: number) {
+    this.reverbAmount = Math.max(0, Math.min(1, amount));
+    if (this.wet && this.ctx) {
+      this.wet.gain.setTargetAtTime(this.reverbAmount, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  /** master EQ pass filter */
+  setEq(type: BiquadFilterType, freq: number) {
+    this.eqType = type;
+    this.eqFreq = freq;
+    if (this.eq && this.ctx) {
+      this.eq.type = type;
+      this.eq.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
+    }
   }
 
   setScale(steps: number[], rootPc: number) {
