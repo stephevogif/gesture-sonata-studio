@@ -435,6 +435,8 @@ export default function GestureSynth() {
           }
         }
 
+        maxSoundLevel = Math.max(maxSoundLevel, soundLevel);
+
         // scheletro ben visibile
         ctx.save();
         ctx.translate(canvas.width, 0);
