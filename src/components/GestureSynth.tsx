@@ -787,6 +787,19 @@ export default function GestureSynth() {
           )}
           {running && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-2 p-3">
+              {(listening || listenMsg) && (
+                <span
+                  className={`rounded-sm border px-3 py-1 text-[9px] tracking-wide backdrop-blur ${
+                    listening
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border bg-background/70 text-muted-foreground"
+                  }`}
+                >
+                  {listening
+                    ? `🎙️ Ascolto ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s…`
+                    : listenMsg}
+                </span>
+              )}
               {hands.length === 0 ? (
                 <span className="rounded-sm border border-border bg-background/70 px-3 py-1 text-[11px] tracking-wide text-muted-foreground backdrop-blur">
                   Pronto
