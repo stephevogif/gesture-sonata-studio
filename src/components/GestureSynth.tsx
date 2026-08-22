@@ -262,11 +262,38 @@ export default function GestureSynth() {
 
     const ctx = canvas.getContext("2d");
     if (ctx && video.videoWidth) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      if (canvas.width !== w || canvas.height !== h || lastSizeRef.current.width !== w || lastSizeRef.current.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        lastSizeRef.current = { width: w, height: h };
+        starsRef.current = generateStars(w, h);
+      }
 
-      const res = lm.detectForVideo(video, performance.now());
+      const now = performance.now();
+
+      // sfondo scuro del palco
+      ctx.fillStyle = "rgb(16, 16, 23)";
+      ctx.fillRect(0, 0, w, h);
+
+      // stelline lontane che respirano col volume
+      const ml = musicLevelRef.current;
+      const baseStarAlpha = 0.03;
+      const stars = starsRef.current;
+      ctx.save();
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i]!;
+        const breath = 0.5 + 0.5 * Math.sin(now * 0.0025 * s.depth + s.phase);
+        const alpha = baseStarAlpha + 0.35 * ml * s.depth * breath;
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.85, alpha)})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      const res = lm.detectForVideo(video, now);
       const active = new Set<string>();
       const next: HandState[] = [];
       const {
