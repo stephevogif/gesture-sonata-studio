@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { KeyboardMusic, Music4, Repeat, SlidersHorizontal, Square } from "lucide-react";
+import { Crosshair, KeyboardMusic, Music4, Repeat, SlidersHorizontal, Square } from "lucide-react";
+
 import {
   ARP_PATTERNS,
   GestureSynthEngine,
@@ -19,7 +20,9 @@ import {
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
-type PanelId = "sound" | "fx" | "scale" | "arp";
+type PanelId = "sound" | "fx" | "scale" | "arp" | "calib";
+type CalibPhase = "idle" | "open" | "closed";
+
 type Particle = {
   x: number;
   y: number;
@@ -45,6 +48,8 @@ const HAND_CONNECTIONS: [number, number][] = [
 
 const STEPS = 21;
 
+const CALIB_KEY = "cth-calibration-v1";
+const DEFAULT_CALIB = { on: 0.42, off: 0.62 };
 
 export default function GestureSynth() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -55,6 +60,15 @@ export default function GestureSynth() {
   const voiceIdsRef = useRef<Set<string>>(new Set());
   const particlesRef = useRef<Particle[]>([]);
   const hueRef = useRef(0);
+  // taratura tocco dita-pollice (distanze normalizzate sulla dimensione della mano)
+  const calibRef = useRef({ ...DEFAULT_CALIB });
+  const sensRef = useRef(0); // -0.15 .. +0.15
+  const calibPhaseRef = useRef<CalibPhase>("idle");
+  const calibSamplesRef = useRef<{ open: number[]; closed: number[] }>({ open: [], closed: [] });
+  const heldRef = useRef<Set<string>>(new Set());
+  const smoothRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const liveRatioRef = useRef(0);
+
 
 
   const [panel, setPanel] = useState<PanelId | null>(null);
@@ -72,10 +86,15 @@ export default function GestureSynth() {
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
   const [eqFreq, setEqFreq] = useState(1200);
 
+  const [sensitivity, setSensitivity] = useState(0); // -15..+15 (%)
+  const [calibPhase, setCalibPhase] = useState<CalibPhase>("idle");
+  const [calib, setCalib] = useState({ ...DEFAULT_CALIB });
+  const [calibrated, setCalibrated] = useState(false);
 
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [hands, setHands] = useState<HandState[]>([]);
+
 
   // keep latest settings readable inside the rAF loop
   const cfg = useRef({
@@ -99,9 +118,38 @@ export default function GestureSynth() {
     setRunning(false);
     setHands([]);
     particlesRef.current = [];
+    heldRef.current.clear();
+    smoothRef.current.clear();
+    calibPhaseRef.current = "idle";
+    setCalibPhase("idle");
   }, []);
 
   useEffect(() => () => stop(), [stop]);
+
+  // carica taratura salvata
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CALIB_KEY);
+      if (!raw) return;
+      const v = JSON.parse(raw) as { on: number; off: number; sensitivity?: number };
+      if (typeof v.on === "number" && typeof v.off === "number") {
+        calibRef.current = { on: v.on, off: v.off };
+        setCalib({ on: v.on, off: v.off });
+        setCalibrated(true);
+      }
+      if (typeof v.sensitivity === "number") {
+        setSensitivity(v.sensitivity);
+        sensRef.current = v.sensitivity / 100;
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    sensRef.current = sensitivity / 100;
+  }, [sensitivity]);
+
 
   useEffect(() => {
     engineRef.current?.setScale(scaleSteps(scale), rootPc);
@@ -124,6 +172,62 @@ export default function GestureSynth() {
   useEffect(() => {
     engineRef.current?.setEq(eqType, eqFreq);
   }, [eqType, eqFreq]);
+
+  const saveCalib = (on: number, off: number) => {
+    try {
+      localStorage.setItem(
+        CALIB_KEY,
+        JSON.stringify({ on, off, sensitivity: sensRef.current * 100 }),
+      );
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const runCalibration = useCallback(() => {
+    calibSamplesRef.current = { open: [], closed: [] };
+    calibPhaseRef.current = "open";
+    setCalibPhase("open");
+    window.setTimeout(() => {
+      calibPhaseRef.current = "closed";
+      setCalibPhase("closed");
+      window.setTimeout(() => {
+        calibPhaseRef.current = "idle";
+        setCalibPhase("idle");
+        const med = (a: number[]) => {
+          if (!a.length) return NaN;
+          const s = [...a].sort((x, y) => x - y);
+          return s[Math.floor(s.length / 2)]!;
+        };
+        const openV = med(calibSamplesRef.current.open);
+        const closedV = med(calibSamplesRef.current.closed);
+        if (!isFinite(openV) || !isFinite(closedV) || openV - closedV < 0.06) {
+          setStatus("Taratura non riuscita: ripeti tenendo la mano ben visibile.");
+          window.setTimeout(() => setStatus(""), 3500);
+          return;
+        }
+        const on = closedV + (openV - closedV) * 0.35;
+        const off = closedV + (openV - closedV) * 0.6;
+        calibRef.current = { on, off };
+        setCalib({ on, off });
+        setCalibrated(true);
+        saveCalib(on, off);
+      }, 3200);
+    }, 3200);
+  }, []);
+
+  const resetCalibration = useCallback(() => {
+    calibRef.current = { ...DEFAULT_CALIB };
+    setCalib({ ...DEFAULT_CALIB });
+    setCalibrated(false);
+    setSensitivity(0);
+    sensRef.current = 0;
+    try {
+      localStorage.removeItem(CALIB_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
 
   const loop = useCallback(() => {
@@ -166,6 +270,20 @@ export default function GestureSynth() {
         const x = 1 - indexTip.x;
         const bright = 1 - Math.min(1, Math.max(0, indexTip.y));
 
+        // dimensione della mano: rende le soglie indipendenti dalla distanza dalla camera
+        const wrist = pts[0]!;
+        const midMcp = pts[9]!;
+        const handSize =
+          Math.hypot(wrist.x - midMcp.x, wrist.y - midMcp.y) || 0.12;
+        const indexRatio = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y) / handSize;
+        if (i === 0) liveRatioRef.current = indexRatio;
+        if (calibPhaseRef.current === "open") calibSamplesRef.current.open.push(indexRatio);
+        else if (calibPhaseRef.current === "closed") calibSamplesRef.current.closed.push(indexRatio);
+
+        const sens = sensRef.current;
+        const thrOn = calibRef.current.on * (1 - sens);
+        const thrOff = Math.max(thrOn + 0.04, calibRef.current.off * (1 - sens));
+
         const list = particlesRef.current;
         const baseHue = isRight ? 20 : 190;
         let soundLevel = 0;
@@ -177,11 +295,15 @@ export default function GestureSynth() {
           PINCH_TIPS.forEach((tipIdx, k) => {
             const tip = pts[tipIdx]!;
             const vid = `${id}f${k}`;
-            const d = Math.hypot(tip.x - thumbTip.x, tip.y - thumbTip.y);
-            const on = d < 0.07;
+            const ratio = Math.hypot(tip.x - thumbTip.x, tip.y - thumbTip.y) / handSize;
+            // isteresi: entra sotto thrOn, resta attivo fino a thrOff
+            const wasOn = heldRef.current.has(vid);
+            const on = wasOn ? ratio < thrOff : ratio < thrOn;
+            if (on) heldRef.current.add(vid);
+            else heldRef.current.delete(vid);
             if (on) {
               active.add(vid);
-              const level = Math.min(1, Math.max(0.35, 1 - d / 0.07));
+              const level = Math.min(1, Math.max(0.35, 1 - ratio / thrOff));
               soundLevel = Math.max(soundLevel, level);
               const degree = base + (PINCH_OFFSETS[k] ?? 0);
               const midi = degreeToMidi(
@@ -198,9 +320,18 @@ export default function GestureSynth() {
                 hand: isRight ? "Lato B" : "Lato A",
                 inst: INSTRUMENTS.find((x2) => x2.id === inst)?.name ?? "",
               });
-              // punto di contatto (fra pollice e dito)
-              const cx = (1 - (tip.x + thumbTip.x) / 2) * canvas.width;
-              const cy = ((tip.y + thumbTip.y) / 2) * canvas.height;
+              // punto di contatto: media pesata polpastrelli + smoothing temporale
+              const thumbIp = pts[3] ?? thumbTip;
+              const tipDip = pts[tipIdx - 1] ?? tip;
+              const rawX =
+                (1 - (tip.x * 0.4 + thumbTip.x * 0.4 + tipDip.x * 0.1 + thumbIp.x * 0.1)) *
+                canvas.width;
+              const rawY =
+                (tip.y * 0.4 + thumbTip.y * 0.4 + tipDip.y * 0.1 + thumbIp.y * 0.1) * canvas.height;
+              const prev = smoothRef.current.get(vid);
+              const cx = prev ? prev.x + (rawX - prev.x) * 0.45 : rawX;
+              const cy = prev ? prev.y + (rawY - prev.y) * 0.45 : rawY;
+              smoothRef.current.set(vid, { x: cx, y: cy });
               glows.push({ x: cx, y: cy, hue: (baseHue + k * 30) % 360, level });
 
               // scintille dal punto di contatto
@@ -219,8 +350,11 @@ export default function GestureSynth() {
                   hue: (hueRef.current + baseHue + k * 30) % 360,
                 });
               }
+            } else {
+              smoothRef.current.delete(vid);
             }
           });
+
         } else {
           active.add(id);
           const degree = positionToDegree(x, STEPS);
@@ -230,8 +364,10 @@ export default function GestureSynth() {
             engine.rootPc,
             INSTRUMENT_SHIFT[inst] ?? 0,
           );
-          const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y);
-          const level = Math.min(1, Math.max(0, (span - 0.05) / 0.22));
+          // normalizzato sulla dimensione della mano + taratura
+          const span = Math.hypot(thumbTip.x - middleTip.x, thumbTip.y - middleTip.y) / handSize;
+          const level = Math.min(1, Math.max(0, (span - thrOn) / Math.max(0.2, thrOff * 1.8)));
+
 
           if (level > 0.06) {
             soundLevel = level;
@@ -439,7 +575,7 @@ export default function GestureSynth() {
       onClick={() => setPanel((p) => (p === id ? null : id))}
       aria-label={label}
       aria-pressed={panel === id}
-      className={`flex flex-1 flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-[11px] transition ${
+      className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-2xl border px-2 py-3 text-[11px] transition ${
         panel === id
           ? "border-primary bg-primary/15 text-primary"
           : "border-border bg-card text-muted-foreground"
@@ -491,15 +627,27 @@ export default function GestureSynth() {
               )}
             </div>
           )}
+          {calibPhase !== "idle" && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-1 bg-background/70 p-3 text-center backdrop-blur">
+              <span className="font-display text-lg text-primary">
+                {calibPhase === "open" ? "1/2 · Dita aperte" : "2/2 · Unisci pollice e indice"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Tieni la posizione per qualche secondo…
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Barra icone */}
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         {panelBtn("sound", "Suono", Music4)}
         {panelBtn("fx", "Effetti", SlidersHorizontal)}
         {panelBtn("scale", "Scala", KeyboardMusic)}
         {panelBtn("arp", "Arp", Repeat)}
+        {panelBtn("calib", "Taratura", Crosshair)}
+
         {running && (
           <button
             onClick={stop}
@@ -720,7 +868,63 @@ export default function GestureSynth() {
           </div>
         </div>
       )}
+
+      {panel === "calib" && (
+        <div className="mt-3 rounded-3xl border border-border bg-card p-4">
+          <p className="text-sm text-muted-foreground">
+            La taratura misura la tua mano e regola quando il contatto tra pollice e dito viene
+            riconosciuto. Serve la fotocamera attiva.
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={runCalibration}
+              disabled={!running || calibPhase !== "idle"}
+              className={running && calibPhase === "idle" ? "btn-hero" : "btn-ghost opacity-60"}
+            >
+              {calibPhase === "idle" ? "Avvia taratura" : "Taratura in corso…"}
+            </button>
+            <button onClick={resetCalibration} className="btn-ghost">
+              Ripristina
+            </button>
+            <span className="text-xs text-muted-foreground">
+              {calibrated ? "Profilo personale attivo" : "Profilo predefinito"} · soglia{" "}
+              {calib.on.toFixed(2)} / rilascio {calib.off.toFixed(2)}
+            </span>
+          </div>
+
+          {!running && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Avvia prima la vista live per poter tarare.
+            </p>
+          )}
+
+          <div className="mt-4">
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Sensibilità: {sensitivity > 0 ? `+${sensitivity}` : sensitivity}
+            </label>
+            <input
+              type="range"
+              min={-15}
+              max={15}
+              step={1}
+              value={sensitivity}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setSensitivity(v);
+                sensRef.current = v / 100;
+                if (calibrated) saveCalib(calib.on, calib.off);
+              }}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Più a destra = serve un contatto più stretto; più a sinistra = risposta più facile.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }
 
