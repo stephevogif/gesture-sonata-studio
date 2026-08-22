@@ -271,6 +271,7 @@ export class GestureSynthEngine {
     vibrato.type = "sine";
 
     const oscs: OscillatorNode[] = [];
+    const ratios: number[] = [];
     let noise: AudioBufferSourceNode | undefined;
     let noiseGain: GainNode | undefined;
     let attack = 0.12;
@@ -280,21 +281,25 @@ export class GestureSynthEngine {
     let lfo: OscillatorNode | undefined;
     let lfoGain: GainNode | undefined;
     let sub: OscillatorNode | undefined;
+    let sustain: number | undefined;
+    let decay: number | undefined;
     const bassPatches: InstrumentId[] = ["reese", "acid", "growl"];
     const isBass = bassPatches.includes(inst);
 
-    const addOsc = (type: OscillatorType, detune = 0, level = 1) => {
+    const addOsc = (type: OscillatorType, detune = 0, level = 1, ratio = 1) => {
       const o = ctx.createOscillator();
       o.type = type;
-      o.frequency.value = freq;
+      o.frequency.value = freq * ratio;
       o.detune.value = detune;
       const g = ctx.createGain();
       g.gain.value = level;
       o.connect(g).connect(filter);
       vibratoGain.connect(o.detune);
       oscs.push(o);
+      ratios.push(ratio);
       return o;
     };
+
 
     if (inst === "violin") {
       addOsc("sawtooth", 0, 0.55);
