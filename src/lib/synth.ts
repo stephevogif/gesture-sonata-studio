@@ -1,12 +1,41 @@
-export type InstrumentId = "violin" | "winds" | "pads" | "reese" | "acid" | "growl";
+export type InstrumentId =
+  | "violin"
+  | "winds"
+  | "pads"
+  | "reese"
+  | "acid"
+  | "growl"
+  | "harp"
+  | "piano"
+  | "kalimba"
+  | "bowl"
+  | "glocken"
+  | "choir"
+  | "pluckAmb"
+  | "subpad";
 
-export const INSTRUMENTS: { id: InstrumentId; name: string; blurb: string }[] = [
-  { id: "reese", name: "Reese Bass", blurb: "Basso detunato, sporco e profondo" },
-  { id: "acid", name: "Acid 303", blurb: "Squelch acido con filtro urlante" },
-  { id: "growl", name: "Growl / Dubstep", blurb: "Wobble aggressivo e distorto" },
-  { id: "violin", name: "Violino", blurb: "Archi espressivi con vibrato" },
-  { id: "winds", name: "Fiati", blurb: "Legni ariosi e soffiati" },
-  { id: "pads", name: "Pads", blurb: "Tappeti ampi e riverberati" },
+export type InstrumentGroup = "zen" | "electro";
+
+export const INSTRUMENTS: {
+  id: InstrumentId;
+  name: string;
+  blurb: string;
+  group: InstrumentGroup;
+}[] = [
+  { id: "harp", name: "Arpa di cristallo", blurb: "Pizzicato brillante, coda lunga", group: "zen" },
+  { id: "piano", name: "Pianoforte notturno", blurb: "Feltro morbido, attacco dolce", group: "zen" },
+  { id: "kalimba", name: "Kalimba", blurb: "Pizzicato legnoso, meditativo", group: "zen" },
+  { id: "bowl", name: "Campane tibetane", blurb: "Metallo profondo, note infinite", group: "zen" },
+  { id: "glocken", name: "Glockenspiel", blurb: "Cristallino e luminoso", group: "zen" },
+  { id: "choir", name: "Coro etereo", blurb: "Voci ampie e riverberate", group: "zen" },
+  { id: "violin", name: "Violino", blurb: "Archi espressivi con vibrato", group: "zen" },
+  { id: "winds", name: "Fiati", blurb: "Legni ariosi e soffiati", group: "zen" },
+  { id: "pads", name: "Pads", blurb: "Tappeti ampi e riverberati", group: "zen" },
+  { id: "pluckAmb", name: "Ambient pluck", blurb: "Pluck digitale downtempo", group: "electro" },
+  { id: "subpad", name: "Warm sub pad", blurb: "Basso morbido e continuo", group: "electro" },
+  { id: "reese", name: "Reese Bass", blurb: "Basso detunato, sporco e profondo", group: "electro" },
+  { id: "acid", name: "Acid 303", blurb: "Squelch acido con filtro urlante", group: "electro" },
+  { id: "growl", name: "Growl / Dubstep", blurb: "Wobble aggressivo e distorto", group: "electro" },
 ];
 
 /** Semitone transpose per instrument (bass patches play way lower). */
@@ -17,7 +46,16 @@ export const INSTRUMENT_SHIFT: Record<InstrumentId, number> = {
   reese: -24,
   acid: -12,
   growl: -24,
+  harp: 12,
+  piano: 0,
+  kalimba: 12,
+  bowl: 0,
+  glocken: 24,
+  choir: 0,
+  pluckAmb: 12,
+  subpad: -12,
 };
+
 
 export type ScaleId =
   | "minorPent"
@@ -103,10 +141,17 @@ type VoiceNodes = {
   lfoGain?: GainNode | undefined;
   sub?: OscillatorNode | undefined;
   isBass?: boolean | undefined;
+  /** plucky patches decay toward this fraction of the peak while held */
+  sustain?: number | undefined;
+  /** time constant of the plucky decay */
+  decay?: number | undefined;
+  /** oscillator frequency ratios (index-aligned with oscs) */
+  ratios: number[];
   inst: InstrumentId;
   attack: number;
   release: number;
 };
+
 
 type ArpTarget = {
   degree: number;
@@ -226,6 +271,7 @@ export class GestureSynthEngine {
     vibrato.type = "sine";
 
     const oscs: OscillatorNode[] = [];
+    const ratios: number[] = [];
     let noise: AudioBufferSourceNode | undefined;
     let noiseGain: GainNode | undefined;
     let attack = 0.12;
@@ -235,21 +281,25 @@ export class GestureSynthEngine {
     let lfo: OscillatorNode | undefined;
     let lfoGain: GainNode | undefined;
     let sub: OscillatorNode | undefined;
+    let sustain: number | undefined;
+    let decay: number | undefined;
     const bassPatches: InstrumentId[] = ["reese", "acid", "growl"];
     const isBass = bassPatches.includes(inst);
 
-    const addOsc = (type: OscillatorType, detune = 0, level = 1) => {
+    const addOsc = (type: OscillatorType, detune = 0, level = 1, ratio = 1) => {
       const o = ctx.createOscillator();
       o.type = type;
-      o.frequency.value = freq;
+      o.frequency.value = freq * ratio;
       o.detune.value = detune;
       const g = ctx.createGain();
       g.gain.value = level;
       o.connect(g).connect(filter);
       vibratoGain.connect(o.detune);
       oscs.push(o);
+      ratios.push(ratio);
       return o;
     };
+
 
     if (inst === "violin") {
       addOsc("sawtooth", 0, 0.55);
@@ -335,6 +385,98 @@ export class GestureSynthEngine {
       subG.gain.value = 0.55;
       sub.connect(subG).connect(gain);
       sub.start(now);
+    } else if (inst === "harp") {
+      addOsc("triangle", 0, 0.5);
+      addOsc("sine", 4, 0.35, 2);
+      addOsc("sine", -4, 0.12, 3);
+      filter.frequency.value = 5200;
+      filter.Q.value = 0.7;
+      vibrato.frequency.value = 3.2;
+      vibratoGain.gain.value = 2;
+      attack = 0.006;
+      release = 1.1;
+      sustain = 0.12;
+      decay = 0.55;
+    } else if (inst === "piano") {
+      addOsc("triangle", 0, 0.55);
+      addOsc("sine", 0, 0.3, 2);
+      addOsc("sine", 3, 0.1, 4);
+      filter.frequency.value = 3200;
+      filter.Q.value = 0.6;
+      vibrato.frequency.value = 1.2;
+      vibratoGain.gain.value = 1;
+      attack = 0.02;
+      release = 1.4;
+      sustain = 0.2;
+      decay = 0.9;
+    } else if (inst === "kalimba") {
+      addOsc("sine", 0, 0.6);
+      addOsc("sine", 0, 0.18, 2.76);
+      addOsc("sine", 0, 0.08, 5.4);
+      filter.frequency.value = 4200;
+      vibrato.frequency.value = 2.4;
+      vibratoGain.gain.value = 1;
+      attack = 0.004;
+      release = 0.7;
+      sustain = 0.08;
+      decay = 0.28;
+    } else if (inst === "bowl") {
+      addOsc("sine", 0, 0.5);
+      addOsc("sine", 0, 0.24, 2.4);
+      addOsc("sine", 0, 0.14, 4.3);
+      addOsc("sine", 6, 0.08, 6.7);
+      filter.frequency.value = 3000;
+      vibrato.frequency.value = 0.45;
+      vibratoGain.gain.value = 4;
+      attack = 0.25;
+      release = 3.2;
+      sustain = 0.45;
+      decay = 2.4;
+    } else if (inst === "glocken") {
+      addOsc("sine", 0, 0.5);
+      addOsc("sine", 0, 0.28, 3.01);
+      addOsc("sine", 0, 0.12, 6.2);
+      filter.frequency.value = 8000;
+      vibrato.frequency.value = 1.6;
+      vibratoGain.gain.value = 1;
+      attack = 0.003;
+      release = 1.6;
+      sustain = 0.1;
+      decay = 0.5;
+    } else if (inst === "choir") {
+      addOsc("sawtooth", -8, 0.18);
+      addOsc("sawtooth", 8, 0.18);
+      addOsc("triangle", 0, 0.3);
+      addOsc("sine", 0, 0.2, 2);
+      filter.type = "lowpass";
+      filter.frequency.value = 1600;
+      filter.Q.value = 2.5;
+      vibrato.frequency.value = 4.8;
+      vibratoGain.gain.value = 7;
+      attack = 0.55;
+      release = 1.8;
+    } else if (inst === "pluckAmb") {
+      addOsc("square", 0, 0.3);
+      addOsc("triangle", 7, 0.35);
+      addOsc("sine", -7, 0.2, 2);
+      filter.frequency.value = 3600;
+      filter.Q.value = 2;
+      vibrato.frequency.value = 5;
+      vibratoGain.gain.value = 3;
+      attack = 0.005;
+      release = 0.9;
+      sustain = 0.14;
+      decay = 0.35;
+    } else if (inst === "subpad") {
+      addOsc("sine", 0, 0.55);
+      addOsc("triangle", -6, 0.2);
+      addOsc("sine", 6, 0.18, 2);
+      filter.frequency.value = 900;
+      filter.Q.value = 0.8;
+      vibrato.frequency.value = 0.35;
+      vibratoGain.gain.value = 4;
+      attack = 0.7;
+      release = 1.8;
     } else {
       addOsc("sawtooth", -9, 0.3);
       addOsc("sawtooth", 9, 0.3);
@@ -360,6 +502,7 @@ export class GestureSynthEngine {
 
     return {
       oscs,
+      ratios,
       gain,
       filter,
       vibrato,
@@ -372,10 +515,13 @@ export class GestureSynthEngine {
       lfoGain,
       sub,
       isBass,
+      sustain,
+      decay,
       inst,
       attack,
       release,
     };
+
   }
 
   private getVoice(id: string, freq: number, inst: InstrumentId) {
@@ -399,10 +545,23 @@ export class GestureSynthEngine {
     const v = this.getVoice(id, freq, inst ?? this.instrument);
     const now = ctx.currentTime;
     const glide = v.inst === "pads" ? 0.25 : v.isBass ? 0.04 : 0.08;
-    v.oscs.forEach((o) => o.frequency.setTargetAtTime(freq, now, glide));
+    v.oscs.forEach((o, i) =>
+      o.frequency.setTargetAtTime(freq * (v.ratios[i] ?? 1), now, glide),
+    );
     v.sub?.frequency.setTargetAtTime(freq / 2, now, glide);
     const peak = v.isBass ? 0.5 : 0.34;
-    v.gain.gain.setTargetAtTime(Math.min(peak, amount * peak), now, v.attack);
+    const target = Math.min(peak, amount * peak);
+    if (v.sustain !== undefined) {
+      // plucky patches: quick swell then decay to a soft tail while held
+      const g = v.gain.gain;
+      if (g.value < target * 0.35) {
+        g.setTargetAtTime(target, now, v.attack);
+      } else {
+        g.setTargetAtTime(target * v.sustain, now, v.decay ?? 0.5);
+      }
+    } else {
+      v.gain.gain.setTargetAtTime(target, now, v.attack);
+    }
     this.shapeFilter(v, bright, amount, now);
   }
 
@@ -412,8 +571,9 @@ export class GestureSynthEngine {
     const ctx = this.ctx;
     const v = this.getVoice(id, freq, inst);
     const now = ctx.currentTime;
-    v.oscs.forEach((o) => o.frequency.setValueAtTime(freq, now));
+    v.oscs.forEach((o, i) => o.frequency.setValueAtTime(freq * (v.ratios[i] ?? 1), now));
     v.sub?.frequency.setValueAtTime(freq / 2, now);
+
     const peak = (v.isBass ? 0.5 : 0.34) * Math.min(1, amount);
     const g = v.gain.gain;
     g.cancelScheduledValues(now);

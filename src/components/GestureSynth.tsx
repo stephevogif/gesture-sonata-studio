@@ -32,6 +32,11 @@ import {
 import { detectKey } from "@/lib/keyDetect";
 
 
+const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
+  { id: "zen", label: "Zen / Calmi" },
+  { id: "electro", label: "Elettronici / Bass" },
+];
+
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
 type PanelId = "sound" | "fx" | "scale" | "arp" | "calib";
@@ -149,18 +154,20 @@ export default function GestureSynth() {
           setListenLevel(level);
         },
       });
+      // applica subito tonica e scala (anche mentre stai suonando)
       setRootPc(res.rootPc);
       setScale(res.scaleId);
-      const name = `${NOTE_NAMES[res.rootPc]} ${res.mode === "minor" ? "minore" : "maggiore"}`;
-      const conf = res.confidence > 0.6 ? "alta" : res.confidence > 0.3 ? "media" : "bassa";
+      engineRef.current?.setScale(scaleSteps(res.scaleId), res.rootPc);
+      const scaleName = SCALES.find((s) => s.id === res.scaleId)?.name ?? "";
+      const name = `${NOTE_NAMES[res.rootPc]} ${scaleName}`;
       setListenMsg(
         res.confidence > 0.3
-          ? `Rilevato: ${name} — confidenza ${conf}`
-          : `Rilevato: ${name} — confidenza bassa, prova di nuovo con più suono`,
+          ? `Applicato: ${name}`
+          : `Applicato: ${name} — confidenza bassa, riprova con più suono`,
       );
     } catch (e) {
       const err = e as Error;
-      if (err.name === "AbortError") setListenMsg("Ascolto annullato.");
+      if (err.name === "AbortError") setListenMsg("Ascolto interrotto.");
       else if (err.name === "NotAllowedError")
         setListenMsg("Permesso microfono negato.");
       else setListenMsg(err.message || "Non è stato possibile ascoltare.");
@@ -172,7 +179,11 @@ export default function GestureSynth() {
   }, []);
 
   const startListening = useCallback(() => runListening(listenDuration), [runListening, listenDuration]);
-  const quickListen = useCallback(() => runListening(16000), [runListening]);
+  const toggleListen = useCallback(() => {
+    if (listening) listenAbortRef.current?.abort();
+    else void runListening(listenDuration);
+  }, [listening, runListening, listenDuration]);
+
 
 
   useEffect(() => () => listenAbortRef.current?.abort(), []);
@@ -759,9 +770,8 @@ export default function GestureSynth() {
           Libero
         </button>
         <button
-          onClick={quickListen}
-          disabled={listening}
-          aria-label="Rileva scala dal microfono"
+          onClick={toggleListen}
+          aria-label={listening ? "Ferma il microfono" : "Rileva scala dal microfono"}
           className={
             (listening
               ? "border-primary bg-primary/15 text-primary animate-pulse"
@@ -769,9 +779,16 @@ export default function GestureSynth() {
             " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
           }
         >
-          <Mic className="h-5 w-5" />
-          {listening ? "Ascolto…" : "Rileva"}
+          {listening ? (
+            <span className="h-4 w-4 rounded-[2px] bg-primary" />
+          ) : (
+            <Mic className="h-5 w-5" />
+          )}
+          {listening
+            ? `Stop ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s`
+            : "Rileva"}
         </button>
+
       </div>
 
       <div className="celestial-frame mt-3 rounded-sm shadow-glow">
@@ -881,18 +898,29 @@ export default function GestureSynth() {
           </div>
 
           {mode !== "split" ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              {INSTRUMENTS.map((i) => (
-                <button
-                  key={i.id}
-                  onClick={() => pickInstrument(i.id)}
-                  className={
-                    instrument === i.id ? "instrument-card instrument-card-active" : "instrument-card"
-                  }
-                >
-                  <span className="font-display text-lg">{i.name}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">{i.blurb}</span>
-                </button>
+            <div className="mt-3 space-y-3">
+              {INSTRUMENT_GROUPS.map((g) => (
+                <div key={g.id}>
+                  <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                    {g.label}
+                  </span>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    {INSTRUMENTS.filter((i) => i.group === g.id).map((i) => (
+                      <button
+                        key={i.id}
+                        onClick={() => pickInstrument(i.id)}
+                        className={
+                          instrument === i.id
+                            ? "instrument-card instrument-card-active"
+                            : "instrument-card"
+                        }
+                      >
+                        <span className="font-display text-lg">{i.name}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">{i.blurb}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
@@ -906,10 +934,14 @@ export default function GestureSynth() {
                   value={leftInstrument}
                   onChange={(e) => setLeftInstrument(e.target.value as InstrumentId)}
                 >
-                  {INSTRUMENTS.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
+                  {INSTRUMENT_GROUPS.map((g) => (
+                    <optgroup key={g.id} label={g.label}>
+                      {INSTRUMENTS.filter((i) => i.group === g.id).map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -922,15 +954,20 @@ export default function GestureSynth() {
                   value={rightInstrument}
                   onChange={(e) => setRightInstrument(e.target.value as InstrumentId)}
                 >
-                  {INSTRUMENTS.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
+                  {INSTRUMENT_GROUPS.map((g) => (
+                    <optgroup key={g.id} label={g.label}>
+                      {INSTRUMENTS.filter((i) => i.group === g.id).map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
             </div>
           )}
+
         </div>
       )}
 
