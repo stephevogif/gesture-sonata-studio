@@ -131,7 +131,7 @@ export default function GestureSynth() {
   const [listenMsg, setListenMsg] = useState<string | null>(null);
   const listenAbortRef = useRef<AbortController | null>(null);
 
-  const startListening = useCallback(async () => {
+  const runListening = useCallback(async (durationMs: number) => {
     listenAbortRef.current?.abort();
     const ac = new AbortController();
     listenAbortRef.current = ac;
@@ -141,7 +141,7 @@ export default function GestureSynth() {
     setListenMsg(null);
     try {
       const res = await detectKey({
-        durationMs: listenDuration,
+        durationMs,
         signal: ac.signal,
         onProgress: ({ progress, level }) => {
           setListenProgress(progress);
@@ -168,7 +168,11 @@ export default function GestureSynth() {
       setListenProgress(0);
       setListenLevel(0);
     }
-  }, [listenDuration]);
+  }, []);
+
+  const startListening = useCallback(() => runListening(listenDuration), [runListening, listenDuration]);
+  const quickListen = useCallback(() => runListening(3000), [runListening]);
+
 
   useEffect(() => () => listenAbortRef.current?.abort(), []);
 
