@@ -34,8 +34,17 @@ type Particle = {
 const PINCH_TIPS = [8, 12, 16, 20];
 const PINCH_OFFSETS = [0, 2, 4, 6];
 
+const HAND_CONNECTIONS: [number, number][] = [
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16],
+  [13, 17], [17, 18], [18, 19], [19, 20],
+  [0, 17],
+];
 
 const STEPS = 21;
+
 
 export default function GestureSynth() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
