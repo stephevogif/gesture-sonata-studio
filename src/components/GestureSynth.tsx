@@ -375,6 +375,7 @@ export default function GestureSynth() {
         rightInstrument: ri,
         arpLeft: aL,
         arpRight: aR,
+        freePitch: fp,
       } = cfg.current;
 
       let maxSoundLevel = 0;
