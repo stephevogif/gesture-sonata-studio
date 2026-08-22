@@ -261,5 +261,5 @@
 @utility instrument-card-active {
   border-color: var(--primary);
   box-shadow: inset 0 0 0 1px var(--primary), 0 18px 40px -30px var(--primary);
-  background: color-mix(in oklch, var(--card) 80%, var(--primary) 20%);
+  background: color-mix(in oklch, var(--card) 90%, var(--primary) 10%);
 }
