@@ -2,21 +2,24 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import TutorialArt from "@/components/TutorialArt";
 import {
+  ArrowLeft,
   ArrowRight,
-  Crosshair,
   Hand,
+  HelpCircle,
   KeyboardMusic,
   Lock,
   Mic,
   Music4,
   Play,
   Repeat,
-  SlidersHorizontal,
-  Square,
-  Sparkles,
   Save,
+  SlidersHorizontal,
+  Sparkles,
+  Square,
   Trash2,
 } from "lucide-react";
+
+
 
 
 
@@ -57,7 +60,7 @@ const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
-type PanelId = "sound" | "fx" | "scale" | "arp" | "calib" | "save";
+type PanelId = "sound" | "fx" | "scale" | "arp" | "save" | "help";
 
 const PRESETS_KEY = "skysynth.presets.v1";
 const MAX_PRESETS = 40;
@@ -1247,13 +1250,9 @@ export default function GestureSynth() {
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-28 pt-5">
         {/* header */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-          <button
-            onClick={() => setPanel((p) => (p === "calib" ? null : "calib"))}
-            aria-label="Taratura"
-            className="night-orb-ghost"
-          >
-            <Crosshair className="h-4 w-4" />
-          </button>
+          <Link to="/" aria-label="Torna alla home" className="night-orb-ghost">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
           <div className="min-w-0 text-center">
             <p className="text-[9px] font-medium uppercase tracking-[0.5em] text-white/65">
               Steph Evo&apos;s
@@ -1262,14 +1261,24 @@ export default function GestureSynth() {
               Sky Synth
             </p>
           </div>
-          <button
-            onClick={() => setPanel((p) => (p === "save" ? null : "save"))}
-            aria-label="Progetti"
-            className="night-orb-ghost"
-          >
-            <Save className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPanel((p) => (p === "save" ? null : "save"))}
+              aria-label="Progetti"
+              className="night-orb-ghost"
+            >
+              <Save className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
+              aria-label="Guida Night Sky"
+              className="night-orb-ghost"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </div>
         </header>
+
 
         <h1 className="night-title mt-4 text-center text-[2.4rem] leading-none tracking-[0.14em] sm:text-6xl">
           NIGHT SKY
@@ -1364,11 +1373,16 @@ export default function GestureSynth() {
                 {status || "Consenti l'accesso alla fotocamera per iniziare a suonare."}
               </p>
               {camError && <p className="max-w-xs text-xs text-[#ffd9a8]">{camError}</p>}
-              <button onClick={start} className="night-chip night-chip-on">
-                {camError ? "Riprova" : "Inizia a suonare"}
+              <button
+                onClick={start}
+                aria-label={camError ? "Riprova" : "Play"}
+                className={`night-play ${camError ? "" : "night-play-breathe"}`}
+              >
+                <Play className="h-5 w-5" />
               </button>
             </div>
           )}
+
           {running && (listening || listenMsg) && (
             <span className={`night-tag absolute top-0 ${listening ? "night-tag-on" : ""}`}>
               {listening
@@ -1990,61 +2004,22 @@ export default function GestureSynth() {
       )}
 
 
-      {panel === "calib" && (
-        <div className="mt-3 celestial-panel rounded-sm p-4">
-          <p className="text-sm text-muted-foreground">
-            La taratura misura la tua mano e regola quando il contatto tra pollice e dito viene
-            riconosciuto. Serve la fotocamera attiva.
-          </p>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              onClick={runCalibration}
-              disabled={!running || calibPhase !== "idle"}
-              className={running && calibPhase === "idle" ? "btn-hero" : "btn-ghost opacity-60"}
-            >
-              {calibPhase === "idle" ? "Avvia taratura" : "Taratura in corso…"}
-            </button>
-            <button onClick={resetCalibration} className="btn-ghost">
-              Ripristina
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {calibrated ? "Profilo personale attivo" : "Profilo predefinito"} · soglia{" "}
-              {calib.on.toFixed(2)} / rilascio {calib.off.toFixed(2)}
-            </span>
-          </div>
-
-          {!running && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Avvia prima la vista live per poter tarare.
-            </p>
-          )}
-
-          <div className="mt-4">
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Sensibilità: {sensitivity > 0 ? `+${sensitivity}` : sensitivity}
-            </label>
-            <input
-              aria-label="Sensibilità"
-              type="range"
-              min={-15}
-              max={15}
-              step={1}
-              value={sensitivity}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setSensitivity(v);
-                sensRef.current = v / 100;
-                if (calibrated) saveCalib(calib.on, calib.off);
-              }}
-              className="mt-3 w-full accent-[var(--primary)]"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Più a destra = serve un contatto più stretto; più a sinistra = risposta più facile.
-            </p>
-          </div>
+      {panel === "help" && (
+        <div className="night-glass mt-3 space-y-2 p-4">
+          <h2 className="text-sm font-bold">Guida rapida</h2>
+          <ol className="space-y-1.5 text-[12px] text-white/80">
+            {TUT_STEPS.map((s, i) => (
+              <li key={i}>
+                <b>
+                  {i + 1}. {s.t}
+                </b>{" "}
+                — {s.d}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
+
 
       {panel === "save" && (
         <div className="mt-3 celestial-panel rounded-sm p-4">
