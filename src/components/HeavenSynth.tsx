@@ -74,13 +74,47 @@ const STEPS = [
   { a: "keys" as const, t: "Scorciatoie", d: "Spazio = play/pausa, 1–4 traccia, M mute, S solo, Canc svuota, Shift+Canc svuota tutto." },
 ];
 
+/** sprite morbido riutilizzabile (evita gradienti creati a ogni frame) */
+function makeBlobSprite(size: number, rgb: string) {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const x = c.getContext("2d")!;
+  const g = x.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, `rgba(${rgb},1)`);
+  g.addColorStop(0.45, `rgba(${rgb},0.6)`);
+  g.addColorStop(1, `rgba(${rgb},0)`);
+  x.fillStyle = g;
+  x.fillRect(0, 0, size, size);
+  return c;
+}
+
+function makeSunSprite(size: number) {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const x = c.getContext("2d")!;
+  const g = x.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0, "rgba(255,252,235,1)");
+  g.addColorStop(0.35, "rgba(255,238,180,0.7)");
+  g.addColorStop(0.7, "rgba(255,220,140,0.25)");
+  g.addColorStop(1, "rgba(255,214,140,0)");
+  x.fillStyle = g;
+  x.fillRect(0, 0, size, size);
+  return c;
+}
+
 export default function HeavenSynth() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
   const sunRef = useRef({ p: -0.25, y: 0.3 });
+  const skyCache = useRef<{ w: number; h: number; grad: CanvasGradient | null }>({ w: 0, h: 0, grad: null });
+  const cloudSprite = useRef<HTMLCanvasElement | null>(null);
+  const sunSprite = useRef<HTMLCanvasElement | null>(null);
+  const fadeRef = useRef(0);
+  const lastFrameRef = useRef(0);
 
   const glowRef = useRef(0);
+
   const activeIdsRef = useRef<string[]>([]);
   const prevNotesRef = useRef<number[]>([]);
   const currentRef = useRef<{ chord: Chord | null; volume: number; filter: number }>({
