@@ -2,19 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
-  Circle,
   Eye,
   EyeOff,
   HelpCircle,
   Mic,
   Music2,
-  Pause,
   Play,
   Repeat,
   Settings2,
   Sliders,
   Square,
-  Trash2,
 } from "lucide-react";
 import {
   GestureSynthEngine,
