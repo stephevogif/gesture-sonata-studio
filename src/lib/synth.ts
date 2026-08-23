@@ -196,15 +196,47 @@ type ArpTarget = {
   step: number;
 };
 
+export type ChordId = "off" | "fifth" | "triad" | "seventh" | "sus";
+
+export const CHORDS: { id: ChordId; name: string; degrees: number[] }[] = [
+  { id: "off", name: "Nota singola", degrees: [0] },
+  { id: "fifth", name: "Quinte", degrees: [0, 4] },
+  { id: "triad", name: "Triade", degrees: [0, 2, 4] },
+  { id: "seventh", name: "Settima", degrees: [0, 2, 4, 6] },
+  { id: "sus", name: "Sospeso", degrees: [0, 3, 4] },
+];
+
+export type DivisionId = "1/4" | "1/8" | "1/8T" | "1/16" | "1/16T";
+
+export const DIVISIONS: { id: DivisionId; name: string; perBeat: number }[] = [
+  { id: "1/4", name: "1/4", perBeat: 1 },
+  { id: "1/8", name: "1/8", perBeat: 2 },
+  { id: "1/8T", name: "1/8 terzine", perBeat: 3 },
+  { id: "1/16", name: "1/16", perBeat: 4 },
+  { id: "1/16T", name: "1/16 terzine", perBeat: 6 },
+];
+
 export class GestureSynthEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private wet: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
   private eq: BiquadFilterNode | null = null;
+  private delaySend: GainNode | null = null;
+  private delayL: DelayNode | null = null;
+  private delayR: DelayNode | null = null;
+  private delayFb: GainNode | null = null;
   reverbAmount = 0.35;
+  delayMix = 0.25;
+  delayFeedback = 0.35;
+  delaySync = true;
+  delayDivision: DivisionId = "1/8";
+  delayTime = 0.3;
   eqType: BiquadFilterType = "lowpass";
   eqFreq = 12000;
+  /** 0..1 gesture modulation of the master cutoff */
+  filterMod = 0.5;
+  filterModAmount = 0;
   private voices = new Map<string, VoiceNodes>();
   private buildInst: InstrumentId = "violin";
   instrument: InstrumentId = "violin";
@@ -212,10 +244,17 @@ export class GestureSynthEngine {
   // musical settings
   scale: number[] = scaleSteps("minorPent");
   rootPc = 2; // D
+  chordMode: ChordId = "off";
+  hold = false;
+
+  // tempo
+  bpm = 100;
 
   // arpeggiator
   arpEnabled = false;
-  arpRate = 8; // notes per second
+  arpRate = 8; // notes per second (used when sync is off)
+  arpSync = true;
+  arpDivision: DivisionId = "1/8";
   arpDegrees: number[] = ARP_PATTERNS[0]!.degrees;
   arpRandom = false;
   arpGate = 0.9;
@@ -225,6 +264,20 @@ export class GestureSynthEngine {
   private arpTargets = new Map<string, ArpTarget>();
   private arpTimer: ReturnType<typeof setTimeout> | null = null;
 
+  private divisionSec(div: DivisionId) {
+    const perBeat = DIVISIONS.find((d) => d.id === div)?.perBeat ?? 2;
+    return 60 / Math.max(20, this.bpm) / perBeat;
+  }
+
+  /** effective arpeggiator speed in notes per second */
+  effectiveRate() {
+    return this.arpSync ? 1 / this.divisionSec(this.arpDivision) : Math.max(1, this.arpRate);
+  }
+
+  private effectiveDelayTime() {
+    const t = this.delaySync ? this.divisionSec(this.delayDivision) : this.delayTime;
+    return Math.max(0.02, Math.min(1.9, t));
+  }
 
   async start() {
     if (this.ctx) {
@@ -255,6 +308,30 @@ export class GestureSynthEngine {
     d1.connect(master);
     d2.connect(master);
 
+    // ping-pong delay bus
+    const delaySend = ctx.createGain();
+    delaySend.gain.value = this.delayMix;
+    const dL = ctx.createDelay(2);
+    const dR = ctx.createDelay(2);
+    const t = this.effectiveDelayTime();
+    dL.delayTime.value = t;
+    dR.delayTime.value = t;
+    const panL = ctx.createStereoPanner();
+    panL.pan.value = -0.65;
+    const panR = ctx.createStereoPanner();
+    panR.pan.value = 0.65;
+    const dTone = ctx.createBiquadFilter();
+    dTone.type = "lowpass";
+    dTone.frequency.value = 3200;
+    const dFb = ctx.createGain();
+    dFb.gain.value = this.delayFeedback;
+
+    delaySend.connect(dL);
+    dL.connect(panL).connect(master);
+    dL.connect(dR);
+    dR.connect(panR).connect(master);
+    dR.connect(dTone).connect(dFb).connect(dL);
+
     const eq = ctx.createBiquadFilter();
     eq.type = this.eqType;
     eq.frequency.value = this.eqFreq;
@@ -267,9 +344,14 @@ export class GestureSynthEngine {
     this.wet = wet;
     this.analyser = analyser;
     this.eq = eq;
+    this.delaySend = delaySend;
+    this.delayL = dL;
+    this.delayR = dR;
+    this.delayFb = dFb;
     await ctx.resume();
     this.syncArpTimer();
   }
+
 
   getAnalyser() {
     return this.analyser;
@@ -425,7 +507,7 @@ export class GestureSynthEngine {
         const modGain = ctx.createGain();
         modGain.gain.value = freq * 3;
         mod.connect(modGain).connect(carrier.frequency);
-        mod.start(now);
+
         oscs.push(mod);
         ratios.push(2);
         filter.type = "lowpass";
@@ -586,7 +668,7 @@ export class GestureSynthEngine {
       const modGain = ctx.createGain();
       modGain.gain.value = freq * 1.5;
       mod.connect(modGain).connect(carrier.frequency);
-      mod.start(now);
+
       oscs.push(mod);
       ratios.push(3);
       addOsc("triangle", 5, 0.25, 2);
@@ -643,6 +725,7 @@ export class GestureSynthEngine {
     }
     gain.connect(this.master!);
     if (!isBass) gain.connect(this.wet!);
+    if (this.delaySend) gain.connect(this.delaySend);
 
     return {
       oscs,
@@ -737,7 +820,39 @@ export class GestureSynthEngine {
     if (v.noiseGain) v.noiseGain.gain.setTargetAtTime(0.02 + amount * 0.08, now, 0.1);
   }
 
-  noteOff(id: string) {
+  /** play a chord (or a single note) built on a scale degree */
+  noteOnChord(
+    id: string,
+    baseMidi: number,
+    degree: number,
+    amount: number,
+    bright: number,
+    inst: InstrumentId,
+  ) {
+    const offsets = CHORDS.find((c) => c.id === this.chordMode)?.degrees ?? [0];
+    const rootSemi = degreeToSemitones(this.scale, degree);
+    offsets.forEach((off, k) => {
+      const semi = degreeToSemitones(this.scale, degree + off) - rootSemi;
+      const vid = k === 0 ? id : `${id}~${k}`;
+      this.noteOn(vid, midiToFreq(baseMidi + semi), amount * (k === 0 ? 1 : 0.55), bright, inst);
+    });
+    // spegni eventuali voci d'accordo in eccesso (cambio di modalità)
+    for (const key of [...this.voices.keys()]) {
+      if (!key.startsWith(`${id}~`)) continue;
+      const k = Number(key.slice(id.length + 1));
+      if (!Number.isNaN(k) && k >= offsets.length) this.noteOff(key, true);
+    }
+  }
+
+  noteOff(id: string, force = false) {
+    if (this.hold && !force) return;
+    for (const key of [...this.voices.keys()]) {
+      if (key.startsWith(`${id}~`)) this.releaseVoice(key);
+    }
+    this.releaseVoice(id);
+  }
+
+  private releaseVoice(id: string) {
     const v = this.voices.get(id);
     if (!v || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -755,13 +870,79 @@ export class GestureSynthEngine {
 
   allOff() {
     this.arpTargets.clear();
-    [...this.voices.keys()].forEach((k) => this.noteOff(k));
+    [...this.voices.keys()].forEach((k) => this.releaseVoice(k));
+  }
+
+  setChord(mode: ChordId) {
+    this.chordMode = mode;
+  }
+
+  /** latch: keep the notes ringing until released */
+  setHold(on: boolean) {
+    this.hold = on;
+    if (!on) this.allOff();
   }
 
   setInstrument(i: InstrumentId) {
     this.allOff();
     this.instrument = i;
   }
+
+  /** ping-pong delay controls */
+  setDelay(opts: {
+    mix?: number;
+    feedback?: number;
+    sync?: boolean;
+    division?: DivisionId;
+    time?: number;
+  }) {
+    if (opts.mix !== undefined) this.delayMix = Math.max(0, Math.min(1, opts.mix));
+    if (opts.feedback !== undefined)
+      this.delayFeedback = Math.max(0, Math.min(0.85, opts.feedback));
+    if (opts.sync !== undefined) this.delaySync = opts.sync;
+    if (opts.division) this.delayDivision = opts.division;
+    if (opts.time !== undefined) this.delayTime = opts.time;
+    this.applyDelay();
+  }
+
+  private applyDelay() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.delaySend?.gain.setTargetAtTime(this.delayMix, now, 0.05);
+    this.delayFb?.gain.setTargetAtTime(this.delayFeedback, now, 0.05);
+    const t = this.effectiveDelayTime();
+    this.delayL?.delayTime.setTargetAtTime(t, now, 0.08);
+    this.delayR?.delayTime.setTargetAtTime(t, now, 0.08);
+  }
+
+  /** global tempo in BPM; arp and delay follow it when synced */
+  setTempo(bpm: number) {
+    this.bpm = Math.max(40, Math.min(220, bpm));
+    this.applyDelay();
+    this.syncArpTimer();
+  }
+
+  /**
+   * gesture modulation of the master cutoff.
+   * value 0..1, amount 0..1 (0 = no modulation)
+   */
+  setFilterMod(value: number, amount = this.filterModAmount) {
+    this.filterMod = Math.max(0, Math.min(1, value));
+    this.filterModAmount = Math.max(0, Math.min(1, amount));
+    this.applyEq();
+  }
+
+  private applyEq() {
+    if (!this.eq || !this.ctx) return;
+    const factor =
+      this.filterModAmount > 0
+        ? 1 + this.filterModAmount * (this.filterMod * 5 - 1.5)
+        : 1;
+    const freq = Math.max(60, Math.min(18000, this.eqFreq * Math.max(0.15, factor)));
+    this.eq.type = this.eqType;
+    this.eq.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.06);
+  }
+
 
   /** 0..1 amount of the delay/reverb send */
   setReverb(amount: number) {
@@ -775,10 +956,7 @@ export class GestureSynthEngine {
   setEq(type: BiquadFilterType, freq: number) {
     this.eqType = type;
     this.eqFreq = freq;
-    if (this.eq && this.ctx) {
-      this.eq.type = type;
-      this.eq.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
-    }
+    this.applyEq();
   }
 
   setScale(steps: number[], rootPc: number) {
@@ -794,12 +972,14 @@ export class GestureSynthEngine {
     gate?: number;
     octaves?: number;
     swing?: number;
+    sync?: boolean;
+    division?: DivisionId;
   }) {
     if (opts.enabled !== undefined) {
       this.arpEnabled = opts.enabled;
       if (!opts.enabled) {
         this.arpTargets.clear();
-        [...this.voices.keys()].forEach((k) => this.noteOff(k));
+        [...this.voices.keys()].forEach((k) => this.releaseVoice(k));
       }
     }
     if (opts.rate !== undefined) this.arpRate = opts.rate;
@@ -808,6 +988,8 @@ export class GestureSynthEngine {
     if (opts.gate !== undefined) this.arpGate = Math.max(0.05, Math.min(1.5, opts.gate));
     if (opts.octaves !== undefined) this.arpOctaves = Math.max(1, Math.min(3, Math.round(opts.octaves)));
     if (opts.swing !== undefined) this.arpSwing = Math.max(0, Math.min(0.6, opts.swing));
+    if (opts.sync !== undefined) this.arpSync = opts.sync;
+    if (opts.division) this.arpDivision = opts.division;
     this.syncArpTimer();
   }
 
@@ -818,8 +1000,10 @@ export class GestureSynthEngine {
   }
 
   clearArpTarget(id: string) {
-    if (this.arpTargets.delete(id)) this.noteOff(id);
+    if (this.hold) return;
+    if (this.arpTargets.delete(id)) this.noteOff(id, true);
   }
+
 
   private syncArpTimer() {
     if (this.arpTimer) {
@@ -829,7 +1013,7 @@ export class GestureSynthEngine {
     if (!this.arpEnabled || !this.ctx) return;
     this.arpTick = 0;
     const schedule = () => {
-      const base = 1000 / Math.max(1, this.arpRate);
+      const base = 1000 / this.effectiveRate();
       const swung =
         this.arpSwing > 0
           ? this.arpTick % 2 === 0
@@ -840,7 +1024,8 @@ export class GestureSynthEngine {
       this.tickArp(swung / 1000);
       this.arpTimer = setTimeout(schedule, swung);
     };
-    this.arpTimer = setTimeout(schedule, 1000 / Math.max(1, this.arpRate));
+    this.arpTimer = setTimeout(schedule, 1000 / this.effectiveRate());
+
   }
 
   private tickArp(periodSec: number) {

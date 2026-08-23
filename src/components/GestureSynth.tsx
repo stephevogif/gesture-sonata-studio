@@ -3,6 +3,7 @@ import {
   Crosshair,
   Hand,
   KeyboardMusic,
+  Lock,
   Mic,
   Music4,
 
@@ -15,6 +16,8 @@ import {
 
 import {
   ARP_PATTERNS,
+  CHORDS,
+  DIVISIONS,
   GestureSynthEngine,
   INSTRUMENTS,
   INSTRUMENT_SHIFT,
@@ -26,10 +29,13 @@ import {
   positionToDegree,
   scaleSteps,
   type ArpPatternId,
+  type ChordId,
+  type DivisionId,
   type InstrumentId,
   type ScaleId,
 } from "@/lib/synth";
 import { detectKey } from "@/lib/keyDetect";
+
 
 
 const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
@@ -129,10 +135,22 @@ export default function GestureSynth() {
   const [arpGate, setArpGate] = useState(90);
   const [arpOctaves, setArpOctaves] = useState(1);
   const [arpSwing, setArpSwing] = useState(0);
+  const [bpm, setBpm] = useState(100);
+  const [arpSync, setArpSync] = useState(true);
+  const [arpDivision, setArpDivision] = useState<DivisionId>("1/8");
+
+  const [chord, setChord] = useState<ChordId>("off");
+  const [hold, setHold] = useState(false);
 
   const [reverb, setReverb] = useState(93);
+  const [delayMix, setDelayMix] = useState(28);
+  const [delayFeedback, setDelayFeedback] = useState(35);
+  const [delaySync, setDelaySync] = useState(true);
+  const [delayDivision, setDelayDivision] = useState<DivisionId>("1/8");
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
   const [eqFreq, setEqFreq] = useState(1200);
+  const [gestureMod, setGestureMod] = useState(40);
+
 
   const [listening, setListening] = useState(false);
   const [listenProgress, setListenProgress] = useState(0);
@@ -212,8 +230,19 @@ export default function GestureSynth() {
     arpLeft,
     arpRight,
     freePitch,
+    gestureMod,
   });
-  cfg.current = { mode, instrument, leftInstrument, rightInstrument, arpLeft, arpRight, freePitch };
+  cfg.current = {
+    mode,
+    instrument,
+    leftInstrument,
+    rightInstrument,
+    arpLeft,
+    arpRight,
+    freePitch,
+    gestureMod,
+  };
+
 
   const stop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -274,17 +303,44 @@ export default function GestureSynth() {
       gate: arpGate / 100,
       octaves: arpOctaves,
       swing: arpSwing / 100,
+      sync: arpSync,
+      division: arpDivision,
     });
-  }, [arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing]);
+  }, [arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, arpSync, arpDivision]);
 
+  useEffect(() => {
+    engineRef.current?.setTempo(bpm);
+  }, [bpm]);
+
+  useEffect(() => {
+    engineRef.current?.setChord(chord);
+  }, [chord]);
+
+  useEffect(() => {
+    engineRef.current?.setHold(hold);
+  }, [hold]);
 
   useEffect(() => {
     engineRef.current?.setReverb(reverb / 100);
   }, [reverb]);
 
   useEffect(() => {
+    engineRef.current?.setDelay({
+      mix: delayMix / 100,
+      feedback: delayFeedback / 100,
+      sync: delaySync,
+      division: delayDivision,
+    });
+  }, [delayMix, delayFeedback, delaySync, delayDivision]);
+
+  useEffect(() => {
+    engineRef.current?.setFilterMod(0.5, gestureMod / 100);
+  }, [gestureMod]);
+
+  useEffect(() => {
     engineRef.current?.setEq(eqType, eqFreq);
   }, [eqType, eqFreq]);
+
 
   const saveCalib = (on: number, off: number) => {
     try {
@@ -395,9 +451,11 @@ export default function GestureSynth() {
         arpLeft: aL,
         arpRight: aR,
         freePitch: fp,
+        gestureMod: gm,
       } = cfg.current;
 
       let maxSoundLevel = 0;
+      let maxMod = 0;
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
         
@@ -456,7 +514,7 @@ export default function GestureSynth() {
                 INSTRUMENT_SHIFT[inst] ?? 0,
               );
               if (arp) engine.setArpTarget(vid, degree, level, bright, inst);
-              else engine.noteOn(vid, midiToFreq(midi), level, bright, inst);
+              else engine.noteOnChord(vid, midi, degree, level, bright, inst);
               next.push({
                 note: midiToName(midi),
                 level,
@@ -519,7 +577,7 @@ export default function GestureSynth() {
           if (level > 0.06) {
             soundLevel = level;
             if (arp) engine.setArpTarget(id, degree, level, freeBright, inst);
-            else engine.noteOn(id, midiToFreq(playMidi), level, freeBright, inst);
+            else engine.noteOnChord(id, playMidi, degree, level, freeBright, inst);
             next.push({
               note: midiToName(Math.round(playMidi)),
               level,
@@ -533,6 +591,7 @@ export default function GestureSynth() {
 
 
         maxSoundLevel = Math.max(maxSoundLevel, soundLevel);
+        if (soundLevel > 0) maxMod = Math.max(maxMod, bright);
 
         // scheletro ben visibile
         ctx.save();
@@ -616,6 +675,7 @@ export default function GestureSynth() {
       });
 
       musicLevelRef.current = musicLevelRef.current * 0.92 + maxSoundLevel * 0.08;
+      if (gm > 0) engine.setFilterMod(maxMod, gm / 100);
 
       // update + draw particelle
       hueRef.current = (hueRef.current + 2.5) % 360;
@@ -669,6 +729,14 @@ export default function GestureSynth() {
       engine.reverbAmount = reverb / 100;
       engine.eqType = eqType;
       engine.eqFreq = eqFreq;
+      engine.bpm = bpm;
+      engine.delayMix = delayMix / 100;
+      engine.delayFeedback = delayFeedback / 100;
+      engine.delaySync = delaySync;
+      engine.delayDivision = delayDivision;
+      engine.chordMode = chord;
+      engine.hold = hold;
+      engine.filterModAmount = gestureMod / 100;
       await engine.start();
       engine.setArp({
         enabled: arpLeft || arpRight,
@@ -678,8 +746,10 @@ export default function GestureSynth() {
         gate: arpGate / 100,
         octaves: arpOctaves,
         swing: arpSwing / 100,
-
+        sync: arpSync,
+        division: arpDivision,
       });
+
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 640, height: 480 },
@@ -714,7 +784,7 @@ export default function GestureSynth() {
       setStatus("Impossibile accedere alla fotocamera o all'audio.");
       setRunning(false);
     }
-  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, reverb, eqType, eqFreq, loop]);
+  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, arpSync, arpDivision, bpm, chord, hold, delayMix, delayFeedback, delaySync, delayDivision, gestureMod, reverb, eqType, eqFreq, loop]);
 
   const pickInstrument = (id: InstrumentId) => {
     setInstrument(id);
@@ -800,8 +870,23 @@ export default function GestureSynth() {
             ? `Stop ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s`
             : "Rileva"}
         </button>
+        <button
+          onClick={() => setHold((v) => !v)}
+          aria-label="Mantieni le note"
+          aria-pressed={hold}
+          className={
+            (hold
+              ? "border-primary bg-primary/15 text-primary"
+              : "border-border bg-card/60 text-muted-foreground") +
+            " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+          }
+        >
+          <Lock className="h-5 w-5" />
+          Hold
+        </button>
 
       </div>
+
 
       <div className="celestial-frame mt-3 rounded-sm shadow-glow">
 
@@ -980,8 +1065,46 @@ export default function GestureSynth() {
             </div>
           )}
 
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Accordi
+              </label>
+              <select
+                className={`mt-2 ${selectClass}`}
+                value={chord}
+                onChange={(e) => setChord(e.target.value as ChordId)}
+              >
+                {CHORDS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Le note extra restano sempre dentro la scala scelta.
+              </p>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Hold
+              </label>
+              <button
+                onClick={() => setHold((v) => !v)}
+                aria-pressed={hold}
+                className={`mt-2 w-full ${hold ? "btn-hero" : "btn-ghost"}`}
+              >
+                {hold ? "Note mantenute" : "Hold off"}
+              </button>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Con Hold attivo le note continuano a suonare finché non lo disattivi.
+              </p>
+            </div>
+          </div>
+
         </div>
       )}
+
 
       {panel === "scale" && (
         <div className="mt-3 grid gap-3 celestial-panel rounded-sm p-4 sm:grid-cols-2">
@@ -1133,18 +1256,73 @@ export default function GestureSynth() {
             </div>
             <div>
               <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                Velocità: {arpRate} note/s
+                Tempo: {bpm} BPM
               </label>
               <input
                 type="range"
-                min={2}
-                max={16}
+                min={40}
+                max={200}
                 step={1}
-                value={arpRate}
-                onChange={(e) => setArpRate(Number(e.target.value))}
+                value={bpm}
+                onChange={(e) => setBpm(Number(e.target.value))}
                 className="mt-3 w-full accent-[var(--primary)]"
               />
             </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Sincronizzazione
+              </label>
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() => setArpSync(true)}
+                  aria-pressed={arpSync}
+                  className={arpSync ? "btn-hero" : "btn-ghost"}
+                >
+                  Sync
+                </button>
+                <button
+                  onClick={() => setArpSync(false)}
+                  aria-pressed={!arpSync}
+                  className={!arpSync ? "btn-hero" : "btn-ghost"}
+                >
+                  Libero
+                </button>
+              </div>
+            </div>
+            {arpSync ? (
+              <div>
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Divisione
+                </label>
+                <select
+                  className={`mt-2 ${selectClass}`}
+                  value={arpDivision}
+                  onChange={(e) => setArpDivision(e.target.value as DivisionId)}
+                >
+                  {DIVISIONS.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Velocità: {arpRate} note/s
+                </label>
+                <input
+                  type="range"
+                  min={2}
+                  max={16}
+                  step={1}
+                  value={arpRate}
+                  onChange={(e) => setArpRate(Number(e.target.value))}
+                  className="mt-3 w-full accent-[var(--primary)]"
+                />
+              </div>
+            )}
+
             <div>
               <label className="text-xs uppercase tracking-widest text-muted-foreground">
                 Gate: {arpGate}%
@@ -1235,8 +1413,85 @@ export default function GestureSynth() {
               className="mt-3 w-full accent-[var(--primary)]"
             />
           </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Delay mix: {delayMix}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={delayMix}
+              onChange={(e) => setDelayMix(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Delay feedback: {delayFeedback}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={85}
+              step={1}
+              value={delayFeedback}
+              onChange={(e) => setDelayFeedback(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Tempo delay
+            </label>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => setDelaySync(true)}
+                aria-pressed={delaySync}
+                className={delaySync ? "btn-hero" : "btn-ghost"}
+              >
+                Sync
+              </button>
+              <button
+                onClick={() => setDelaySync(false)}
+                aria-pressed={!delaySync}
+                className={!delaySync ? "btn-hero" : "btn-ghost"}
+              >
+                Libero
+              </button>
+            </div>
+            {delaySync && (
+              <select
+                className={`mt-2 ${selectClass}`}
+                value={delayDivision}
+                onChange={(e) => setDelayDivision(e.target.value as DivisionId)}
+              >
+                {DIVISIONS.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Modulazione gesto → filtro: {gestureMod}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={gestureMod}
+              onChange={(e) => setGestureMod(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
         </div>
       )}
+
 
       {panel === "calib" && (
         <div className="mt-3 celestial-panel rounded-sm p-4">
