@@ -990,124 +990,78 @@ export default function HeavenSynth() {
         )}
 
 
-        {panel === "loop" && (
+        {panel === "arp" && (
           <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold">Loop pedal</h2>
+              <h2 className="text-sm font-bold">Arpeggiatore</h2>
               <span className="text-[11px] font-semibold text-slate-500">
-                {loop.countIn ? "Preconteggio…" : loop.recording ? "REC" : loop.playing ? "Play" : "Stop"}
+                {arpOn ? "Attivo" : "Spento"}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
-                BPM
-                <input
-                  type="range"
-                  min={60}
-                  max={180}
-                  value={bpm}
-                  onChange={(e) => setBpm(Number(e.target.value))}
-                  className="w-28"
-                />
-                <span className="w-8 text-slate-900">{bpm}</span>
-              </label>
-              <div className="flex gap-1.5">
-                {[1, 2, 4].map((b) => (
-                  <button key={b} onClick={() => setBars(b)} className={chip(bars === b)}>
-                    {b} {b === 1 ? "battuta" : "battute"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => getLooper().record()}
-                className="flex items-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-[12px] font-bold text-white"
-              >
-                <Circle className="h-3.5 w-3.5 fill-current" /> Rec traccia {loop.selected + 1}
+            <div className="flex flex-wrap gap-1.5">
+              <button onClick={() => setArpOn((v) => !v)} className={chip(arpOn)}>
+                {arpOn ? "Arp ON" : "Arp OFF"}
               </button>
-              <button
-                onClick={() => getLooper().toggle()}
-                className="flex items-center gap-1.5 rounded-full bg-sky-700 px-4 py-2 text-[12px] font-bold text-white"
-              >
-                {loop.playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {loop.playing ? "Pausa" : "Play"}
-              </button>
-              <button
-                onClick={() => getLooper().clearAll()}
-                className="flex items-center gap-1.5 rounded-full border border-slate-300 px-4 py-2 text-[12px] font-semibold text-slate-700"
-              >
-                <Trash2 className="h-4 w-4" /> Svuota tutto
+              <button onClick={() => { holdRef.current = false; }} className={chip(false)}>
+                Rilascia hold
               </button>
             </div>
-
-            <div className="space-y-2">
-              {loop.tracks.map((t: LoopTrack) => (
-                <div
-                  key={t.id}
-                  className={`rounded-xl border p-2 ${
-                    loop.selected === t.id ? "border-sky-700 bg-sky-50" : "border-slate-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => getLooper().select(t.id)}
-                      className="rounded-md bg-slate-900 px-2 py-1 text-[11px] font-bold text-white"
-                    >
-                      {t.id + 1}
-                    </button>
-                    <button onClick={() => getLooper().toggleMute(t.id)} className={chip(t.mute)}>
-                      M
-                    </button>
-                    <button onClick={() => getLooper().toggleSolo(t.id)} className={chip(t.solo)}>
-                      S
-                    </button>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      value={t.volume}
-                      onChange={(e) => getLooper().setVolume(t.id, Number(e.target.value))}
-                      className="ml-1 w-20"
-                    />
-                    <button
-                      onClick={() => getLooper().clear(t.id)}
-                      className="ml-auto text-slate-500"
-                      aria-label={`Svuota traccia ${t.id + 1}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="mt-2 flex gap-[2px]">
-                    {Array.from({ length: bars * STEPS_PER_BAR }, (_, s) => {
-                      const ev = t.events.find((e) => e.step === s);
-                      return (
-                        <button
-                          key={s}
-                          onClick={() => ev && getLooper().toggleCell(t.id, s)}
-                          className={`h-6 flex-1 rounded-[3px] ${
-                            ev
-                              ? ev.muted
-                                ? "bg-slate-300"
-                                : "bg-sky-600"
-                              : s % 4 === 0
-                                ? "bg-slate-200"
-                                : "bg-slate-100"
-                          } ${loop.step === s && loop.playing ? "ring-2 ring-rose-500" : ""}`}
-                          aria-label={`Step ${s + 1}`}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+            <label className="block text-[11px] font-semibold text-slate-600">
+              Tempo: <span className="text-slate-900">{bpm} BPM</span>
+              <input
+                type="range"
+                min={50}
+                max={200}
+                value={bpm}
+                onChange={(e) => setBpm(Number(e.target.value))}
+                className="mt-1 w-full accent-sky-700"
+                aria-label="Tempo in BPM"
+              />
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ["1/4", 1],
+                ["1/8", 2],
+                ["1/8T", 3],
+                ["1/16", 4],
+              ] as const).map(([label, div]) => (
+                <button key={label} onClick={() => setArpDiv(div)} className={chip(arpDiv === div)}>
+                  {label}
+                </button>
               ))}
             </div>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ["up", "Salita"],
+                ["down", "Discesa"],
+                ["updown", "Su e giù"],
+                ["octaves", "Ottave"],
+                ["random", "Casuale"],
+              ] as const).map(([id, label]) => (
+                <button key={id} onClick={() => setArpMode(id)} className={chip(arpMode === id)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <label className="block text-[11px] font-semibold text-slate-600">
+              Gate: <span className="text-slate-900">{Math.round(arpGate * 100)}%</span>
+              <input
+                type="range"
+                min={10}
+                max={140}
+                value={Math.round(arpGate * 100)}
+                onChange={(e) => setArpGate(Number(e.target.value) / 100)}
+                className="mt-1 w-full accent-sky-700"
+                aria-label="Lunghezza nota arpeggio"
+              />
+            </label>
             <p className="text-[11px] text-slate-500">
-              Spazio play/pausa · 1–4 traccia · M mute · S solo · Canc svuota · Shift+Canc tutto
+              Gesti: 8 dita = arp OFF · 9 dita = arp ON · 10 dita = hold della nota (si libera
+              cambiando grado).
             </p>
           </section>
         )}
+
 
         {panel === "help" && (
           <section className="heaven-glass mt-4 space-y-2 p-4 text-white">
