@@ -548,12 +548,13 @@ export default function HeavenSynth() {
             </p>
           </div>
           <button
-            onClick={running ? stop : start}
-            aria-label={running ? "Stop" : "Play"}
+            onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
+            aria-label="Guida"
             className="heaven-orb-btn"
           >
-            {running ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            <HelpCircle className="h-4 w-4" />
           </button>
+
         </header>
 
         <h1 className="heaven-title mt-5 text-center text-[2.1rem] leading-none sm:text-5xl">
