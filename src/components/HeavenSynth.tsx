@@ -105,7 +105,12 @@ export default function HeavenSynth() {
   const cloudSprite = useRef<HTMLCanvasElement | null>(null);
   const sunSprite = useRef<HTMLCanvasElement | null>(null);
   const fadeRef = useRef(0);
+  const musicRef = useRef(0);
+  const particlesRef = useRef<
+    { x: number; y: number; vx: number; vy: number; life: number; max: number; r: number }[]
+  >([]);
   const lastFrameRef = useRef(0);
+
 
   const glowRef = useRef(0);
 
