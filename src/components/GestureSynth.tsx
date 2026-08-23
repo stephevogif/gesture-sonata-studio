@@ -135,10 +135,22 @@ export default function GestureSynth() {
   const [arpGate, setArpGate] = useState(90);
   const [arpOctaves, setArpOctaves] = useState(1);
   const [arpSwing, setArpSwing] = useState(0);
+  const [bpm, setBpm] = useState(100);
+  const [arpSync, setArpSync] = useState(true);
+  const [arpDivision, setArpDivision] = useState<DivisionId>("1/8");
+
+  const [chord, setChord] = useState<ChordId>("off");
+  const [hold, setHold] = useState(false);
 
   const [reverb, setReverb] = useState(93);
+  const [delayMix, setDelayMix] = useState(28);
+  const [delayFeedback, setDelayFeedback] = useState(35);
+  const [delaySync, setDelaySync] = useState(true);
+  const [delayDivision, setDelayDivision] = useState<DivisionId>("1/8");
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
   const [eqFreq, setEqFreq] = useState(1200);
+  const [gestureMod, setGestureMod] = useState(40);
+
 
   const [listening, setListening] = useState(false);
   const [listenProgress, setListenProgress] = useState(0);
