@@ -781,7 +781,15 @@ export class GestureSynthEngine {
     this.rootPc = rootPc;
   }
 
-  setArp(opts: { enabled?: boolean; rate?: number; degrees?: number[]; random?: boolean }) {
+  setArp(opts: {
+    enabled?: boolean;
+    rate?: number;
+    degrees?: number[];
+    random?: boolean;
+    gate?: number;
+    octaves?: number;
+    swing?: number;
+  }) {
     if (opts.enabled !== undefined) {
       this.arpEnabled = opts.enabled;
       if (!opts.enabled) {
@@ -792,6 +800,9 @@ export class GestureSynthEngine {
     if (opts.rate !== undefined) this.arpRate = opts.rate;
     if (opts.degrees) this.arpDegrees = opts.degrees;
     if (opts.random !== undefined) this.arpRandom = opts.random;
+    if (opts.gate !== undefined) this.arpGate = Math.max(0.05, Math.min(1.5, opts.gate));
+    if (opts.octaves !== undefined) this.arpOctaves = Math.max(1, Math.min(3, Math.round(opts.octaves)));
+    if (opts.swing !== undefined) this.arpSwing = Math.max(0, Math.min(0.6, opts.swing));
     this.syncArpTimer();
   }
 
@@ -807,12 +818,24 @@ export class GestureSynthEngine {
 
   private syncArpTimer() {
     if (this.arpTimer) {
-      clearInterval(this.arpTimer);
+      clearTimeout(this.arpTimer);
       this.arpTimer = null;
     }
     if (!this.arpEnabled || !this.ctx) return;
-    const period = 1000 / Math.max(1, this.arpRate);
-    this.arpTimer = setInterval(() => this.tickArp(period / 1000), period);
+    this.arpTick = 0;
+    const schedule = () => {
+      const base = 1000 / Math.max(1, this.arpRate);
+      const swung =
+        this.arpSwing > 0
+          ? this.arpTick % 2 === 0
+            ? base * (1 + this.arpSwing)
+            : base * (1 - this.arpSwing)
+          : base;
+      this.arpTick += 1;
+      this.tickArp(swung / 1000);
+      this.arpTimer = setTimeout(schedule, swung);
+    };
+    this.arpTimer = setTimeout(schedule, 1000 / Math.max(1, this.arpRate));
   }
 
   private tickArp(periodSec: number) {
@@ -822,15 +845,19 @@ export class GestureSynthEngine {
       const offset = this.arpRandom
         ? (seq[Math.floor(Math.random() * seq.length)] ?? 0)
         : (seq[t.step % seq.length] ?? 0);
+      const octIndex =
+        this.arpOctaves > 1 ? Math.floor(t.step / seq.length) % this.arpOctaves : 0;
       t.step += 1;
       const midi =
         BASE_OCTAVE_MIDI +
         this.rootPc +
         (INSTRUMENT_SHIFT[t.inst] ?? 0) +
-        degreeToSemitones(this.scale, t.degree + offset);
-      this.pluck(id, midiToFreq(midi), t.amount, t.bright, t.inst, periodSec * 0.9);
+        degreeToSemitones(this.scale, t.degree + offset) +
+        octIndex * 12;
+      this.pluck(id, midiToFreq(midi), t.amount, t.bright, t.inst, periodSec * this.arpGate);
     });
   }
+
 
   /** midi note the arpeggiator (or a hand) is currently centred on */
   midiFor(degree: number, inst: InstrumentId) {
