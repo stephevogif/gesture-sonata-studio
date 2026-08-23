@@ -860,10 +860,15 @@ export default function HeavenSynth() {
                 </p>
               )}
               {!running && (
-                <button onClick={start} className="heaven-pill mt-6">
-                  {camError ? "Riprova" : "Inizia a suonare"}
+                <button
+                  onClick={start}
+                  aria-label={camError ? "Riprova" : "Play"}
+                  className="heaven-play heaven-play-breathe mx-auto mt-6"
+                >
+                  <Play className="h-7 w-7" />
                 </button>
               )}
+
             </div>
           )}
         </div>
