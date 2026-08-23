@@ -775,6 +775,10 @@ export default function HeavenSynth() {
         : "border-white/50 bg-white/25 text-[#3f4b62] hover:border-white/80"
     }`;
 
+  const field =
+    "mt-1.5 w-full appearance-none rounded-xl border border-white/60 bg-white/70 px-3 py-2.5 text-[13px] font-semibold tracking-normal text-[#2b3855] shadow-sm outline-none transition focus:border-[rgba(255,222,160,0.95)]";
+
+
   return (
     <div className="heaven-scene relative min-h-screen overflow-hidden text-[#33405a]">
       {/* strato camera: sfondo vivo di tutta la pagina */}
