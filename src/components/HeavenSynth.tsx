@@ -656,7 +656,9 @@ export default function HeavenSynth() {
         const amt = 0.35 + Math.min(1, volume) * 0.45;
         for (const hand of hands) emitParticles(hand, w, h, amt);
       }
+      for (const hand of hands) drawHandGlow(ctx, hand, w, h, musicRef.current, volume);
       drawParticles(ctx, dt);
+
 
       if (cfg.current.showDebug) for (const hand of hands) drawHand(ctx, hand, w, h);
 
