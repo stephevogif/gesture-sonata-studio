@@ -3,6 +3,7 @@ import {
   Crosshair,
   Hand,
   KeyboardMusic,
+  Lock,
   Mic,
   Music4,
 
@@ -15,6 +16,8 @@ import {
 
 import {
   ARP_PATTERNS,
+  CHORDS,
+  DIVISIONS,
   GestureSynthEngine,
   INSTRUMENTS,
   INSTRUMENT_SHIFT,
@@ -26,10 +29,13 @@ import {
   positionToDegree,
   scaleSteps,
   type ArpPatternId,
+  type ChordId,
+  type DivisionId,
   type InstrumentId,
   type ScaleId,
 } from "@/lib/synth";
 import { detectKey } from "@/lib/keyDetect";
+
 
 
 const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
