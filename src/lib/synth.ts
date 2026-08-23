@@ -956,10 +956,7 @@ export class GestureSynthEngine {
   setEq(type: BiquadFilterType, freq: number) {
     this.eqType = type;
     this.eqFreq = freq;
-    if (this.eq && this.ctx) {
-      this.eq.type = type;
-      this.eq.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
-    }
+    this.applyEq();
   }
 
   setScale(steps: number[], rootPc: number) {
@@ -975,12 +972,14 @@ export class GestureSynthEngine {
     gate?: number;
     octaves?: number;
     swing?: number;
+    sync?: boolean;
+    division?: DivisionId;
   }) {
     if (opts.enabled !== undefined) {
       this.arpEnabled = opts.enabled;
       if (!opts.enabled) {
         this.arpTargets.clear();
-        [...this.voices.keys()].forEach((k) => this.noteOff(k));
+        [...this.voices.keys()].forEach((k) => this.releaseVoice(k));
       }
     }
     if (opts.rate !== undefined) this.arpRate = opts.rate;
@@ -989,6 +988,8 @@ export class GestureSynthEngine {
     if (opts.gate !== undefined) this.arpGate = Math.max(0.05, Math.min(1.5, opts.gate));
     if (opts.octaves !== undefined) this.arpOctaves = Math.max(1, Math.min(3, Math.round(opts.octaves)));
     if (opts.swing !== undefined) this.arpSwing = Math.max(0, Math.min(0.6, opts.swing));
+    if (opts.sync !== undefined) this.arpSync = opts.sync;
+    if (opts.division) this.arpDivision = opts.division;
     this.syncArpTimer();
   }
 
@@ -999,8 +1000,10 @@ export class GestureSynthEngine {
   }
 
   clearArpTarget(id: string) {
-    if (this.arpTargets.delete(id)) this.noteOff(id);
+    if (this.hold) return;
+    if (this.arpTargets.delete(id)) this.noteOff(id, true);
   }
+
 
   private syncArpTimer() {
     if (this.arpTimer) {
