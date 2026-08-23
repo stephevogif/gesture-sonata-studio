@@ -1,18 +1,18 @@
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-const ChordStudio = lazy(() => import("@/components/ChordStudio"));
+const HeavenSynth = lazy(() => import("@/components/HeavenSynth"));
 
 export const Route = createFileRoute("/studio")({
   head: () => ({
     meta: [
-      { title: "Chord Studio — Steph Evo's Sky Synth" },
+      { title: "Heaven Synth — Steph Evo's Sky Synth" },
       {
         name: "description",
         content:
-          "Chord Studio: suona accordi e gradi di scala con il Lato A e controlla volume, timbro e tipo di accordo con il Lato B.",
+          "Heaven Synth: suona accordi e gradi di scala con il Lato A e controlla volume, timbro e tipo di accordo con il Lato B.",
       },
-      { property: "og:title", content: "Chord Studio — Steph Evo's Sky Synth" },
+      { property: "og:title", content: "Heaven Synth — Steph Evo's Sky Synth" },
       {
         property: "og:description",
         content: "Modalità accordi: gradi di scala, maggiore/minore e espressione in tempo reale.",
@@ -37,7 +37,7 @@ function StudioPage() {
     <main className="min-h-screen">
       <ClientOnly fallback={<div className="min-h-screen" />}>
         <Suspense fallback={<div className="min-h-screen" />}>
-          <ChordStudio />
+          <HeavenSynth />
         </Suspense>
       </ClientOnly>
     </main>
