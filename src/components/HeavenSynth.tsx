@@ -473,18 +473,21 @@ export default function HeavenSynth() {
     await engine.start();
     engine.setChord("off");
     engine.setInstrument(cfg.current.instrument);
-    engine.setReverb(0.45);
+    engine.setReverb(reverb / 100);
+    engine.setDelay({ mix: delayMix / 100, feedback: delayFeedback / 100 });
+    engine.setResonance(resonance);
     engine.setTempo(bpm);
     await startCam();
-  }, [bpm, startCam]);
+  }, [bpm, delayFeedback, delayMix, resonance, reverb, startCam]);
 
   const stop = useCallback(() => {
     stopCam();
     releaseAll();
     engineRef.current?.allOff();
     looperRef.current?.pause();
-    setHud({ left: null, right: null, heavens: null, fps: 0 });
+    setHud({ volume: 0, filter: 8000, heavens: null, fps: 0 });
   }, [releaseAll, stopCam]);
+
 
   useEffect(() => () => stop(), [stop]);
 
