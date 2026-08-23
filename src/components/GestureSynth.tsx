@@ -11,6 +11,8 @@ import {
   SlidersHorizontal,
   Square,
   Sparkles,
+  Save,
+  Trash2,
 } from "lucide-react";
 
 
