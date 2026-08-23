@@ -820,7 +820,10 @@ export default function HeavenSynth() {
       {showOnboard && (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/60 p-5">
           <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-sky-700">
+            <p className="text-[12px] font-bold tracking-tight text-slate-900">
+              STEPH EVO&apos;S HEAVEN SYNTH
+            </p>
+            <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-sky-700">
               Passo {onboard + 1} di {STEPS.length}
             </p>
             <h3 className="mt-1 text-lg font-bold text-slate-900">{STEPS[onboard]!.t}</h3>

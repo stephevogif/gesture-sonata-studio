@@ -15,10 +15,15 @@ export const Route = createFileRoute("/studio")({
       { property: "og:title", content: "STEPH EVO'S HEAVEN SYNTH" },
       {
         property: "og:description",
-        content: "Modalità accordi: gradi di scala, maggiore/minore e espressione in tempo reale.",
+        content: "Modalità accordi: gradi di scala, maggiore/minore ed espressione in tempo reale.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "STEPH EVO'S HEAVEN SYNTH" },
+      {
+        name: "twitter:description",
+        content: "Modalità accordi: gradi di scala, maggiore/minore ed espressione in tempo reale.",
+      },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
