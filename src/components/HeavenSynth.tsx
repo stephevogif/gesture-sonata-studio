@@ -59,13 +59,14 @@ const ONBOARD_KEY = "sky-studio-onboarded";
 
 const STEPS = [
   { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: il video non viene mostrato, vedi solo le mani luminose." },
-  { a: "fingers" as const, t: "Lato A = gradi della scala", d: "1–5 dita scelgono i gradi I–V. Indice + mignolo = VI, con il pollice = VII." },
-  { a: "tilt" as const, t: "Inclinazione Lato A", d: "Ruota il polso per passare da maggiore a minore (con zona neutra anti-tremolio)." },
-  { a: "height" as const, t: "Lato B = espressione", d: "Altezza = volume, dita = rivolto/settima/voicing, inclinazione = filtro." },
-  { a: "settings" as const, t: "Personalizza", d: "Tonalità, scala, strumento e modalità nel pannello Impostazioni." },
+  { a: "fingers" as const, t: "7 Heavens", d: "Le dita totali delle due mani (1–7) scelgono l'accordo I–VII della scala scelta." },
+  { a: "height" as const, t: "Lato A = filtro", d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi." },
+  { a: "height" as const, t: "Lato B = volume", d: "Alza o abbassa la mano B per controllare il volume." },
+  { a: "settings" as const, t: "Suono ed effetti", d: "Strumento nel pannello Suono; riverbero, delay, risonanza e cutoff nel pannello Effetti." },
   { a: "loop" as const, t: "Loop pedal", d: "Registra fino a 4 tracce con click di preconteggio: si avviano in automatico." },
   { a: "keys" as const, t: "Scorciatoie", d: "Spazio = play/pausa, 1–4 traccia, M mute, S solo, Canc svuota, Shift+Canc svuota tutto." },
 ];
+
 
 /** sprite morbido riutilizzabile (evita gradienti creati a ogni frame) */
 function makeBlobSprite(size: number, rgb: string) {
