@@ -714,7 +714,7 @@ export default function HeavenSynth() {
     stopCam();
     releaseAll();
     engineRef.current?.allOff();
-    looperRef.current?.pause();
+    holdRef.current = false;
     setHud({ volume: 0, filter: 8000, heavens: null, fps: 0 });
   }, [releaseAll, stopCam]);
 
@@ -726,24 +726,13 @@ export default function HeavenSynth() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName)) return;
-      const l = getLooper();
-      if (e.code === "Space") {
-        e.preventDefault();
-        l.toggle();
-      } else if (/^Digit[1-4]$/.test(e.code)) {
-        l.select(Number(e.code.slice(5)) - 1);
-      } else if (e.key.toLowerCase() === "m") {
-        l.toggleMute();
-      } else if (e.key.toLowerCase() === "s") {
-        l.toggleSolo();
-      } else if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        e.shiftKey ? l.clearAll() : l.clear();
-      }
+      if (e.key.toLowerCase() === "a") setArpOn((v) => !v);
+      else if (e.key.toLowerCase() === "h") holdRef.current = !holdRef.current;
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [getLooper]);
+  }, []);
+
 
   const activeDegree = hud.heavens?.degree ?? null;
   const playing = activeDegree != null;
