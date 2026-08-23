@@ -45,7 +45,43 @@ const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
-type PanelId = "sound" | "fx" | "scale" | "arp" | "calib";
+type PanelId = "sound" | "fx" | "scale" | "arp" | "calib" | "save";
+
+const PRESETS_KEY = "skysynth.presets.v1";
+const MAX_PRESETS = 40;
+
+type PresetData = {
+  mode: PlayMode;
+  freeMode: "single" | "split";
+  freePitch: "scale" | "glide";
+  instrument: InstrumentId;
+  leftInstrument: InstrumentId;
+  rightInstrument: InstrumentId;
+  scale: ScaleId;
+  rootPc: number;
+  arpLeft: boolean;
+  arpRight: boolean;
+  arpRate: number;
+  arpPattern: ArpPatternId;
+  arpGate: number;
+  arpOctaves: number;
+  arpSwing: number;
+  bpm: number;
+  arpSync: boolean;
+  arpDivision: DivisionId;
+  chord: ChordId;
+  hold: boolean;
+  reverb: number;
+  delayMix: number;
+  delayFeedback: number;
+  delaySync: boolean;
+  delayDivision: DivisionId;
+  eqType: "lowpass" | "highpass";
+  eqFreq: number;
+  gestureMod: number;
+};
+
+type Preset = { id: string; name: string; savedAt: number; data: PresetData };
 type CalibPhase = "idle" | "open" | "closed";
 
 type Particle = {
