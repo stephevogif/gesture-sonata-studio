@@ -222,6 +222,7 @@ export class GestureSynthEngine {
   private wet: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
   private eq: BiquadFilterNode | null = null;
+  eqQ = 0.7;
   private delaySend: GainNode | null = null;
   private delayL: DelayNode | null = null;
   private delayR: DelayNode | null = null;
@@ -335,7 +336,7 @@ export class GestureSynthEngine {
     const eq = ctx.createBiquadFilter();
     eq.type = this.eqType;
     eq.frequency.value = this.eqFreq;
-    eq.Q.value = 0.7;
+    eq.Q.value = this.eqQ;
 
     master.connect(eq).connect(analyser).connect(ctx.destination);
 
