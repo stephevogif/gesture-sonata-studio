@@ -334,6 +334,17 @@
     linear-gradient(180deg, #5f8ed6 0%, #7ba9e4 24%, #a7c8ee 48%, #d3d9f2 70%, #f3ddd0 88%, #ffe9c9 100%);
 }
 
+/* strato scuro nella parte bassa per far risaltare la nav in vetro */
+.heaven-bottom-shade {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 34vh;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(40, 68, 112, 0.72) 0%, rgba(40, 68, 112, 0.28) 45%, transparent 100%);
+  z-index: 5;
+}
+
+
 /* stelle lontane + veli di nube in lenta deriva */
 .heaven-stars {
   background-image:
