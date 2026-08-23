@@ -126,6 +126,10 @@ export default function GestureSynth() {
   const [arpRight, setArpRight] = useState(false);
   const [arpRate, setArpRate] = useState(8);
   const [arpPattern, setArpPattern] = useState<ArpPatternId>("up");
+  const [arpGate, setArpGate] = useState(90);
+  const [arpOctaves, setArpOctaves] = useState(1);
+  const [arpSwing, setArpSwing] = useState(0);
+
   const [reverb, setReverb] = useState(93);
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
   const [eqFreq, setEqFreq] = useState(1200);
