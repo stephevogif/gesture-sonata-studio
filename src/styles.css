@@ -921,7 +921,8 @@
 @utility sky-home {
   position: relative;
   min-height: 100svh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #05070f;
   transition: opacity 0.5s ease;
 }
@@ -1107,8 +1108,9 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: min(86vw, 340px);
+  width: min(74vw, 300px);
   aspect-ratio: 1;
+  flex: none;
   border-radius: 999px;
   background: transparent;
   cursor: pointer;
