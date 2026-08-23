@@ -544,7 +544,57 @@ export class GestureSynthEngine {
       vibratoGain.gain.value = 7;
       attack = 0.55;
       release = 1.8;
+    } else if (inst === "hoover") {
+      addOsc("sawtooth", -22, 0.28);
+      addOsc("sawtooth", 22, 0.28);
+      addOsc("square", 0, 0.2, 0.5);
+      addOsc("sawtooth", 0, 0.2, 2);
+      filter.type = "lowpass";
+      filter.frequency.value = 1800;
+      filter.Q.value = 9;
+      vibrato.frequency.value = 5.5;
+      vibratoGain.gain.value = 22;
+      attack = 0.02;
+      release = 0.5;
+      sustain = 0.5;
+      decay = 0.4;
+    } else if (inst === "supersaw") {
+      addOsc("sawtooth", -24, 0.16);
+      addOsc("sawtooth", -14, 0.16);
+      addOsc("sawtooth", -6, 0.16);
+      addOsc("sawtooth", 0, 0.2);
+      addOsc("sawtooth", 6, 0.16);
+      addOsc("sawtooth", 14, 0.16);
+      addOsc("sawtooth", 24, 0.16);
+      filter.type = "lowpass";
+      filter.frequency.value = 3400;
+      filter.Q.value = 1.5;
+      vibrato.frequency.value = 0.4;
+      vibratoGain.gain.value = 6;
+      attack = 0.12;
+      release = 0.7;
+    } else if (inst === "digipluck") {
+      const carrier = addOsc("square", 0, 0.45);
+      const mod = ctx.createOscillator();
+      mod.type = "sine";
+      mod.frequency.value = freq * 3;
+      const modGain = ctx.createGain();
+      modGain.gain.value = freq * 1.5;
+      mod.connect(modGain).connect(carrier.frequency);
+      mod.start(now);
+      oscs.push(mod);
+      ratios.push(3);
+      addOsc("triangle", 5, 0.25, 2);
+      filter.frequency.value = 4200;
+      filter.Q.value = 2.5;
+      vibrato.frequency.value = 4;
+      vibratoGain.gain.value = 2;
+      attack = 0.003;
+      release = 0.45;
+      sustain = 0.06;
+      decay = 0.18;
     } else if (inst === "pluckAmb") {
+
       addOsc("square", 0, 0.3);
       addOsc("triangle", 7, 0.35);
       addOsc("sine", -7, 0.2, 2);
