@@ -675,6 +675,10 @@ export default function GestureSynth() {
         rate: arpRate,
         degrees: ARP_PATTERNS.find((p) => p.id === arpPattern)?.degrees ?? [0],
         random: arpPattern === "random",
+        gate: arpGate / 100,
+        octaves: arpOctaves,
+        swing: arpSwing / 100,
+
       });
 
       const stream = await navigator.mediaDevices.getUserMedia({
