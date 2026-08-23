@@ -2062,8 +2062,8 @@ export default function GestureSynth() {
 
       {/* barra inferiore */}
       <div className="night-bottom-shade" />
-      <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
-        <div className="night-glass mx-auto flex max-w-md items-center justify-between px-3 py-2">
+      <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-3">
+        <div className="night-glass night-bar mx-auto flex max-w-md items-center justify-between px-3 py-1.5">
           {panelBtn("sound", "Suono", Music4)}
           {panelBtn("scale", "Scala", KeyboardMusic)}
 
@@ -2072,8 +2072,9 @@ export default function GestureSynth() {
             aria-label={running ? "Stop" : "Play"}
             className={`night-play ${running ? "night-play-on" : ""}`}
           >
-            {running ? <Square className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+            {running ? <Square className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
+
 
           {panelBtn("arp", "Arp", Repeat)}
           {panelBtn("fx", "Effetti", SlidersHorizontal)}
