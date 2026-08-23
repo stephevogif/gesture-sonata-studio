@@ -236,6 +236,14 @@ export default function GestureSynth() {
 
   const musicLevelRef = useRef(0);
   const lastSizeRef = useRef({ width: 0, height: 0 });
+  // stelle musicali: feedback visivo delle note appena suonate
+  const noteStarsRef = useRef<
+    { x: number; y: number; born: number; warm: boolean; seed: number }[]
+  >([]);
+  const curNoteRef = useRef<string>("");
+  const noteAtRef = useRef<number>(0);
+  const [curNote, setCurNote] = useState<string>("");
+
 
 
 
