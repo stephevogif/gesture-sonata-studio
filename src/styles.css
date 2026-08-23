@@ -263,3 +263,65 @@
   box-shadow: inset 0 0 0 1px var(--primary), 0 18px 40px -30px var(--primary);
   background: color-mix(in oklch, var(--card) 90%, var(--primary) 10%);
 }
+
+/* ————— tema "puro spirito": cielo chiaro tra nuvole calme ————— */
+.sky-theme {
+  --background: oklch(0.97 0.015 240);
+  --stage: oklch(0.96 0.02 235);
+  --foreground: oklch(0.36 0.045 255);
+  --card: oklch(0.99 0.008 240);
+  --card-foreground: oklch(0.36 0.045 255);
+  --primary: oklch(0.72 0.1 235);
+  --primary-foreground: oklch(0.99 0.005 240);
+  --secondary: oklch(0.93 0.02 240);
+  --secondary-foreground: oklch(0.38 0.04 255);
+  --muted: oklch(0.94 0.015 240);
+  --muted-foreground: oklch(0.58 0.03 250);
+  --accent: oklch(0.86 0.06 220);
+  --accent-foreground: oklch(0.36 0.045 255);
+  --border: oklch(0.72 0.06 240 / 0.28);
+  --input: oklch(0.72 0.06 240 / 0.28);
+  --ring: oklch(0.72 0.1 235);
+  color: var(--foreground);
+  background:
+    radial-gradient(120% 90% at 50% -20%, oklch(0.99 0.02 220), transparent 70%),
+    linear-gradient(180deg, oklch(0.97 0.025 235), oklch(0.93 0.03 250));
+}
+
+@utility sky-panel {
+  border: 1px solid oklch(0.72 0.06 240 / 0.25);
+  border-radius: 1.25rem;
+  background: color-mix(in oklch, var(--card) 78%, transparent);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 50px -30px oklch(0.5 0.07 250 / 0.45);
+}
+
+@utility sky-frame {
+  border-radius: 1.75rem;
+  overflow: hidden;
+  border: 1px solid oklch(0.75 0.06 235 / 0.35);
+  box-shadow:
+    0 40px 90px -50px oklch(0.5 0.08 250 / 0.55),
+    inset 0 1px 0 oklch(1 0 0 / 0.6);
+}
+
+@utility sky-chip {
+  border-radius: 999px;
+  border: 1px solid oklch(0.72 0.06 240 / 0.3);
+  background: color-mix(in oklch, var(--card) 70%, transparent);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+@utility sky-chip-active {
+  border-color: color-mix(in oklch, var(--primary) 70%, transparent);
+  background: color-mix(in oklch, var(--primary) 18%, transparent);
+  color: var(--primary);
+}
+
+.sky-theme .btn-hero {
+  background: linear-gradient(135deg, oklch(0.8 0.09 235), oklch(0.86 0.06 210));
+  color: oklch(0.32 0.05 255);
+  letter-spacing: 0.22em;
+  box-shadow: 0 18px 40px -22px oklch(0.5 0.09 250 / 0.7);
+}
