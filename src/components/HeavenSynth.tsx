@@ -608,9 +608,16 @@ export default function HeavenSynth() {
       const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
       const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
       const total = lc + rc;
-      const stable = heavensDeb.current.push(total >= 1 && total <= 7 ? total : null);
+      const stable = heavensDeb.current.push(total >= 1 && total <= 10 ? total : null);
+      if (stable !== lastStableRef.current) {
+        lastStableRef.current = stable;
+        if (stable === 8) setArpOn(false);
+        else if (stable === 9) setArpOn(true);
+        else if (stable === 10) holdRef.current = !!currentRef.current.chord;
+        else if (stable != null && stable !== heldDegreeRef.current! + 1) holdRef.current = false;
+      }
       let deg: number | null = null;
-      if (hands.length && stable) {
+      if (hands.length && stable && stable <= 7) {
         deg = stable - 1;
         chord = buildChord({
           rootPc: root,
@@ -620,12 +627,18 @@ export default function HeavenSynth() {
           voicing: "triad",
           previous: prevNotesRef.current,
         });
-        applyNotes(chord.notes, right ? Math.max(0.06, volume) : 0.6, bright);
+        if (arpOnRef.current) releaseAll();
+        else applyNotes(chord.notes, right ? Math.max(0.06, volume) : 0.6, bright);
         prevNotesRef.current = chord.notes;
         currentRef.current.chord = chord;
+        heldDegreeRef.current = deg;
+      } else if (holdRef.current) {
+        chord = currentRef.current.chord;
+        deg = heldDegreeRef.current;
       } else {
         releaseAll();
       }
+
       heavensHud = {
         leftCount: lc,
         rightCount: rc,
