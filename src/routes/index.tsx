@@ -6,20 +6,26 @@ const GestureSynth = lazy(() => import("@/components/GestureSynth"));
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Steph Evo's Sky Synth — Hand gestures instrument" },
+      { title: "STEPH EVO'S SKY SYNTH — strumento gestuale" },
       {
         name: "description",
         content:
-          "Steph Evo's Sky Synth: suona pad, fiati, bassi e strumenti zen nel browser con le mani, scale, arpeggiatore ed effetti.",
+          "STEPH EVO'S SKY SYNTH: suona pad, fiati, bassi e strumenti zen nel browser, con scale, arpeggiatore ed effetti.",
       },
-      { property: "og:title", content: "Steph Evo's Sky Synth — Hand gestures instrument" },
+      { property: "og:title", content: "STEPH EVO'S SKY SYNTH — strumento gestuale" },
       {
         property: "og:description",
         content:
-          "Synth gestuale interattivo con scale, arpeggiatori e effetti in tempo reale.",
+          "STEPH EVO'S SKY SYNTH: scale, arpeggiatori ed effetti in tempo reale, tutto controllato dai movimenti.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "STEPH EVO'S SKY SYNTH — strumento gestuale" },
+      {
+        name: "twitter:description",
+        content:
+          "STEPH EVO'S SKY SYNTH: scale, arpeggiatori ed effetti in tempo reale, tutto controllato dai movimenti.",
+      },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
