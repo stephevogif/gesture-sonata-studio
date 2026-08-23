@@ -1999,61 +1999,22 @@ export default function GestureSynth() {
       )}
 
 
-      {panel === "calib" && (
-        <div className="mt-3 celestial-panel rounded-sm p-4">
-          <p className="text-sm text-muted-foreground">
-            La taratura misura la tua mano e regola quando il contatto tra pollice e dito viene
-            riconosciuto. Serve la fotocamera attiva.
-          </p>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              onClick={runCalibration}
-              disabled={!running || calibPhase !== "idle"}
-              className={running && calibPhase === "idle" ? "btn-hero" : "btn-ghost opacity-60"}
-            >
-              {calibPhase === "idle" ? "Avvia taratura" : "Taratura in corso…"}
-            </button>
-            <button onClick={resetCalibration} className="btn-ghost">
-              Ripristina
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {calibrated ? "Profilo personale attivo" : "Profilo predefinito"} · soglia{" "}
-              {calib.on.toFixed(2)} / rilascio {calib.off.toFixed(2)}
-            </span>
-          </div>
-
-          {!running && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Avvia prima la vista live per poter tarare.
-            </p>
-          )}
-
-          <div className="mt-4">
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Sensibilità: {sensitivity > 0 ? `+${sensitivity}` : sensitivity}
-            </label>
-            <input
-              aria-label="Sensibilità"
-              type="range"
-              min={-15}
-              max={15}
-              step={1}
-              value={sensitivity}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setSensitivity(v);
-                sensRef.current = v / 100;
-                if (calibrated) saveCalib(calib.on, calib.off);
-              }}
-              className="mt-3 w-full accent-[var(--primary)]"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Più a destra = serve un contatto più stretto; più a sinistra = risposta più facile.
-            </p>
-          </div>
+      {panel === "help" && (
+        <div className="night-glass mt-3 space-y-2 p-4">
+          <h2 className="text-sm font-bold">Guida rapida</h2>
+          <ol className="space-y-1.5 text-[12px] text-white/80">
+            {TUT_STEPS.map((s, i) => (
+              <li key={i}>
+                <b>
+                  {i + 1}. {s.t}
+                </b>{" "}
+                — {s.d}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
+
 
       {panel === "save" && (
         <div className="mt-3 celestial-panel rounded-sm p-4">
