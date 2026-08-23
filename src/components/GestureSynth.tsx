@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   Crosshair,
   Hand,
@@ -1107,6 +1108,12 @@ export default function GestureSynth() {
           Carta sonora · Ed. I
         </p>
         <div className="celestial-rule mx-auto mt-3 w-2/3" />
+        <Link
+          to="/studio"
+          className="mt-3 inline-flex items-center gap-2 rounded-sm border border-border bg-card/60 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:border-primary hover:text-primary"
+        >
+          Chord Studio
+        </Link>
       </header>
 
       <div className="mt-4 flex items-center justify-center gap-2">
