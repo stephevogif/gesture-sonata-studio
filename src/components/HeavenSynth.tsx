@@ -445,7 +445,7 @@ export default function HeavenSynth() {
       fadeRef.current += ((hands.length ? 1 : 0) - fadeRef.current) * (1 - Math.exp(-dt * (hands.length ? 3 : 1.6)));
       drawSky(ctx, w, h, glowRef.current, fadeRef.current, dt);
 
-      for (const hand of hands) drawHand(ctx, hand, w, h);
+      if (cfg.current.showDebug) for (const hand of hands) drawHand(ctx, hand, w, h);
 
       // ————— HUD (throttle) —————
       const now = performance.now();
