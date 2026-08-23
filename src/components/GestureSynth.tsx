@@ -640,6 +640,7 @@ export default function GestureSynth() {
         canvas.height = h;
         lastSizeRef.current = { width: w, height: h };
         starsRef.current = generateStars(w, h);
+        constellationsRef.current = generateConstellations(w, h);
       }
 
       const now = performance.now();
@@ -664,6 +665,65 @@ export default function GestureSynth() {
         ctx.fill();
       }
       ctx.restore();
+
+      // costellazioni che attraversano lo spazio: visibili solo col suono
+      {
+        const dt = constLastRef.current ? Math.min(64, now - constLastRef.current) : 16;
+        constLastRef.current = now;
+        const list = constellationsRef.current;
+        const glow = Math.min(1, ml * 2.2);
+        ctx.save();
+        ctx.lineCap = "round";
+        for (let i = list.length - 1; i >= 0; i--) {
+          const c = list[i]!;
+          c.x += c.vx * dt;
+          c.y += c.vy * dt;
+          if (c.x + c.scale * 1.2 < 0) {
+            list[i] = spawnConstellation(w, h, false);
+            continue;
+          }
+          const twinkle = 0.55 + 0.45 * Math.sin(now * c.speed * 4 + c.phase);
+          const a = glow * twinkle * 0.5;
+          if (a < 0.01) continue;
+
+          const cos = Math.cos(c.rot);
+          const sin = Math.sin(c.rot);
+          const px = (p: [number, number]) => c.x + (p[0] * cos - p[1] * sin) * c.scale;
+          const py = (p: [number, number]) => c.y + (p[0] * sin + p[1] * cos) * c.scale;
+
+          ctx.strokeStyle = `rgba(150, 190, 245, ${a * 0.42})`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          for (const [s0, s1] of c.shape.edges) {
+            const p0 = c.shape.pts[s0]!;
+            const p1 = c.shape.pts[s1]!;
+            ctx.moveTo(px(p0), py(p0));
+            ctx.lineTo(px(p1), py(p1));
+          }
+          ctx.stroke();
+
+          for (let k = 0; k < c.shape.pts.length; k++) {
+            const p = c.shape.pts[k]!;
+            const x = px(p);
+            const y = py(p);
+            const r = 1.4 + 1.6 * (k % 3 === 0 ? 1 : 0.4);
+            const g = ctx.createRadialGradient(x, y, 0, x, y, r * 5);
+            g.addColorStop(0, `rgba(255, 250, 235, ${a})`);
+            g.addColorStop(0.35, `rgba(200, 220, 255, ${a * 0.35})`);
+            g.addColorStop(1, "rgba(160, 190, 240, 0)");
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, r * 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = `rgba(255, 252, 240, ${Math.min(0.9, a * 1.6)})`;
+            ctx.beginPath();
+            ctx.arc(x, y, r * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
 
       const res = lm.detectForVideo(video, now);
       const active = new Set<string>();
