@@ -1099,30 +1099,48 @@ export default function HeavenSynth() {
                 aria-label="Tempo in BPM"
               />
             </label>
-            <div className="flex flex-wrap gap-1.5">
-              {([
-                ["1/4", 1],
-                ["1/8", 2],
-                ["1/8T", 3],
-                ["1/16", 4],
-              ] as const).map(([label, div]) => (
-                <button key={label} onClick={() => setArpDiv(div)} className={chip(arpDiv === div)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {([
-                ["up", "Salita"],
-                ["down", "Discesa"],
-                ["updown", "Su e giù"],
-                ["octaves", "Ottave"],
-                ["random", "Casuale"],
-              ] as const).map(([id, label]) => (
-                <button key={id} onClick={() => setArpMode(id)} className={chip(arpMode === id)}>
-                  {label}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                Divisione
+                <select
+                  value={arpDiv}
+                  onChange={(e) => setArpDiv(Number(e.target.value))}
+                  className={field}
+                  aria-label="Divisione arpeggio"
+                >
+                  {([
+                    ["1/4", 1],
+                    ["1/8", 2],
+                    ["1/8T", 3],
+                    ["1/16", 4],
+                  ] as const).map(([label, div]) => (
+                    <option key={label} value={div}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                Pattern
+                <select
+                  value={arpMode}
+                  onChange={(e) => setArpMode(e.target.value as typeof arpMode)}
+                  className={field}
+                  aria-label="Pattern arpeggio"
+                >
+                  {([
+                    ["up", "Salita"],
+                    ["down", "Discesa"],
+                    ["updown", "Su e giù"],
+                    ["octaves", "Ottave"],
+                    ["random", "Casuale"],
+                  ] as const).map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <label className="block text-[11px] font-semibold text-slate-600">
               Gate: <span className="text-slate-900">{Math.round(arpGate * 100)}%</span>
@@ -1137,9 +1155,10 @@ export default function HeavenSynth() {
               />
             </label>
             <p className="text-[11px] text-slate-500">
-              Gesti: 8 dita = arp OFF · 9 dita = arp ON · 10 dita = hold della nota (si libera
-              cambiando grado).
+              Gesto: chiudi e riapri velocemente entrambe le mani per accendere o spegnere l&apos;arp
+              (tasto A). Nessun numero di dita attiva più l&apos;arpeggiatore.
             </p>
+
           </section>
         )}
 
