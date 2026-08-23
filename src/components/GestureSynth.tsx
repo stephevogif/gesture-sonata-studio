@@ -126,6 +126,10 @@ export default function GestureSynth() {
   const [arpRight, setArpRight] = useState(false);
   const [arpRate, setArpRate] = useState(8);
   const [arpPattern, setArpPattern] = useState<ArpPatternId>("up");
+  const [arpGate, setArpGate] = useState(90);
+  const [arpOctaves, setArpOctaves] = useState(1);
+  const [arpSwing, setArpSwing] = useState(0);
+
   const [reverb, setReverb] = useState(93);
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
   const [eqFreq, setEqFreq] = useState(1200);
@@ -267,8 +271,12 @@ export default function GestureSynth() {
       rate: arpRate,
       degrees,
       random: arpPattern === "random",
+      gate: arpGate / 100,
+      octaves: arpOctaves,
+      swing: arpSwing / 100,
     });
-  }, [arpLeft, arpRight, arpRate, arpPattern]);
+  }, [arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing]);
+
 
   useEffect(() => {
     engineRef.current?.setReverb(reverb / 100);
@@ -667,6 +675,10 @@ export default function GestureSynth() {
         rate: arpRate,
         degrees: ARP_PATTERNS.find((p) => p.id === arpPattern)?.degrees ?? [0],
         random: arpPattern === "random",
+        gate: arpGate / 100,
+        octaves: arpOctaves,
+        swing: arpSwing / 100,
+
       });
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -702,7 +714,7 @@ export default function GestureSynth() {
       setStatus("Impossibile accedere alla fotocamera o all'audio.");
       setRunning(false);
     }
-  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, reverb, eqType, eqFreq, loop]);
+  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, reverb, eqType, eqFreq, loop]);
 
   const pickInstrument = (id: InstrumentId) => {
     setInstrument(id);
@@ -1133,7 +1145,50 @@ export default function GestureSynth() {
                 className="mt-3 w-full accent-[var(--primary)]"
               />
             </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Gate: {arpGate}%
+              </label>
+              <input
+                type="range"
+                min={10}
+                max={140}
+                step={5}
+                value={arpGate}
+                onChange={(e) => setArpGate(Number(e.target.value))}
+                className="mt-3 w-full accent-[var(--primary)]"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Ottave: {arpOctaves}
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={1}
+                value={arpOctaves}
+                onChange={(e) => setArpOctaves(Number(e.target.value))}
+                className="mt-3 w-full accent-[var(--primary)]"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Swing: {arpSwing}%
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={60}
+                step={5}
+                value={arpSwing}
+                onChange={(e) => setArpSwing(Number(e.target.value))}
+                className="mt-3 w-full accent-[var(--primary)]"
+              />
+            </div>
           </div>
+
         </div>
       )}
 

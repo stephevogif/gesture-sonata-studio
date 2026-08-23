@@ -5,6 +5,12 @@ export type InstrumentId =
   | "reese"
   | "acid"
   | "growl"
+  | "neuro"
+  | "fmbass"
+  | "sub808"
+  | "hoover"
+  | "supersaw"
+  | "digipluck"
   | "harp"
   | "piano"
   | "kalimba"
@@ -36,6 +42,12 @@ export const INSTRUMENTS: {
   { id: "reese", name: "Reese Bass", blurb: "Basso detunato, sporco e profondo", group: "electro" },
   { id: "acid", name: "Acid 303", blurb: "Squelch acido con filtro urlante", group: "electro" },
   { id: "growl", name: "Growl / Dubstep", blurb: "Wobble aggressivo e distorto", group: "electro" },
+  { id: "neuro", name: "Neuro Bass", blurb: "Saw distorto con filtro formante", group: "electro" },
+  { id: "fmbass", name: "FM Bass", blurb: "FM profonda, attacco secco", group: "electro" },
+  { id: "sub808", name: "808 Sub", blurb: "Sub caldo con pitch drop", group: "electro" },
+  { id: "hoover", name: "Hoover / Rave Stab", blurb: "Stab rave urlante", group: "electro" },
+  { id: "supersaw", name: "Supersaw Trance", blurb: "7 saw detunati, brillante", group: "electro" },
+  { id: "digipluck", name: "Digital Pluck", blurb: "Pluck secco per arp veloci", group: "electro" },
 ];
 
 /** Semitone transpose per instrument (bass patches play way lower). */
@@ -46,6 +58,12 @@ export const INSTRUMENT_SHIFT: Record<InstrumentId, number> = {
   reese: -24,
   acid: -12,
   growl: -24,
+  neuro: -24,
+  fmbass: -24,
+  sub808: -24,
+  hoover: 0,
+  supersaw: 0,
+  digipluck: 12,
   harp: 12,
   piano: 0,
   kalimba: 12,
@@ -55,6 +73,7 @@ export const INSTRUMENT_SHIFT: Record<InstrumentId, number> = {
   pluckAmb: 12,
   subpad: -12,
 };
+
 
 
 export type ScaleId =
@@ -117,15 +136,31 @@ export function midiToName(m: number): string {
   return `${NOTE_NAMES[((m % 12) + 12) % 12] ?? "C"}${Math.floor(m / 12) - 1}`;
 }
 
-export type ArpPatternId = "up" | "down" | "updown" | "octaves" | "random";
+export type ArpPatternId =
+  | "up"
+  | "down"
+  | "updown"
+  | "updown2"
+  | "triplet"
+  | "octaves"
+  | "octaveJump"
+  | "fullScale"
+  | "tranceGate"
+  | "random";
 
 export const ARP_PATTERNS: { id: ArpPatternId; name: string; degrees: number[] }[] = [
   { id: "up", name: "Su", degrees: [0, 1, 2, 3] },
   { id: "down", name: "Giù", degrees: [3, 2, 1, 0] },
   { id: "updown", name: "Su / Giù", degrees: [0, 1, 2, 3, 2, 1] },
+  { id: "updown2", name: "Su / Giù x2", degrees: [0, 1, 2, 3, 4, 5, 4, 3, 2, 1] },
+  { id: "triplet", name: "Terzine", degrees: [0, 2, 4] },
   { id: "octaves", name: "Ottave", degrees: [0, 2, 5, 7] },
+  { id: "octaveJump", name: "Salti d'ottava", degrees: [0, 7, 1, 8, 2, 9] },
+  { id: "fullScale", name: "Scala completa", degrees: [0, 1, 2, 3, 4, 5, 6, 7] },
+  { id: "tranceGate", name: "Trance gate", degrees: [0, 0, 2, 0, 4, 0, 2, 5] },
   { id: "random", name: "Random", degrees: [0, 1, 2, 3, 4, 5] },
 ];
+
 
 type VoiceNodes = {
   oscs: OscillatorNode[];
@@ -183,8 +218,13 @@ export class GestureSynthEngine {
   arpRate = 8; // notes per second
   arpDegrees: number[] = ARP_PATTERNS[0]!.degrees;
   arpRandom = false;
+  arpGate = 0.9;
+  arpOctaves = 1;
+  arpSwing = 0;
+  private arpTick = 0;
   private arpTargets = new Map<string, ArpTarget>();
-  private arpTimer: ReturnType<typeof setInterval> | null = null;
+  private arpTimer: ReturnType<typeof setTimeout> | null = null;
+
 
   async start() {
     if (this.ctx) {
@@ -283,7 +323,7 @@ export class GestureSynthEngine {
     let sub: OscillatorNode | undefined;
     let sustain: number | undefined;
     let decay: number | undefined;
-    const bassPatches: InstrumentId[] = ["reese", "acid", "growl"];
+    const bassPatches: InstrumentId[] = ["reese", "acid", "growl", "neuro", "fmbass", "sub808"];
     const isBass = bassPatches.includes(inst);
 
     const addOsc = (type: OscillatorType, detune = 0, level = 1, ratio = 1) => {
@@ -357,7 +397,61 @@ export class GestureSynthEngine {
         vibratoGain.gain.value = 2;
         attack = 0.008;
         release = 0.12;
+      } else if (inst === "neuro") {
+        addOsc("sawtooth", -18, 0.4);
+        addOsc("sawtooth", 18, 0.4);
+        addOsc("square", 0, 0.25, 0.5);
+        filter.type = "lowpass";
+        filter.frequency.value = 800;
+        filter.Q.value = 10;
+        drive.curve = this.makeCurve(1.2);
+        driveGain.gain.value = 0.55;
+        vibrato.frequency.value = 0.3;
+        vibratoGain.gain.value = 5;
+        attack = 0.012;
+        release = 0.16;
+        lfo = ctx.createOscillator();
+        lfo.type = "triangle";
+        lfo.frequency.value = 3.2;
+        lfoGain = ctx.createGain();
+        lfoGain.gain.value = 900;
+        lfo.connect(lfoGain).connect(filter.frequency);
+        lfo.start(now);
+      } else if (inst === "fmbass") {
+        const carrier = addOsc("sine", 0, 0.8);
+        const mod = ctx.createOscillator();
+        mod.type = "sine";
+        mod.frequency.value = freq * 2;
+        const modGain = ctx.createGain();
+        modGain.gain.value = freq * 3;
+        mod.connect(modGain).connect(carrier.frequency);
+        mod.start(now);
+        oscs.push(mod);
+        ratios.push(2);
+        filter.type = "lowpass";
+        filter.frequency.value = 1200;
+        filter.Q.value = 4;
+        drive.curve = this.makeCurve(0.4);
+        driveGain.gain.value = 0.85;
+        vibrato.frequency.value = 0.2;
+        vibratoGain.gain.value = 2;
+        attack = 0.005;
+        release = 0.2;
+      } else if (inst === "sub808") {
+        const o = addOsc("sine", 0, 0.95);
+        o.frequency.setValueAtTime(freq * 2.2, now);
+        o.frequency.exponentialRampToValueAtTime(Math.max(20, freq), now + 0.08);
+        filter.type = "lowpass";
+        filter.frequency.value = 400;
+        filter.Q.value = 1;
+        drive.curve = this.makeCurve(0.25);
+        driveGain.gain.value = 0.95;
+        vibrato.frequency.value = 0.1;
+        vibratoGain.gain.value = 1;
+        attack = 0.006;
+        release = 0.9;
       } else {
+
         addOsc("square", -10, 0.45);
         addOsc("sawtooth", 10, 0.45);
         filter.type = "lowpass";
@@ -455,7 +549,57 @@ export class GestureSynthEngine {
       vibratoGain.gain.value = 7;
       attack = 0.55;
       release = 1.8;
+    } else if (inst === "hoover") {
+      addOsc("sawtooth", -22, 0.28);
+      addOsc("sawtooth", 22, 0.28);
+      addOsc("square", 0, 0.2, 0.5);
+      addOsc("sawtooth", 0, 0.2, 2);
+      filter.type = "lowpass";
+      filter.frequency.value = 1800;
+      filter.Q.value = 9;
+      vibrato.frequency.value = 5.5;
+      vibratoGain.gain.value = 22;
+      attack = 0.02;
+      release = 0.5;
+      sustain = 0.5;
+      decay = 0.4;
+    } else if (inst === "supersaw") {
+      addOsc("sawtooth", -24, 0.16);
+      addOsc("sawtooth", -14, 0.16);
+      addOsc("sawtooth", -6, 0.16);
+      addOsc("sawtooth", 0, 0.2);
+      addOsc("sawtooth", 6, 0.16);
+      addOsc("sawtooth", 14, 0.16);
+      addOsc("sawtooth", 24, 0.16);
+      filter.type = "lowpass";
+      filter.frequency.value = 3400;
+      filter.Q.value = 1.5;
+      vibrato.frequency.value = 0.4;
+      vibratoGain.gain.value = 6;
+      attack = 0.12;
+      release = 0.7;
+    } else if (inst === "digipluck") {
+      const carrier = addOsc("square", 0, 0.45);
+      const mod = ctx.createOscillator();
+      mod.type = "sine";
+      mod.frequency.value = freq * 3;
+      const modGain = ctx.createGain();
+      modGain.gain.value = freq * 1.5;
+      mod.connect(modGain).connect(carrier.frequency);
+      mod.start(now);
+      oscs.push(mod);
+      ratios.push(3);
+      addOsc("triangle", 5, 0.25, 2);
+      filter.frequency.value = 4200;
+      filter.Q.value = 2.5;
+      vibrato.frequency.value = 4;
+      vibratoGain.gain.value = 2;
+      attack = 0.003;
+      release = 0.45;
+      sustain = 0.06;
+      decay = 0.18;
     } else if (inst === "pluckAmb") {
+
       addOsc("square", 0, 0.3);
       addOsc("triangle", 7, 0.35);
       addOsc("sine", -7, 0.2, 2);
@@ -642,7 +786,15 @@ export class GestureSynthEngine {
     this.rootPc = rootPc;
   }
 
-  setArp(opts: { enabled?: boolean; rate?: number; degrees?: number[]; random?: boolean }) {
+  setArp(opts: {
+    enabled?: boolean;
+    rate?: number;
+    degrees?: number[];
+    random?: boolean;
+    gate?: number;
+    octaves?: number;
+    swing?: number;
+  }) {
     if (opts.enabled !== undefined) {
       this.arpEnabled = opts.enabled;
       if (!opts.enabled) {
@@ -653,6 +805,9 @@ export class GestureSynthEngine {
     if (opts.rate !== undefined) this.arpRate = opts.rate;
     if (opts.degrees) this.arpDegrees = opts.degrees;
     if (opts.random !== undefined) this.arpRandom = opts.random;
+    if (opts.gate !== undefined) this.arpGate = Math.max(0.05, Math.min(1.5, opts.gate));
+    if (opts.octaves !== undefined) this.arpOctaves = Math.max(1, Math.min(3, Math.round(opts.octaves)));
+    if (opts.swing !== undefined) this.arpSwing = Math.max(0, Math.min(0.6, opts.swing));
     this.syncArpTimer();
   }
 
@@ -668,12 +823,24 @@ export class GestureSynthEngine {
 
   private syncArpTimer() {
     if (this.arpTimer) {
-      clearInterval(this.arpTimer);
+      clearTimeout(this.arpTimer);
       this.arpTimer = null;
     }
     if (!this.arpEnabled || !this.ctx) return;
-    const period = 1000 / Math.max(1, this.arpRate);
-    this.arpTimer = setInterval(() => this.tickArp(period / 1000), period);
+    this.arpTick = 0;
+    const schedule = () => {
+      const base = 1000 / Math.max(1, this.arpRate);
+      const swung =
+        this.arpSwing > 0
+          ? this.arpTick % 2 === 0
+            ? base * (1 + this.arpSwing)
+            : base * (1 - this.arpSwing)
+          : base;
+      this.arpTick += 1;
+      this.tickArp(swung / 1000);
+      this.arpTimer = setTimeout(schedule, swung);
+    };
+    this.arpTimer = setTimeout(schedule, 1000 / Math.max(1, this.arpRate));
   }
 
   private tickArp(periodSec: number) {
@@ -683,15 +850,19 @@ export class GestureSynthEngine {
       const offset = this.arpRandom
         ? (seq[Math.floor(Math.random() * seq.length)] ?? 0)
         : (seq[t.step % seq.length] ?? 0);
+      const octIndex =
+        this.arpOctaves > 1 ? Math.floor(t.step / seq.length) % this.arpOctaves : 0;
       t.step += 1;
       const midi =
         BASE_OCTAVE_MIDI +
         this.rootPc +
         (INSTRUMENT_SHIFT[t.inst] ?? 0) +
-        degreeToSemitones(this.scale, t.degree + offset);
-      this.pluck(id, midiToFreq(midi), t.amount, t.bright, t.inst, periodSec * 0.9);
+        degreeToSemitones(this.scale, t.degree + offset) +
+        octIndex * 12;
+      this.pluck(id, midiToFreq(midi), t.amount, t.bright, t.inst, periodSec * this.arpGate);
     });
   }
+
 
   /** midi note the arpeggiator (or a hand) is currently centred on */
   midiFor(degree: number, inst: InstrumentId) {
@@ -700,7 +871,7 @@ export class GestureSynthEngine {
 
   async dispose() {
     this.allOff();
-    if (this.arpTimer) clearInterval(this.arpTimer);
+    if (this.arpTimer) clearTimeout(this.arpTimer);
     this.arpTimer = null;
     await this.ctx?.close();
     this.ctx = null;
