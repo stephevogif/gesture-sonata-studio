@@ -125,39 +125,12 @@ export default function SkyHome() {
             <p className="sky-choose">CHOOSE YOUR SKY</p>
 
             <div className="sky-portals">
-              {/* NIGHT SKY */}
-              <button
-                type="button"
-                onClick={() => enter("night")}
-                aria-label="Entra in Night Sky"
-                className={`sky-portal sky-portal-night sky-reveal-1 ${
-                  leaving === "night" ? "sky-portal-chosen" : ""
-                } ${leaving === "heaven" ? "sky-portal-dimmed" : ""}`}
-              >
-                <span className="sky-aura sky-aura-night" aria-hidden />
-                <span className="sky-orbit sky-orbit-night" aria-hidden />
-                <span className="sky-content">
-                  <Sparkle tone="night" />
-                  <span className="sky-portal-title">NIGHT SKY</span>
-                  <span className="sky-portal-rule" aria-hidden>
-                    ✦
-                  </span>
-                  <span className="sky-portal-sub">
-                    Touch the stars.
-                    <br />
-                    Play the night.
-                  </span>
-                  <span className="sky-portal-meta sky-meta-night">TOUCH · FREE · DETECT</span>
-                </span>
-                {showHint && <TapHand delay="0s" />}
-              </button>
-
               {/* SEVEN HEAVENS */}
               <button
                 type="button"
                 onClick={() => enter("heaven")}
                 aria-label="Entra in Seven Heavens"
-                className={`sky-portal sky-portal-heaven sky-reveal-2 ${
+                className={`sky-portal sky-portal-heaven sky-reveal-1 ${
                   leaving === "heaven" ? "sky-portal-chosen" : ""
                 } ${leaving === "night" ? "sky-portal-dimmed" : ""}`}
               >
@@ -178,8 +151,36 @@ export default function SkyHome() {
                     I · II · III · IV · V · VI · VII
                   </span>
                 </span>
+                {showHint && <TapHand delay="0s" />}
+              </button>
+
+              {/* NIGHT SKY */}
+              <button
+                type="button"
+                onClick={() => enter("night")}
+                aria-label="Entra in Night Sky"
+                className={`sky-portal sky-portal-night sky-reveal-2 ${
+                  leaving === "night" ? "sky-portal-chosen" : ""
+                } ${leaving === "heaven" ? "sky-portal-dimmed" : ""}`}
+              >
+                <span className="sky-aura sky-aura-night" aria-hidden />
+                <span className="sky-orbit sky-orbit-night" aria-hidden />
+                <span className="sky-content">
+                  <Sparkle tone="night" />
+                  <span className="sky-portal-title">NIGHT SKY</span>
+                  <span className="sky-portal-rule" aria-hidden>
+                    ✦
+                  </span>
+                  <span className="sky-portal-sub">
+                    Touch the stars.
+                    <br />
+                    Play the night.
+                  </span>
+                  <span className="sky-portal-meta sky-meta-night">TOUCH · FREE · DETECT</span>
+                </span>
                 {showHint && <TapHand delay="2.6s" />}
               </button>
+
             </div>
 
             <div className="sky-hint-wrap sky-reveal-3">
