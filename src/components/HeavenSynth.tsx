@@ -339,19 +339,42 @@ export default function HeavenSynth() {
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
 
-      // ————— sole: tre cerchi concentrici con respiro sfasato —————
-      if (music > 0.004) {
+      // ————— sole al centro: tre cerchi concentrici con respiro sfasato —————
+      {
         const sx = w * 0.5;
-        const sy = h * 0.72;
-        const base = Math.min(w, h) * 0.12;
+        const sy = h * 0.44;
+        const base = Math.min(w, h) * 0.11;
+        const wake = 0.14 + music * 0.86; // presenza minima anche in silenzio
+        const pulse = 0.9 + Math.sin(t * 1.6) * 0.1 * music;
         for (let i = 0; i < 3; i++) {
-          const osc = Math.sin(t * 0.9 - i * 0.8);
-          const r = base * (1 + i * 0.95) * (1 + osc * (0.05 + glow * 0.16));
-          const a = [0.55, 0.26, 0.13][i]! * music * (0.55 + glow * 0.6) * (0.85 + osc * 0.15);
+          const osc = Math.sin(t * (0.9 + music * 0.5) - i * 0.8);
+          const r = base * (1 + i * 0.95) * (1 + osc * (0.04 + glow * 0.2 + music * 0.06)) * pulse;
+          const a = [0.55, 0.26, 0.13][i]! * wake * (0.5 + glow * 0.7) * (0.85 + osc * 0.15);
           ctx.globalAlpha = Math.min(1, a);
           ctx.drawImage(sun, sx - r, sy - r, r * 2, r * 2);
         }
+        // raggi che ruotano lentamente solo mentre suona
+        if (music > 0.02) {
+          const rays = 12;
+          const rot = t * 0.16;
+          const inner = base * 1.5;
+          const outer = base * (2.1 + Math.sin(t * 1.2) * 0.16 + glow * 0.5);
+          ctx.globalAlpha = Math.min(0.5, music * (0.16 + glow * 0.3));
+          ctx.strokeStyle = "rgba(255,236,186,1)";
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          for (let i = 0; i < rays; i++) {
+            const ang = rot + (i / rays) * Math.PI * 2;
+            const c1 = Math.cos(ang);
+            const s1 = Math.sin(ang);
+            const len = outer * (i % 2 ? 0.78 : 1);
+            ctx.moveTo(sx + c1 * inner, sy + s1 * inner);
+            ctx.lineTo(sx + c1 * len, sy + s1 * len);
+          }
+          ctx.stroke();
+        }
       }
+
 
       // ————— nuvole leggerissime, sempre in viaggio —————
       for (const c of cloudsRef.current) {
