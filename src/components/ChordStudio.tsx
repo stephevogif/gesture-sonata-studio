@@ -8,7 +8,6 @@ import {
   NOTE_NAMES,
   SCALES,
   degreeToMidi,
-  midiToFreq,
   midiToName,
   scaleSteps,
   type InstrumentId,
@@ -454,8 +453,3 @@ export default function ChordStudio() {
     </div>
   );
 }
-
-function midiFreqUnused() {
-  return midiToFreq(69);
-}
-void midiFreqUnused;
