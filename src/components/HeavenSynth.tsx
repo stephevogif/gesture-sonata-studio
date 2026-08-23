@@ -613,33 +613,13 @@ export default function HeavenSynth() {
               <>
                 <div className="pointer-events-none absolute left-3 top-3 rounded-xl bg-white/90 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow">
                   <div className="text-[9px] uppercase tracking-widest text-sky-800">Lato A</div>
-                  {hud.left ? (
-                    <>
-                      <div>
-                        Grado: <b>{hud.left.degree !== null ? ROMAN[hud.left.degree] : "—"}</b>
-                      </div>
-                      <div>
-                        Accordo: <b>{hud.left.chord}</b>
-                      </div>
-                      <div className="text-slate-500">{hud.left.gesture}</div>
-                    </>
-                  ) : (
-                    <div className="text-slate-500">nessuna mano</div>
-                  )}
+                  <div>Filtro: {(hud.filter / 1000).toFixed(1)} kHz</div>
+                  <div className="text-slate-500">{hud.heavens?.leftCount ?? 0} dita</div>
                 </div>
                 <div className="pointer-events-none absolute right-3 top-3 rounded-xl bg-white/90 px-3 py-2 text-right text-[11px] font-semibold text-slate-800 shadow">
                   <div className="text-[9px] uppercase tracking-widest text-teal-800">Lato B</div>
-                  {hud.right ? (
-                    <>
-                      <div>
-                        Voicing: <b>{VOICINGS.find((v) => v.id === hud.right!.voicing)?.name}</b>
-                      </div>
-                      <div>Volume: {Math.round(hud.right.volume * 100)}%</div>
-                      <div>Filtro: {(hud.right.filter / 1000).toFixed(1)} kHz</div>
-                    </>
-                  ) : (
-                    <div className="text-slate-500">nessuna mano</div>
-                  )}
+                  <div>Volume: {Math.round(hud.volume * 100)}%</div>
+                  <div className="text-slate-500">{hud.heavens?.rightCount ?? 0} dita</div>
                 </div>
                 <div className="pointer-events-none absolute bottom-2 right-3 text-[10px] font-semibold text-slate-500">
                   {Math.round(hud.fps)} fps
@@ -651,7 +631,7 @@ export default function HeavenSynth() {
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
                 <p className="max-w-sm text-sm font-medium text-slate-700">
                   {status ||
-                    "Lato A sceglie il grado della scala (dita) e maggiore/minore (inclinazione). Lato B controlla volume, voicing e filtro."}
+                    "Mostra da 1 a 7 dita (anche con due mani) per suonare i 7 accordi della scala. Lato A su/giù apre il filtro, Lato B su/giù alza il volume."}
                 </p>
                 <button
                   onClick={start}
@@ -675,15 +655,42 @@ export default function HeavenSynth() {
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button onClick={() => setShowDebug((v) => !v)} className={chip(showDebug)}>
-                {showDebug ? <Eye className="mr-1 inline h-3.5 w-3.5" /> : <EyeOff className="mr-1 inline h-3.5 w-3.5" />}
-                Overlay debug
-              </button>
-              <button onClick={() => setQuantize((v) => !v)} className={chip(quantize)}>
-                Theremin in scala
-              </button>
-            </div>
+            <button onClick={() => setShowDebug((v) => !v)} className={chip(showDebug)}>
+              {showDebug ? <Eye className="mr-1 inline h-3.5 w-3.5" /> : <EyeOff className="mr-1 inline h-3.5 w-3.5" />}
+              Overlay debug
+            </button>
+          </section>
+        )}
+
+        {panel === "fx" && (
+          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+            <h2 className="text-sm font-bold">Effetti</h2>
+            {(
+              [
+                ["Riverbero", reverb, setReverb, 0, 100, 1, "%"],
+                ["Delay mix", delayMix, setDelayMix, 0, 100, 1, "%"],
+                ["Delay feedback", delayFeedback, setDelayFeedback, 0, 90, 1, "%"],
+                ["Risonanza filtro", resonance, setResonance, 0.5, 18, 0.5, ""],
+                ["Cutoff massimo", cutMax, setCutMax, 800, 14000, 100, " Hz"],
+              ] as const
+            ).map(([label, value, set, min, max, step, unit]) => (
+              <label key={label} className="block text-[11px] font-semibold text-slate-600">
+                {label}: <span className="text-slate-900">{value}{unit}</span>
+                <input
+                  type="range"
+                  min={min}
+                  max={max}
+                  step={step}
+                  value={value}
+                  onChange={(e) => set(Number(e.target.value))}
+                  className="mt-1 w-full accent-sky-700"
+                />
+              </label>
+            ))}
+            <p className="text-[11px] text-slate-500">
+              Il low pass segue l&apos;altezza del Lato A: mano in basso = suono scuro, mano in alto = cutoff
+              massimo.
+            </p>
           </section>
         )}
 
@@ -704,40 +711,12 @@ export default function HeavenSynth() {
                 </button>
               ))}
             </div>
-            <div>
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Tonalità Lato A
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {(
-                  [
-                    ["auto", "Auto dal polso"],
-                    ["major", "Blocca maggiore"],
-                    ["minor", "Blocca minore"],
-                  ] as const
-                ).map(([id, label]) => (
-                  <button key={id} onClick={() => setTonalityLock(id)} className={chip(tonalityLock === id)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Gesture → grado
-              </p>
-              <ul className="grid grid-cols-2 gap-1 text-[11px] text-slate-700">
-                {DEFAULT_DEGREE_RULES.slice()
-                  .sort((a, b) => a.degree - b.degree)
-                  .map((r) => (
-                    <li key={r.id} className="rounded-lg bg-slate-100 px-2 py-1">
-                      <b>{ROMAN[r.degree]}</b> · {r.label}
-                    </li>
-                  ))}
-              </ul>
-            </div>
+            <p className="text-[11px] text-slate-500">
+              Tonica e scala restano bloccate: le mani scelgono solo il grado (1–7).
+            </p>
           </section>
         )}
+
 
         {panel === "loop" && (
           <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
