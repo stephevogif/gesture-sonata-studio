@@ -920,7 +920,9 @@ export default function HeavenSynth() {
               </div>
             </div>
             <div className="heaven-glass px-4 py-3 text-right">
-              <p className="text-[9px] uppercase tracking-[0.32em] text-white/80">Volume</p>
+              <p className="text-[9px] uppercase tracking-[0.32em] text-white/80">
+                Volume {volFollow ? "· mano" : "· fisso"}
+              </p>
               <p className="mt-1 text-lg font-light text-white">{Math.round(hud.volume * 100)}%</p>
               <div className="heaven-meter heaven-meter-r mt-2">
                 <span style={{ width: `${Math.round(hud.volume * 100)}%` }} />
