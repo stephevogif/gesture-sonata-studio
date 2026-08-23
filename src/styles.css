@@ -915,3 +915,521 @@
   text-transform: uppercase;
   color: rgba(240, 246, 255, 0.7);
 }
+
+/* ==================== SKY HOME (choose your sky) ==================== */
+
+@utility sky-home {
+  position: relative;
+  min-height: 100svh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #05070f;
+  transition: opacity 0.5s ease;
+}
+
+@utility sky-home-leaving {
+  opacity: 0;
+}
+
+@utility sky-home-bg {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    #04060f 0%,
+    #070c22 18%,
+    #101a3f 36%,
+    #24306a 52%,
+    #55507f 66%,
+    #a4795f 78%,
+    #e2b184 88%,
+    #f7ddb8 100%
+  );
+}
+
+@utility sky-home-nebula {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(60% 34% at 18% 22%, rgba(90, 120, 255, 0.24), transparent 70%),
+    radial-gradient(48% 26% at 82% 30%, rgba(160, 110, 255, 0.16), transparent 70%);
+  animation: sky-drift 46s ease-in-out infinite alternate;
+}
+
+@utility sky-home-clouds {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 46%;
+  background:
+    radial-gradient(48% 60% at 20% 90%, rgba(255, 225, 190, 0.5), transparent 70%),
+    radial-gradient(52% 62% at 80% 96%, rgba(255, 220, 175, 0.45), transparent 72%),
+    radial-gradient(40% 50% at 50% 108%, rgba(255, 240, 215, 0.55), transparent 70%);
+  filter: blur(6px);
+  animation: sky-drift 60s ease-in-out infinite alternate;
+}
+
+@utility sky-home-stars {
+  position: fixed;
+  inset: 0 0 42% 0;
+  pointer-events: none;
+
+  & span {
+    position: absolute;
+    border-radius: 999px;
+    background: #eaf1ff;
+    opacity: 0.5;
+    animation-name: sky-twinkle;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+  }
+}
+
+@keyframes sky-twinkle {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes sky-drift {
+  from {
+    transform: translate3d(-1.5%, 0, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(1.5%, -1%, 0) scale(1.06);
+  }
+}
+
+/* ---- logo ---- */
+
+@utility sky-logo {
+  text-align: center;
+  color: #fdf6e6;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.9s ease;
+}
+
+@utility sky-logo-intro {
+  transform: translateY(34svh) scale(1.06);
+  animation: sky-logo-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility sky-logo-home {
+  transform: translateY(0) scale(1);
+}
+
+@keyframes sky-logo-in {
+  0% {
+    opacity: 0;
+    filter: brightness(0.7);
+    transform: translateY(34svh) scale(0.97);
+  }
+  60% {
+    opacity: 1;
+    filter: brightness(1.12);
+    transform: translateY(34svh) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: translateY(34svh) scale(1.06);
+  }
+}
+
+@utility sky-logo-top {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.42em;
+  color: rgba(253, 246, 230, 0.82);
+}
+
+@utility sky-logo-main {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 8vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: 0.16em;
+  color: #fffaf0;
+  text-shadow: 0 0 26px rgba(255, 228, 178, 0.45), 0 0 70px rgba(255, 210, 150, 0.22);
+}
+
+@utility sky-rule {
+  margin: 0.5rem auto 0;
+  display: flex;
+  width: min(280px, 70%);
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  color: rgba(255, 228, 180, 0.75);
+
+  & span {
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(90deg, transparent, rgba(255, 228, 180, 0.45), transparent);
+  }
+}
+
+@utility sky-choose {
+  margin-top: 1.4rem;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.42em;
+  color: rgba(240, 245, 255, 0.72);
+  animation: sky-fade-up 0.7s ease both;
+}
+
+@keyframes sky-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility sky-reveal-1 {
+  animation: sky-fade-up 0.8s ease 0.18s both;
+}
+
+@utility sky-reveal-2 {
+  animation: sky-fade-up 0.8s ease 0.36s both;
+}
+
+@utility sky-reveal-3 {
+  animation: sky-fade-up 0.8s ease 0.56s both;
+}
+
+/* ---- portali ---- */
+
+@utility sky-portal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(74vw, 300px);
+  aspect-ratio: 1;
+  flex: none;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.4s ease;
+
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+@utility sky-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+@utility sky-aura {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+}
+
+@utility sky-aura-night {
+  background: radial-gradient(circle, rgba(40, 80, 190, 0.3), rgba(8, 14, 40, 0) 68%);
+  box-shadow: inset 0 0 60px rgba(90, 140, 255, 0.16);
+}
+
+@utility sky-aura-heaven {
+  background: radial-gradient(circle, rgba(255, 205, 130, 0.26), rgba(60, 40, 20, 0) 68%);
+  box-shadow: inset 0 0 60px rgba(255, 220, 170, 0.18);
+}
+
+/* energia luminosa che scorre lungo l'orbita (conic gradient + mask) */
+@utility sky-orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  padding: 1px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 999px;
+  }
+
+  &::before {
+    animation: sky-flow-a 34s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  }
+
+  &::after {
+    animation: sky-flow-b 53s cubic-bezier(0.35, 0.15, 0.6, 0.9) infinite;
+    opacity: 0.7;
+  }
+}
+
+@utility sky-orbit-night {
+  &::before {
+    background: conic-gradient(
+      from 0deg,
+      rgba(150, 190, 255, 0.06),
+      rgba(190, 220, 255, 0.85) 12%,
+      rgba(120, 160, 255, 0.1) 26%,
+      rgba(120, 160, 255, 0.03) 48%,
+      rgba(220, 235, 255, 0.55) 66%,
+      rgba(120, 160, 255, 0.05) 82%,
+      rgba(150, 190, 255, 0.06)
+    );
+  }
+  &::after {
+    background: conic-gradient(
+      from 140deg,
+      transparent,
+      rgba(200, 225, 255, 0.5) 18%,
+      transparent 34%,
+      transparent 70%,
+      rgba(160, 200, 255, 0.35) 86%,
+      transparent
+    );
+  }
+}
+
+@utility sky-orbit-heaven {
+  &::before {
+    background: conic-gradient(
+      from 40deg,
+      rgba(255, 225, 170, 0.06),
+      rgba(255, 240, 205, 0.9) 14%,
+      rgba(255, 210, 140, 0.1) 28%,
+      rgba(255, 210, 140, 0.03) 50%,
+      rgba(255, 248, 225, 0.6) 68%,
+      rgba(255, 210, 140, 0.05) 84%,
+      rgba(255, 225, 170, 0.06)
+    );
+  }
+  &::after {
+    background: conic-gradient(
+      from 220deg,
+      transparent,
+      rgba(255, 235, 190, 0.5) 16%,
+      transparent 32%,
+      transparent 68%,
+      rgba(255, 220, 160, 0.35) 88%,
+      transparent
+    );
+  }
+}
+
+@keyframes sky-flow-a {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0.85;
+  }
+  22% {
+    transform: rotate(58deg);
+    opacity: 1;
+  }
+  47% {
+    transform: rotate(126deg);
+    opacity: 0.55;
+  }
+  71% {
+    transform: rotate(238deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0.85;
+  }
+}
+
+@keyframes sky-flow-b {
+  0% {
+    transform: rotate(360deg);
+    opacity: 0.4;
+  }
+  35% {
+    transform: rotate(212deg);
+    opacity: 0.8;
+  }
+  63% {
+    transform: rotate(140deg);
+    opacity: 0.35;
+  }
+  100% {
+    transform: rotate(0deg);
+    opacity: 0.4;
+  }
+}
+
+/* ---- stelle CTA ---- */
+
+@utility sky-star {
+  position: relative;
+  display: block;
+  height: 74px;
+  width: 74px;
+  animation: sky-breathe 3.4s ease-in-out infinite;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -60%;
+    border-radius: 999px;
+    animation: sky-halo 3.4s ease-in-out infinite;
+  }
+}
+
+@utility sky-star-night {
+  color: #e8f1ff;
+  filter: drop-shadow(0 0 16px rgba(140, 190, 255, 0.9));
+
+  &::after {
+    background: radial-gradient(circle, rgba(120, 170, 255, 0.4), transparent 68%);
+  }
+}
+
+@utility sky-star-heaven {
+  color: #fff3d6;
+  filter: drop-shadow(0 0 18px rgba(255, 205, 130, 0.95));
+
+  &::after {
+    background: radial-gradient(circle, rgba(255, 205, 130, 0.42), transparent 68%);
+  }
+}
+
+@keyframes sky-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.88;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes sky-halo {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@utility sky-portal-title {
+  margin-top: 0.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 5.6vw, 1.9rem);
+  letter-spacing: 0.1em;
+  color: #fffaf1;
+  text-shadow: 0 0 22px rgba(255, 255, 255, 0.28);
+}
+
+@utility sky-portal-rule {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@utility sky-portal-sub {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: rgba(250, 250, 255, 0.85);
+}
+
+@utility sky-portal-meta {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+
+@utility sky-meta-night {
+  color: rgba(150, 195, 255, 0.95);
+}
+
+@utility sky-meta-heaven {
+  color: rgba(255, 215, 155, 0.95);
+}
+
+/* ---- hint dito ---- */
+
+@utility sky-hint-wrap {
+  margin-top: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+@utility sky-hand {
+  color: rgba(255, 245, 225, 0.85);
+  animation: sky-tap-hint 5.2s ease-in-out infinite;
+}
+
+@keyframes sky-tap-hint {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  12% {
+    transform: translateY(-6px);
+    opacity: 0.9;
+  }
+  18% {
+    transform: translateY(-12px) scale(0.94);
+    opacity: 1;
+  }
+  24% {
+    transform: translateY(-6px) scale(1);
+    opacity: 0.9;
+  }
+  36% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+@utility sky-tap {
+  font-size: 0.66rem;
+  letter-spacing: 0.36em;
+  color: rgba(255, 248, 235, 0.7);
+}
+
+@utility sky-foot {
+  font-size: 0.6rem;
+  letter-spacing: 0.34em;
+  color: rgba(255, 240, 215, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-star,
+  .sky-star::after,
+  .sky-orbit::before,
+  .sky-orbit::after,
+  .sky-hand,
+  .sky-home-nebula,
+  .sky-home-clouds,
+  .sky-home-stars span {
+    animation: none !important;
+  }
+}

@@ -1409,7 +1409,13 @@ export default function GestureSynth() {
           </div>
         </div>
 
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex justify-center gap-5">
+          <Link
+            to="/"
+            className="text-[10px] uppercase tracking-[0.32em] text-white/55 hover:text-white"
+          >
+            Home
+          </Link>
           <Link
             to="/studio"
             className="text-[10px] uppercase tracking-[0.32em] text-white/55 hover:text-white"
@@ -1418,6 +1424,7 @@ export default function GestureSynth() {
             <ArrowRight className="ml-1.5 inline h-3 w-3" />
           </Link>
         </div>
+
 
 
 
