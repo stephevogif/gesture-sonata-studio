@@ -35,7 +35,7 @@ export function useHandTracking(onFrame: (frame: TrackingFrame) => void) {
     lastTimestamp.current = now;
 
     const hands = provider.detect(video, now);
-    callbackRef.current({ hands, video, fps: fpsRef.current });
+    callbackRef.current({ hands, video, fps: fpsRef.current, timestamp: now });
     rafRef.current = requestAnimationFrame(loop);
   }, []);
 
