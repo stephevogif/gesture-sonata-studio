@@ -6,6 +6,7 @@ import {
   Eye,
   EyeOff,
   HelpCircle,
+  Mic,
   Music2,
   Pause,
   Play,
