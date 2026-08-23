@@ -58,7 +58,7 @@ type Hud = {
 const ONBOARD_KEY = "sky-studio-onboarded";
 
 const STEPS = [
-  { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: il video non viene mostrato, vedi solo le mani luminose." },
+  { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: vedrai te stesso nel cielo, con le mani illuminate come costellazioni." },
   { a: "fingers" as const, t: "7 Heavens", d: "Le dita totali delle due mani (1–7) scelgono l'accordo I–VII della scala scelta." },
   { a: "height" as const, t: "Lato A = filtro", d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi." },
   { a: "height" as const, t: "Lato B = volume", d: "Alza o abbassa la mano B per controllare il volume." },

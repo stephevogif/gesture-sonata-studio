@@ -335,11 +335,11 @@
 .heaven-veil {
   background:
     radial-gradient(90% 55% at 50% 12%, rgba(255, 236, 200, 0.55), transparent 62%),
-    linear-gradient(180deg, rgba(150, 190, 240, 0.72) 0%, rgba(198, 222, 250, 0.5) 45%, rgba(255, 244, 228, 0.58) 100%);
+    linear-gradient(180deg, rgba(150,190,240,0.55) 0%, rgba(198, 222, 250, 0.5) 45%, rgba(255, 244, 228, 0.58) 100%);
 }
 
 .heaven-vignette {
-  background: radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(90, 130, 190, 0.42) 100%);
+  background: radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(96,138,196,0.28) 100%);
 }
 
 @utility heaven-title {
