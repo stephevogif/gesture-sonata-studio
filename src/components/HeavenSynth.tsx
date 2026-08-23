@@ -61,10 +61,10 @@ const STEPS = [
   { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: vedrai te stesso nel cielo, con le mani illuminate come costellazioni." },
   { a: "fingers" as const, t: "7 Heavens", d: "Le dita totali delle due mani (1–7) scelgono l'accordo I–VII della scala scelta." },
   { a: "height" as const, t: "Lato A = filtro", d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi." },
-  { a: "height" as const, t: "Lato B = volume", d: "Alza o abbassa la mano B per controllare il volume." },
+  { a: "height" as const, t: "Volume", d: "Il volume parte fisso al 100%: mostra 10 dita per passare al controllo con la mano B (altezza) e 10 dita di nuovo per tornare fisso." },
   { a: "settings" as const, t: "Suono ed effetti", d: "Strumento nel pannello Suono; riverbero, delay, risonanza e cutoff nel pannello Effetti." },
-  { a: "loop" as const, t: "Arpeggiatore", d: "9 dita accendono l'arp, 8 lo spengono; nel pannello Arp scegli tempo, divisione e pattern." },
-  { a: "keys" as const, t: "Hold", d: "10 dita tengono l'accordo: si libera appena scegli un altro grado (A = arp, H = hold)." },
+  { a: "loop" as const, t: "Arpeggiatore", d: "Chiudi e riapri velocemente entrambe le mani per accendere o spegnere l'arpeggiatore (tasto A)." },
+
 ];
 
 
