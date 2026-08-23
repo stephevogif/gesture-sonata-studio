@@ -607,6 +607,10 @@ export default function HeavenSynth() {
         <div className="heaven-vignette absolute inset-0" />
       </div>
 
+      {/* gradiente scuro in basso per far risaltare la nav */}
+      <div className="heaven-bottom-shade" />
+
+
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-32 pt-5">
         {/* header */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
