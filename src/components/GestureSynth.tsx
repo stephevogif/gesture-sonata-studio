@@ -1256,18 +1256,73 @@ export default function GestureSynth() {
             </div>
             <div>
               <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                Velocità: {arpRate} note/s
+                Tempo: {bpm} BPM
               </label>
               <input
                 type="range"
-                min={2}
-                max={16}
+                min={40}
+                max={200}
                 step={1}
-                value={arpRate}
-                onChange={(e) => setArpRate(Number(e.target.value))}
+                value={bpm}
+                onChange={(e) => setBpm(Number(e.target.value))}
                 className="mt-3 w-full accent-[var(--primary)]"
               />
             </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Sincronizzazione
+              </label>
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() => setArpSync(true)}
+                  aria-pressed={arpSync}
+                  className={arpSync ? "btn-hero" : "btn-ghost"}
+                >
+                  Sync
+                </button>
+                <button
+                  onClick={() => setArpSync(false)}
+                  aria-pressed={!arpSync}
+                  className={!arpSync ? "btn-hero" : "btn-ghost"}
+                >
+                  Libero
+                </button>
+              </div>
+            </div>
+            {arpSync ? (
+              <div>
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Divisione
+                </label>
+                <select
+                  className={`mt-2 ${selectClass}`}
+                  value={arpDivision}
+                  onChange={(e) => setArpDivision(e.target.value as DivisionId)}
+                >
+                  {DIVISIONS.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Velocità: {arpRate} note/s
+                </label>
+                <input
+                  type="range"
+                  min={2}
+                  max={16}
+                  step={1}
+                  value={arpRate}
+                  onChange={(e) => setArpRate(Number(e.target.value))}
+                  className="mt-3 w-full accent-[var(--primary)]"
+                />
+              </div>
+            )}
+
             <div>
               <label className="text-xs uppercase tracking-widest text-muted-foreground">
                 Gate: {arpGate}%
