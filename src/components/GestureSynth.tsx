@@ -116,6 +116,73 @@ const generateStars = (w: number, h: number): Star[] => {
   }));
 };
 
+// ---- costellazioni che scorrono sullo sfondo ----
+type ConstShape = { pts: [number, number][]; edges: [number, number][] };
+
+const CONST_SHAPES: ConstShape[] = [
+  // Orione
+  {
+    pts: [[0.1, 0], [0.32, 0.06], [0.05, 0.34], [0.24, 0.42], [0.42, 0.5], [0.6, 0.58], [0.5, 0.86], [0.78, 0.9]],
+    edges: [[0, 1], [0, 2], [1, 5], [2, 3], [3, 4], [4, 5], [3, 6], [5, 7], [6, 7]],
+  },
+  // Cassiopea (W)
+  {
+    pts: [[0, 0.2], [0.25, 0.62], [0.5, 0.18], [0.75, 0.66], [1, 0.24]],
+    edges: [[0, 1], [1, 2], [2, 3], [3, 4]],
+  },
+  // Orsa maggiore
+  {
+    pts: [[0, 0.5], [0.18, 0.36], [0.38, 0.4], [0.55, 0.56], [0.72, 0.42], [0.9, 0.5], [1, 0.72]],
+    edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [3, 6]],
+  },
+  // Lira / triangolo
+  {
+    pts: [[0.5, 0], [0.12, 0.4], [0.86, 0.44], [0.3, 0.9], [0.66, 0.96]],
+    edges: [[0, 1], [0, 2], [1, 3], [2, 4], [3, 4]],
+  },
+  // Scorpione
+  {
+    pts: [[0, 0.1], [0.16, 0.28], [0.34, 0.36], [0.52, 0.48], [0.66, 0.66], [0.6, 0.86], [0.4, 0.94], [0.28, 0.8]],
+    edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]],
+  },
+  // Cigno (croce)
+  {
+    pts: [[0.5, 0], [0.5, 0.35], [0.5, 0.7], [0.5, 1], [0.12, 0.42], [0.88, 0.5]],
+    edges: [[0, 1], [1, 2], [2, 3], [4, 1], [1, 5]],
+  },
+];
+
+type Constellation = {
+  shape: ConstShape;
+  x: number;
+  y: number;
+  scale: number;
+  vx: number;
+  vy: number;
+  rot: number;
+  phase: number;
+  speed: number;
+};
+
+const spawnConstellation = (w: number, h: number, initial: boolean): Constellation => {
+  const scale = (0.16 + Math.random() * 0.26) * Math.min(w, h) * 1.6;
+  return {
+    shape: CONST_SHAPES[Math.floor(Math.random() * CONST_SHAPES.length)]!,
+    x: initial ? Math.random() * w : w + scale * 0.6,
+    y: Math.random() * (h - scale * 0.4),
+    scale,
+    vx: -(0.06 + Math.random() * 0.12),
+    vy: (Math.random() - 0.5) * 0.03,
+    rot: (Math.random() - 0.5) * 0.5,
+    phase: Math.random() * Math.PI * 2,
+    speed: 0.0002 + Math.random() * 0.0004,
+  };
+};
+
+const generateConstellations = (w: number, h: number): Constellation[] =>
+  Array.from({ length: 5 }, () => spawnConstellation(w, h, true));
+
+
 const PINCH_TIPS = [8, 12, 16, 20];
 const PINCH_OFFSETS = [0, 2, 4, 6];
 
