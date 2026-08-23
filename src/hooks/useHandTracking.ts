@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { HandLandmarkProvider, openCamera, type CameraHandle } from "@/core/tracking/provider";
+import {
+  HandLandmarkProvider,
+  cameraErrorFrom,
+  openCamera,
+  type CameraHandle,
+} from "@/core/tracking/provider";
 import type { TrackingFrame } from "@/core/tracking/types";
 
 export type { TrackingFrame };
@@ -14,6 +19,8 @@ export function useHandTracking(onFrame: (frame: TrackingFrame) => void) {
   const providerRef = useRef<HandLandmarkProvider | null>(null);
   const cameraRef = useRef<CameraHandle | null>(null);
   const rafRef = useRef<number | null>(null);
+  const startingRef = useRef(false);
+  const runningRef = useRef(false);
   const callbackRef = useRef(onFrame);
   callbackRef.current = onFrame;
   const lastTimestamp = useRef(0);
@@ -21,6 +28,7 @@ export function useHandTracking(onFrame: (frame: TrackingFrame) => void) {
 
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
 
   const loop = useCallback(() => {
     const video = videoRef.current;
@@ -39,7 +47,21 @@ export function useHandTracking(onFrame: (frame: TrackingFrame) => void) {
     rafRef.current = requestAnimationFrame(loop);
   }, []);
 
+  const stop = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    cameraRef.current?.stop();
+    cameraRef.current = null;
+    runningRef.current = false;
+    setRunning(false);
+    setStatus("");
+  }, []);
+
   const start = useCallback(async () => {
+    // un solo avvio alla volta: il doppio tap su mobile non apre due camere
+    if (startingRef.current || runningRef.current) return runningRef.current;
+    startingRef.current = true;
+    setError("");
     try {
       setStatus("Attivazione fotocamera…");
       const video = videoRef.current!;
@@ -52,26 +74,36 @@ export function useHandTracking(onFrame: (frame: TrackingFrame) => void) {
       }
 
       setStatus("");
+      runningRef.current = true;
       setRunning(true);
       rafRef.current = requestAnimationFrame(loop);
       return true;
-    } catch (error) {
-      console.error(error);
-      setStatus("Impossibile accedere alla fotocamera.");
+    } catch (raw) {
+      const err = cameraErrorFrom(raw);
+      console.error(err);
+      // rilascia sempre la camera: un retry non deve trovare il device occupato
+      cameraRef.current?.stop();
+      cameraRef.current = null;
+      runningRef.current = false;
+      setStatus("");
+      setError(err.message);
       setRunning(false);
       return false;
+    } finally {
+      startingRef.current = false;
     }
   }, [loop]);
 
-  const stop = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
-    cameraRef.current?.stop();
-    cameraRef.current = null;
-    setRunning(false);
-  }, []);
-
   useEffect(() => () => stop(), [stop]);
 
-  return { videoRef, running, status, start, stop };
+  // in background la camera viene rilasciata: niente stream appesi al ritorno
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === "hidden" && runningRef.current) stop();
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    return () => document.removeEventListener("visibilitychange", onHidden);
+  }, [stop]);
+
+  return { videoRef, running, status, error, start, stop };
 }
