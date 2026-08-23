@@ -164,15 +164,8 @@ export class HandLandmarkProvider {
   /** Loads the detector lazily; safe to call more than once. */
   async load(): Promise<void> {
     if (this.detector) return;
-    const vision = await import("@mediapipe/tasks-vision");
-    const files = await vision.FilesetResolver.forVisionTasks(WASM_BUNDLE);
-    this.detector = (await vision.HandLandmarker.createFromOptions(files, {
-      baseOptions: { modelAssetPath: HAND_MODEL, delegate: "GPU" },
-      runningMode: "VIDEO",
-      numHands: this.maxHands,
-      minHandDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    })) as unknown as RawDetector;
+    this.detector = (await loadHandLandmarker(this.maxHands)) as unknown as RawDetector;
+
   }
 
   /** Detects the hands visible in the current video frame. */
