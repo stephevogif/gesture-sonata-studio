@@ -871,7 +871,7 @@ export class GestureSynthEngine {
 
   async dispose() {
     this.allOff();
-    if (this.arpTimer) clearInterval(this.arpTimer);
+    if (this.arpTimer) clearTimeout(this.arpTimer);
     this.arpTimer = null;
     await this.ctx?.close();
     this.ctx = null;
