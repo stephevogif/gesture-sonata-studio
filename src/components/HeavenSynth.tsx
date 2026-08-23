@@ -2,19 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
-  Circle,
   Eye,
   EyeOff,
   HelpCircle,
   Mic,
   Music2,
-  Pause,
   Play,
   Repeat,
   Settings2,
   Sliders,
   Square,
-  Trash2,
 } from "lucide-react";
 import {
   GestureSynthEngine,
@@ -34,14 +31,13 @@ import {
   type ModeId,
 } from "@/lib/theory";
 import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gestures";
-import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import TutorialArt from "@/components/TutorialArt";
 import { detectKey } from "@/lib/keyDetect";
 
 
 
-type PanelId = null | "sound" | "fx" | "scale" | "loop" | "help";
+type PanelId = null | "sound" | "fx" | "scale" | "arp" | "help";
 
 type Hud = {
   volume: number;
@@ -67,8 +63,8 @@ const STEPS = [
   { a: "height" as const, t: "Lato A = filtro", d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi." },
   { a: "height" as const, t: "Lato B = volume", d: "Alza o abbassa la mano B per controllare il volume." },
   { a: "settings" as const, t: "Suono ed effetti", d: "Strumento nel pannello Suono; riverbero, delay, risonanza e cutoff nel pannello Effetti." },
-  { a: "loop" as const, t: "Loop pedal", d: "Registra fino a 4 tracce con click di preconteggio: si avviano in automatico." },
-  { a: "keys" as const, t: "Scorciatoie", d: "Spazio = play/pausa, 1–4 traccia, M mute, S solo, Canc svuota, Shift+Canc svuota tutto." },
+  { a: "loop" as const, t: "Arpeggiatore", d: "9 dita accendono l'arp, 8 lo spengono; nel pannello Arp scegli tempo, divisione e pattern." },
+  { a: "keys" as const, t: "Hold", d: "10 dita tengono l'accordo: si libera appena scegli un altro grado (A = arp, H = hold)." },
 ];
 
 
@@ -148,18 +144,17 @@ export default function HeavenSynth() {
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
 
-  // ————— loop pedal —————
+  // ————— arpeggiatore —————
   const [bpm, setBpm] = useState(100);
-  const [bars, setBars] = useState(2);
-  const [loop, setLoop] = useState({
-    playing: false,
-    recording: false,
-    countIn: false,
-    step: 0,
-    selected: 0,
-    tracks: emptyTracks(),
-  });
-  const looperRef = useRef<Looper | null>(null);
+  const [arpOn, setArpOn] = useState(false);
+  const [arpDiv, setArpDiv] = useState(2);
+  const [arpMode, setArpMode] = useState<"up" | "down" | "updown" | "octaves" | "random">("up");
+  const [arpGate, setArpGate] = useState(0.7);
+  const arpOnRef = useRef(false);
+  const holdRef = useRef(false);
+  const heldDegreeRef = useRef<number | null>(null);
+  const lastStableRef = useRef<number | null>(null);
+
 
   const cfg = useRef({ rootPc, mode, instrument, showDebug, cutMax });
   useEffect(() => {
@@ -261,49 +256,49 @@ export default function HeavenSynth() {
     activeIdsRef.current = ids;
   }, []);
 
-  /* ————— loop pedal ————— */
-
-  const getLooper = useCallback(() => {
-    if (looperRef.current) return looperRef.current;
-    const l = new Looper({
-      bpm,
-      bars,
-      onEvent: (track, ev) => {
-        const e = engineRef.current;
-        if (!e) return;
-        const inst = cfg.current.instrument;
-        const shift = INSTRUMENT_SHIFT[inst] ?? 0;
-        const dur = (60 / Math.max(30, l.bpm) / 4) * 3.2;
-        ev.notes.forEach((m, i) => {
-          const id = `lp${track.id}-${i}`;
-          e.noteOn(id, midiToFreq(m + shift), ev.volume * track.volume * 0.8, 0.5, inst);
-          setTimeout(() => e.noteOff(id, true), dur * 1000);
-        });
-      },
-      capture: () => {
-        const c = currentRef.current;
-        if (!c.chord) return null;
-        return {
-          notes: c.chord.notes,
-          label: c.chord.label,
-          volume: Math.max(0.2, c.volume),
-          filter: c.filter,
-        };
-      },
-      onState: (patch) => setLoop((s) => ({ ...s, ...patch }) as typeof s),
-    });
-    looperRef.current = l;
-    return l;
-  }, [bpm, bars]);
+  /* ————— arpeggiatore ————— */
 
   useEffect(() => {
-    looperRef.current?.setBpm(bpm);
+    arpOnRef.current = arpOn;
+    if (!arpOn) return;
+    const interval = ((60 / Math.max(40, bpm)) / arpDiv) * 1000;
+    let i = 0;
+    const id = setInterval(() => {
+      const e = engineRef.current;
+      const c = currentRef.current.chord;
+      if (!e || !c || !c.notes.length) return;
+      const inst = cfg.current.instrument;
+      const shift = INSTRUMENT_SHIFT[inst] ?? 0;
+      const base = c.notes;
+      const seq =
+        arpMode === "down"
+          ? [...base].reverse()
+          : arpMode === "updown"
+            ? [...base, ...[...base].reverse().slice(1, -1)]
+            : arpMode === "octaves"
+              ? [...base, ...base.map((n) => n + 12)]
+              : base;
+      const m =
+        arpMode === "random"
+          ? (base[Math.floor(Math.random() * base.length)] ?? base[0]!)
+          : (seq[i % seq.length] ?? base[0]!);
+      i += 1;
+      e.pluck(
+        "arp",
+        midiToFreq(m + shift),
+        Math.max(0.1, currentRef.current.volume),
+        0.6,
+        inst,
+        (interval / 1000) * arpGate,
+      );
+    }, interval);
+    return () => clearInterval(id);
+  }, [arpOn, bpm, arpDiv, arpMode, arpGate]);
+
+  useEffect(() => {
     engineRef.current?.setTempo(bpm);
   }, [bpm]);
-  useEffect(() => {
-    looperRef.current?.setBars(bars);
-  }, [bars]);
-  useEffect(() => () => looperRef.current?.dispose(), []);
+
 
   /* ————— rendering ————— */
 
@@ -609,9 +604,16 @@ export default function HeavenSynth() {
       const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
       const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
       const total = lc + rc;
-      const stable = heavensDeb.current.push(total >= 1 && total <= 7 ? total : null);
+      const stable = heavensDeb.current.push(total >= 1 && total <= 10 ? total : null);
+      if (stable !== lastStableRef.current) {
+        lastStableRef.current = stable;
+        if (stable === 8) setArpOn(false);
+        else if (stable === 9) setArpOn(true);
+        else if (stable === 10) holdRef.current = !!currentRef.current.chord;
+        else if (stable != null && stable !== heldDegreeRef.current! + 1) holdRef.current = false;
+      }
       let deg: number | null = null;
-      if (hands.length && stable) {
+      if (hands.length && stable && stable <= 7) {
         deg = stable - 1;
         chord = buildChord({
           rootPc: root,
@@ -621,12 +623,18 @@ export default function HeavenSynth() {
           voicing: "triad",
           previous: prevNotesRef.current,
         });
-        applyNotes(chord.notes, right ? Math.max(0.06, volume) : 0.6, bright);
+        if (arpOnRef.current) releaseAll();
+        else applyNotes(chord.notes, right ? Math.max(0.06, volume) : 0.6, bright);
         prevNotesRef.current = chord.notes;
         currentRef.current.chord = chord;
+        heldDegreeRef.current = deg;
+      } else if (holdRef.current) {
+        chord = currentRef.current.chord;
+        deg = heldDegreeRef.current;
       } else {
         releaseAll();
       }
+
       heavensHud = {
         leftCount: lc,
         rightCount: rc,
@@ -702,7 +710,7 @@ export default function HeavenSynth() {
     stopCam();
     releaseAll();
     engineRef.current?.allOff();
-    looperRef.current?.pause();
+    holdRef.current = false;
     setHud({ volume: 0, filter: 8000, heavens: null, fps: 0 });
   }, [releaseAll, stopCam]);
 
@@ -714,24 +722,13 @@ export default function HeavenSynth() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName)) return;
-      const l = getLooper();
-      if (e.code === "Space") {
-        e.preventDefault();
-        l.toggle();
-      } else if (/^Digit[1-4]$/.test(e.code)) {
-        l.select(Number(e.code.slice(5)) - 1);
-      } else if (e.key.toLowerCase() === "m") {
-        l.toggleMute();
-      } else if (e.key.toLowerCase() === "s") {
-        l.toggleSolo();
-      } else if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        e.shiftKey ? l.clearAll() : l.clear();
-      }
+      if (e.key.toLowerCase() === "a") setArpOn((v) => !v);
+      else if (e.key.toLowerCase() === "h") holdRef.current = !holdRef.current;
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [getLooper]);
+  }, []);
+
 
   const activeDegree = hud.heavens?.degree ?? null;
   const playing = activeDegree != null;
@@ -860,10 +857,15 @@ export default function HeavenSynth() {
                 </p>
               )}
               {!running && (
-                <button onClick={start} className="heaven-pill mt-6">
-                  {camError ? "Riprova" : "Inizia a suonare"}
+                <button
+                  onClick={start}
+                  aria-label={camError ? "Riprova" : "Play"}
+                  className="heaven-play heaven-play-breathe mx-auto mt-6"
+                >
+                  <Play className="h-7 w-7" />
                 </button>
               )}
+
             </div>
           )}
         </div>
@@ -990,124 +992,78 @@ export default function HeavenSynth() {
         )}
 
 
-        {panel === "loop" && (
+        {panel === "arp" && (
           <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold">Loop pedal</h2>
+              <h2 className="text-sm font-bold">Arpeggiatore</h2>
               <span className="text-[11px] font-semibold text-slate-500">
-                {loop.countIn ? "Preconteggio…" : loop.recording ? "REC" : loop.playing ? "Play" : "Stop"}
+                {arpOn ? "Attivo" : "Spento"}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
-                BPM
-                <input
-                  type="range"
-                  min={60}
-                  max={180}
-                  value={bpm}
-                  onChange={(e) => setBpm(Number(e.target.value))}
-                  className="w-28"
-                />
-                <span className="w-8 text-slate-900">{bpm}</span>
-              </label>
-              <div className="flex gap-1.5">
-                {[1, 2, 4].map((b) => (
-                  <button key={b} onClick={() => setBars(b)} className={chip(bars === b)}>
-                    {b} {b === 1 ? "battuta" : "battute"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => getLooper().record()}
-                className="flex items-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-[12px] font-bold text-white"
-              >
-                <Circle className="h-3.5 w-3.5 fill-current" /> Rec traccia {loop.selected + 1}
+            <div className="flex flex-wrap gap-1.5">
+              <button onClick={() => setArpOn((v) => !v)} className={chip(arpOn)}>
+                {arpOn ? "Arp ON" : "Arp OFF"}
               </button>
-              <button
-                onClick={() => getLooper().toggle()}
-                className="flex items-center gap-1.5 rounded-full bg-sky-700 px-4 py-2 text-[12px] font-bold text-white"
-              >
-                {loop.playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {loop.playing ? "Pausa" : "Play"}
-              </button>
-              <button
-                onClick={() => getLooper().clearAll()}
-                className="flex items-center gap-1.5 rounded-full border border-slate-300 px-4 py-2 text-[12px] font-semibold text-slate-700"
-              >
-                <Trash2 className="h-4 w-4" /> Svuota tutto
+              <button onClick={() => { holdRef.current = false; }} className={chip(false)}>
+                Rilascia hold
               </button>
             </div>
-
-            <div className="space-y-2">
-              {loop.tracks.map((t: LoopTrack) => (
-                <div
-                  key={t.id}
-                  className={`rounded-xl border p-2 ${
-                    loop.selected === t.id ? "border-sky-700 bg-sky-50" : "border-slate-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => getLooper().select(t.id)}
-                      className="rounded-md bg-slate-900 px-2 py-1 text-[11px] font-bold text-white"
-                    >
-                      {t.id + 1}
-                    </button>
-                    <button onClick={() => getLooper().toggleMute(t.id)} className={chip(t.mute)}>
-                      M
-                    </button>
-                    <button onClick={() => getLooper().toggleSolo(t.id)} className={chip(t.solo)}>
-                      S
-                    </button>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      value={t.volume}
-                      onChange={(e) => getLooper().setVolume(t.id, Number(e.target.value))}
-                      className="ml-1 w-20"
-                    />
-                    <button
-                      onClick={() => getLooper().clear(t.id)}
-                      className="ml-auto text-slate-500"
-                      aria-label={`Svuota traccia ${t.id + 1}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="mt-2 flex gap-[2px]">
-                    {Array.from({ length: bars * STEPS_PER_BAR }, (_, s) => {
-                      const ev = t.events.find((e) => e.step === s);
-                      return (
-                        <button
-                          key={s}
-                          onClick={() => ev && getLooper().toggleCell(t.id, s)}
-                          className={`h-6 flex-1 rounded-[3px] ${
-                            ev
-                              ? ev.muted
-                                ? "bg-slate-300"
-                                : "bg-sky-600"
-                              : s % 4 === 0
-                                ? "bg-slate-200"
-                                : "bg-slate-100"
-                          } ${loop.step === s && loop.playing ? "ring-2 ring-rose-500" : ""}`}
-                          aria-label={`Step ${s + 1}`}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+            <label className="block text-[11px] font-semibold text-slate-600">
+              Tempo: <span className="text-slate-900">{bpm} BPM</span>
+              <input
+                type="range"
+                min={50}
+                max={200}
+                value={bpm}
+                onChange={(e) => setBpm(Number(e.target.value))}
+                className="mt-1 w-full accent-sky-700"
+                aria-label="Tempo in BPM"
+              />
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ["1/4", 1],
+                ["1/8", 2],
+                ["1/8T", 3],
+                ["1/16", 4],
+              ] as const).map(([label, div]) => (
+                <button key={label} onClick={() => setArpDiv(div)} className={chip(arpDiv === div)}>
+                  {label}
+                </button>
               ))}
             </div>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ["up", "Salita"],
+                ["down", "Discesa"],
+                ["updown", "Su e giù"],
+                ["octaves", "Ottave"],
+                ["random", "Casuale"],
+              ] as const).map(([id, label]) => (
+                <button key={id} onClick={() => setArpMode(id)} className={chip(arpMode === id)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <label className="block text-[11px] font-semibold text-slate-600">
+              Gate: <span className="text-slate-900">{Math.round(arpGate * 100)}%</span>
+              <input
+                type="range"
+                min={10}
+                max={140}
+                value={Math.round(arpGate * 100)}
+                onChange={(e) => setArpGate(Number(e.target.value) / 100)}
+                className="mt-1 w-full accent-sky-700"
+                aria-label="Lunghezza nota arpeggio"
+              />
+            </label>
             <p className="text-[11px] text-slate-500">
-              Spazio play/pausa · 1–4 traccia · M mute · S solo · Canc svuota · Shift+Canc tutto
+              Gesti: 8 dita = arp OFF · 9 dita = arp ON · 10 dita = hold della nota (si libera
+              cambiando grado).
             </p>
           </section>
         )}
+
 
         {panel === "help" && (
           <section className="heaven-glass mt-4 space-y-2 p-4 text-white">
@@ -1152,7 +1108,7 @@ export default function HeavenSynth() {
 
           {(
             [
-              ["loop", "Loop", Repeat],
+              ["arp", "Arp", Repeat],
               ["fx", "FX", Sliders],
             ] as const
           ).map(([id, label, Icon]) => (
