@@ -599,8 +599,9 @@ export default function HeavenSynth() {
       const right = hands.find((x) => x.handedness === "right") ?? null;
       const { rootPc: root, mode: md, cutMax: cmax } = cfg.current;
 
-      // ————— Lato B (destra): altezza = volume —————
-      const volume = right ? volSm.current.push(heightToGain(right.height)) : volSm.current.push(0);
+      // ————— Lato B (destra): altezza = volume (solo se il controllo mano è attivo) —————
+      const handVol = right ? heightToGain(right.height) : 0;
+      const volume = volSm.current.push(volFollowRef.current ? handVol : 1);
 
       // ————— Lato A (sinistra): altezza = low pass risonante —————
       const cutTarget = left ? 260 * Math.pow(Math.max(400, cmax) / 260, left.height) : cmax;
@@ -615,14 +616,37 @@ export default function HeavenSynth() {
       const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
       const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
       const total = lc + rc;
+
+      // gesto arp: entrambe le mani chiuse e subito riaperte
+      const nowGesture = performance.now();
+      if (left && right) {
+        if (lc === 0 && rc === 0) {
+          if (!armedRef.current) {
+            armedRef.current = true;
+            fistAtRef.current = nowGesture;
+          }
+        } else if (armedRef.current && lc >= 4 && rc >= 4) {
+          armedRef.current = false;
+          if (
+            nowGesture - fistAtRef.current < 900 &&
+            nowGesture - lastArpGestureRef.current > 1200
+          ) {
+            lastArpGestureRef.current = nowGesture;
+            setArpOn((v) => !v);
+          }
+        } else if (armedRef.current && nowGesture - fistAtRef.current > 1200) {
+          armedRef.current = false;
+        }
+      } else {
+        armedRef.current = false;
+      }
+
       const stable = heavensDeb.current.push(total >= 1 && total <= 10 ? total : null);
       if (stable !== lastStableRef.current) {
         lastStableRef.current = stable;
-        if (stable === 8) setArpOn(false);
-        else if (stable === 9) setArpOn(true);
-        else if (stable === 10) holdRef.current = !!currentRef.current.chord;
-        else if (stable != null && stable !== heldDegreeRef.current! + 1) holdRef.current = false;
+        if (stable === 10) setVolFollow((v) => !v);
       }
+
       let deg: number | null = null;
       if (hands.length && stable && stable <= 7) {
         deg = stable - 1;
