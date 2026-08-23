@@ -6,6 +6,7 @@ import {
   Eye,
   EyeOff,
   HelpCircle,
+  Mic,
   Music2,
   Pause,
   Play,
@@ -36,6 +37,9 @@ import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gesture
 import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import TutorialArt from "@/components/TutorialArt";
+import { detectKey } from "@/lib/keyDetect";
+
+
 
 type PanelId = null | "sound" | "fx" | "scale" | "loop" | "help";
 
@@ -180,6 +184,55 @@ export default function HeavenSynth() {
   }, []);
 
   const noteNames = useMemo(() => scaleNoteNames(rootPc, mode), [rootPc, mode]);
+
+  /* ————— ascolto microfono: tonica + scala automatiche ————— */
+  const [listening, setListening] = useState(false);
+  const [listenProgress, setListenProgress] = useState(0);
+  const [listenDuration, setListenDuration] = useState(16000);
+  const [listenMsg, setListenMsg] = useState<string | null>(null);
+  const listenAbortRef = useRef<AbortController | null>(null);
+
+  const runListening = useCallback(async (durationMs: number) => {
+    listenAbortRef.current?.abort();
+    const ac = new AbortController();
+    listenAbortRef.current = ac;
+    setListening(true);
+    setListenProgress(0);
+    setListenMsg(null);
+    try {
+      const res = await detectKey({
+        durationMs,
+        signal: ac.signal,
+        onProgress: ({ progress }) => setListenProgress(progress),
+      });
+      const md: ModeId =
+        res.scaleId === "dorian" ? "dorian" : res.mode === "minor" ? "minor" : "major";
+      setRootPc(res.rootPc);
+      setMode(md);
+      const name = `${KEYS[res.rootPc]} ${MODES.find((m) => m.id === md)?.name ?? ""}`;
+      setListenMsg(
+        res.confidence > 0.3
+          ? `Applicato: ${name}`
+          : `Applicato: ${name} — confidenza bassa, riprova con più suono`,
+      );
+    } catch (e) {
+      const err = e as Error;
+      if (err.name === "AbortError") setListenMsg("Ascolto interrotto.");
+      else if (err.name === "NotAllowedError") setListenMsg("Permesso microfono negato.");
+      else setListenMsg(err.message || "Non è stato possibile ascoltare.");
+    } finally {
+      setListening(false);
+      setListenProgress(0);
+    }
+  }, []);
+
+  const toggleListen = useCallback(() => {
+    if (listening) listenAbortRef.current?.abort();
+    else void runListening(listenDuration);
+  }, [listening, runListening, listenDuration]);
+
+  useEffect(() => () => listenAbortRef.current?.abort(), []);
+
 
   /* ————— audio ————— */
 
@@ -640,7 +693,7 @@ export default function HeavenSynth() {
         </h1>
 
         {/* root + scala */}
-        <div className="mt-4 flex justify-center">
+        <div className="mt-4 flex items-center justify-center gap-2">
           <button
             onClick={() => setPanel((p) => (p === "scale" ? null : "scale"))}
             className="heaven-pill"
@@ -648,7 +701,23 @@ export default function HeavenSynth() {
             {KEYS[rootPc]} · {MODES.find((m) => m.id === mode)?.name.toUpperCase()}
             <span className="ml-2 opacity-70">⌄</span>
           </button>
+          <button
+            onClick={toggleListen}
+            aria-pressed={listening}
+            aria-label={listening ? "Ferma il microfono" : "Rileva scala dal microfono"}
+            className={`heaven-orb-btn ${listening ? "animate-pulse" : ""}`}
+          >
+            {listening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
         </div>
+        {(listening || listenMsg) && (
+          <p className="mt-2 text-center text-[11px] font-semibold text-slate-600">
+            {listening
+              ? `Ascolto… ${Math.round(listenProgress * 100)}%`
+              : listenMsg}
+          </p>
+        )}
+
 
         {/* i sette cieli */}
         <div className="relative mt-7 flex items-center justify-between px-1">
@@ -786,9 +855,31 @@ export default function HeavenSynth() {
                 </button>
               ))}
             </div>
+            <div className="space-y-2 border-t border-white/20 pt-3">
+              <h3 className="text-xs font-bold">Ascolto automatico</h3>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[16000, 24000, 32000].map((d) => (
+                  <button
+                    key={d}
+                    disabled={listening}
+                    onClick={() => setListenDuration(d)}
+                    className={chip(listenDuration === d)}
+                  >
+                    {d / 1000}s
+                  </button>
+                ))}
+                <button onClick={toggleListen} className={chip(listening)}>
+                  {listening ? `Ferma (${Math.round(listenProgress * 100)}%)` : "Ascolta"}
+                </button>
+              </div>
+              {listenMsg && !listening && (
+                <p className="text-[11px] text-slate-500">{listenMsg}</p>
+              )}
+            </div>
             <p className="text-[11px] text-slate-500">
               Tonica e scala restano bloccate: le mani scelgono solo il grado (1–7).
             </p>
+
           </section>
         )}
 
