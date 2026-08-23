@@ -1703,7 +1703,65 @@ export default function GestureSynth() {
           </div>
         </div>
       )}
+
+      {panel === "save" && (
+        <div className="mt-3 celestial-panel rounded-sm p-4">
+          <p className="text-sm text-muted-foreground">
+            Salva tutte le impostazioni correnti (suoni, scala, arp, effetti) e richiamale prima di
+            uno show. Fino a {MAX_PRESETS} progetti.
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder="Nome del progetto"
+              maxLength={40}
+              className="min-w-[180px] flex-1 rounded-sm border border-border bg-background/60 px-3 py-2 text-sm text-foreground"
+            />
+            <button onClick={savePreset} className="btn-hero flex items-center gap-2">
+              <Save className="h-4 w-4" />
+              Salva
+            </button>
+          </div>
+
+          <p className="mt-2 text-xs text-muted-foreground">
+            {presetMsg ?? `${presets.length}/${MAX_PRESETS} progetti salvati`}
+          </p>
+
+          <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+            {presets.length === 0 && (
+              <p className="text-xs text-muted-foreground">Nessun progetto salvato.</p>
+            )}
+            {presets.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-2 rounded-sm border border-border bg-card/60 px-3 py-2"
+              >
+                <button
+                  onClick={() => loadPreset(p)}
+                  className="flex-1 text-left"
+                  aria-label={`Apri ${p.name}`}
+                >
+                  <span className="block text-sm text-foreground">{p.name}</span>
+                  <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {new Date(p.savedAt).toLocaleString()}
+                  </span>
+                </button>
+                <button
+                  onClick={() => deletePreset(p.id)}
+                  aria-label={`Cancella ${p.name}`}
+                  className="rounded-sm border border-border p-2 text-muted-foreground"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+
 
   );
 }
