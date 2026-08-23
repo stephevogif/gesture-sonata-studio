@@ -1,30 +1,28 @@
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-const GestureSynth = lazy(() => import("@/components/GestureSynth"));
+const SkyHome = lazy(() => import("@/components/SkyHome"));
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "STEPH EVO'S SKY SYNTH — strumento gestuale" },
+      { title: "STEPH EVO'S HEAVEN SYNTH — Choose your sky" },
       {
         name: "description",
         content:
-          "STEPH EVO'S SKY SYNTH: suona pad, fiati, bassi e strumenti zen nel browser, con scale, arpeggiatore ed effetti.",
+          "Scegli in quale cielo entrare: Night Sky per suonare le stelle, Seven Heavens per gli accordi con le mani.",
       },
-      { property: "og:title", content: "STEPH EVO'S SKY SYNTH — strumento gestuale" },
+      { property: "og:title", content: "STEPH EVO'S HEAVEN SYNTH — Choose your sky" },
       {
         property: "og:description",
-        content:
-          "STEPH EVO'S SKY SYNTH: scale, arpeggiatori ed effetti in tempo reale, tutto controllato dai movimenti.",
+        content: "Two skies. One sound. Night Sky e Seven Heavens: strumenti gestuali nel browser.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "STEPH EVO'S SKY SYNTH — strumento gestuale" },
+      { name: "twitter:title", content: "STEPH EVO'S HEAVEN SYNTH — Choose your sky" },
       {
         name: "twitter:description",
-        content:
-          "STEPH EVO'S SKY SYNTH: scale, arpeggiatori ed effetti in tempo reale, tutto controllato dai movimenti.",
+        content: "Two skies. One sound. Night Sky e Seven Heavens: strumenti gestuali nel browser.",
       },
     ],
     links: [
@@ -44,7 +42,7 @@ function Index() {
     <main className="min-h-screen">
       <ClientOnly fallback={<div className="min-h-screen" />}>
         <Suspense fallback={<div className="min-h-screen" />}>
-          <GestureSynth />
+          <SkyHome />
         </Suspense>
       </ClientOnly>
     </main>
