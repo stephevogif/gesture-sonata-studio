@@ -667,7 +667,7 @@ export default function HeavenSynth() {
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-32 pt-5">
         {/* header */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-          <Link to="/" aria-label="Sky Synth" className="heaven-orb-btn">
+          <Link to="/" aria-label="Torna alla home" className="heaven-orb-btn">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="min-w-0 text-center">
