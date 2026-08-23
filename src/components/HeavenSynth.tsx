@@ -659,7 +659,7 @@ export default function HeavenSynth() {
           previous: prevNotesRef.current,
         });
         if (arpOnRef.current) releaseAll();
-        else applyNotes(chord.notes, right ? Math.max(0.06, volume) : 0.6, bright);
+        else applyNotes(chord.notes, Math.max(0.06, volume), bright);
         prevNotesRef.current = chord.notes;
         currentRef.current.chord = chord;
         heldDegreeRef.current = deg;
