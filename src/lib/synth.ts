@@ -1013,7 +1013,7 @@ export class GestureSynthEngine {
     if (!this.arpEnabled || !this.ctx) return;
     this.arpTick = 0;
     const schedule = () => {
-      const base = 1000 / Math.max(1, this.arpRate);
+      const base = 1000 / this.effectiveRate();
       const swung =
         this.arpSwing > 0
           ? this.arpTick % 2 === 0
@@ -1024,7 +1024,8 @@ export class GestureSynthEngine {
       this.tickArp(swung / 1000);
       this.arpTimer = setTimeout(schedule, swung);
     };
-    this.arpTimer = setTimeout(schedule, 1000 / Math.max(1, this.arpRate));
+    this.arpTimer = setTimeout(schedule, 1000 / this.effectiveRate());
+
   }
 
   private tickArp(periodSec: number) {
