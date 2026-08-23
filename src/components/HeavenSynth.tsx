@@ -554,7 +554,7 @@ export default function HeavenSynth() {
     releaseAll();
     engineRef.current?.allOff();
     looperRef.current?.pause();
-    setHud({ left: null, right: null, fps: 0 });
+    setHud({ left: null, right: null, heavens: null, fps: 0 });
   }, [releaseAll, stopCam]);
 
   useEffect(() => () => stop(), [stop]);
