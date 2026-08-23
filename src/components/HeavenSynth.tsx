@@ -13,6 +13,8 @@ import {
   Radio,
   Repeat,
   Settings2,
+  Sparkles,
+
   Square,
   Trash2,
 } from "lucide-react";
