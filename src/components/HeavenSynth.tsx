@@ -458,9 +458,15 @@ export default function HeavenSynth() {
       currentRef.current.filter = cutoff;
 
       // ————— disegno —————
+      const nowMs = performance.now();
+      const dt = lastFrameRef.current ? Math.min(0.05, (nowMs - lastFrameRef.current) / 1000) : 0.016;
+      lastFrameRef.current = nowMs;
       const target = hands.length ? Math.max(0.2, volume) : 0;
-      glowRef.current += (target - glowRef.current) * 0.06;
-      drawSky(ctx, w, h, glowRef.current);
+      const k = 1 - Math.exp(-dt * 4);
+      glowRef.current += (target - glowRef.current) * k;
+      fadeRef.current += ((hands.length ? 1 : 0) - fadeRef.current) * (1 - Math.exp(-dt * (hands.length ? 3 : 1.6)));
+      drawSky(ctx, w, h, glowRef.current, fadeRef.current, dt);
+
       for (const hand of hands) drawHand(ctx, hand, w, h);
 
       // ————— HUD (throttle) —————
