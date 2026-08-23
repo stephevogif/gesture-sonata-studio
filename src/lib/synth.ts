@@ -318,7 +318,7 @@ export class GestureSynthEngine {
     let sub: OscillatorNode | undefined;
     let sustain: number | undefined;
     let decay: number | undefined;
-    const bassPatches: InstrumentId[] = ["reese", "acid", "growl"];
+    const bassPatches: InstrumentId[] = ["reese", "acid", "growl", "neuro", "fmbass", "sub808"];
     const isBass = bassPatches.includes(inst);
 
     const addOsc = (type: OscillatorType, detune = 0, level = 1, ratio = 1) => {
