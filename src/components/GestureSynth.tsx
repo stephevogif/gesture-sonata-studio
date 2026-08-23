@@ -1065,8 +1065,46 @@ export default function GestureSynth() {
             </div>
           )}
 
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Accordi
+              </label>
+              <select
+                className={`mt-2 ${selectClass}`}
+                value={chord}
+                onChange={(e) => setChord(e.target.value as ChordId)}
+              >
+                {CHORDS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Le note extra restano sempre dentro la scala scelta.
+              </p>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Hold
+              </label>
+              <button
+                onClick={() => setHold((v) => !v)}
+                aria-pressed={hold}
+                className={`mt-2 w-full ${hold ? "btn-hero" : "btn-ghost"}`}
+              >
+                {hold ? "Note mantenute" : "Hold off"}
+              </button>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Con Hold attivo le note continuano a suonare finché non lo disattivi.
+              </p>
+            </div>
+          </div>
+
         </div>
       )}
+
 
       {panel === "scale" && (
         <div className="mt-3 grid gap-3 celestial-panel rounded-sm p-4 sm:grid-cols-2">
