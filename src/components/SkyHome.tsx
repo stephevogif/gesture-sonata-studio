@@ -72,16 +72,24 @@ export default function SkyHome() {
 
   const enter = (which: "night" | "heaven") => {
     if (leaving) return;
-    if (typeof window !== "undefined") localStorage.setItem(HINT_KEY, "1");
+    if (typeof window !== "undefined") {
+      localStorage.setItem(HINT_KEY, "1");
+      try {
+        sessionStorage.setItem(SKY_WARP_KEY, which);
+      } catch {
+        /* storage non disponibile */
+      }
+    }
     setShowHint(false);
     setLeaving(which);
     window.setTimeout(() => {
       void navigate({ to: which === "night" ? "/night" : "/studio" });
-    }, 520);
+    }, 720);
   };
 
   return (
     <div className={`sky-home ${leaving ? `sky-home-leaving sky-leave-${leaving}` : ""}`}>
+
       {/* background: un unico viaggio verticale notte → alba → nuvole */}
       <div className="sky-home-bg" aria-hidden />
       <div className="sky-home-nebula" aria-hidden />
