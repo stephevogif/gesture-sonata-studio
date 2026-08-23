@@ -303,17 +303,44 @@ export default function GestureSynth() {
       gate: arpGate / 100,
       octaves: arpOctaves,
       swing: arpSwing / 100,
+      sync: arpSync,
+      division: arpDivision,
     });
-  }, [arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing]);
+  }, [arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, arpSync, arpDivision]);
 
+  useEffect(() => {
+    engineRef.current?.setTempo(bpm);
+  }, [bpm]);
+
+  useEffect(() => {
+    engineRef.current?.setChord(chord);
+  }, [chord]);
+
+  useEffect(() => {
+    engineRef.current?.setHold(hold);
+  }, [hold]);
 
   useEffect(() => {
     engineRef.current?.setReverb(reverb / 100);
   }, [reverb]);
 
   useEffect(() => {
+    engineRef.current?.setDelay({
+      mix: delayMix / 100,
+      feedback: delayFeedback / 100,
+      sync: delaySync,
+      division: delayDivision,
+    });
+  }, [delayMix, delayFeedback, delaySync, delayDivision]);
+
+  useEffect(() => {
+    engineRef.current?.setFilterMod(0.5, gestureMod / 100);
+  }, [gestureMod]);
+
+  useEffect(() => {
     engineRef.current?.setEq(eqType, eqFreq);
   }, [eqType, eqFreq]);
+
 
   const saveCalib = (on: number, off: number) => {
     try {
