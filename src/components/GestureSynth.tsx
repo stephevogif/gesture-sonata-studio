@@ -1194,6 +1194,11 @@ export default function GestureSynth() {
     <div className="night-scene relative min-h-screen overflow-hidden">
       <div className="night-stars pointer-events-none fixed inset-0 z-0" />
       <div className="night-aurora pointer-events-none fixed inset-0 z-0" />
+      {/* il cielo è lo strumento: la performance area occupa tutto lo schermo */}
+      <video ref={videoRef} playsInline muted className="hidden" />
+      <canvas ref={canvasRef} className="night-sky-canvas" />
+      <div className="night-sky-fade pointer-events-none fixed inset-0 z-[1]" />
+
 
       {showTut && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(6,10,26,0.86)] p-5 backdrop-blur-sm">
