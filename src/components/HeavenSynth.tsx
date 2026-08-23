@@ -251,33 +251,26 @@ export default function HeavenSynth() {
 
   const drawSky = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, glow: number, fade: number, dt: number) => {
-      // gradiente cielo (cache: ricreato solo al cambio dimensione)
+      // il canvas è TRASPARENTE: sotto si vede la webcam reale
+      ctx.clearRect(0, 0, w, h);
+
       const cache = skyCache.current;
-      if (cache.w !== w || cache.h !== h || !cache.grad) {
-        const sky = ctx.createLinearGradient(0, 0, 0, h);
-        sky.addColorStop(0, "#1e63c8");
-        sky.addColorStop(0.35, "#4f92e0");
-        sky.addColorStop(0.7, "#a8cef4");
-        sky.addColorStop(1, "#eaf5ff");
-        cache.grad = sky;
+      if (cache.w !== w || cache.h !== h) {
         cache.w = w;
         cache.h = h;
         cloudsRef.current = [];
       }
-      ctx.fillStyle = cache.grad!;
-      ctx.fillRect(0, 0, w, h);
 
-      // sprite riusabili (nessun gradiente creato per frame)
-      if (!cloudSprite.current) cloudSprite.current = makeBlobSprite(256, "255,255,255");
+      if (!cloudSprite.current) cloudSprite.current = makeBlobSprite(256, "255,252,244");
       if (!sunSprite.current) sunSprite.current = makeSunSprite(256);
 
       if (cloudsRef.current.length === 0) {
-        cloudsRef.current = Array.from({ length: 14 }, () => ({
+        cloudsRef.current = Array.from({ length: 10 }, () => ({
           x: Math.random() * w,
           y: Math.random() * h,
-          r: h * (0.12 + Math.random() * 0.3),
-          v: 6 + Math.random() * 22,
-          a: 0.3 + Math.random() * 0.45,
+          r: h * (0.12 + Math.random() * 0.28),
+          v: 5 + Math.random() * 18,
+          a: 0.1 + Math.random() * 0.18,
         }));
       }
 
@@ -286,6 +279,9 @@ export default function HeavenSynth() {
       const t = performance.now() / 1000;
       const sun = sunSprite.current!;
       const cloud = cloudSprite.current!;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
 
       // ————— sole: tre cerchi concentrici con respiro sfasato —————
       const s = sunRef.current;
@@ -296,31 +292,27 @@ export default function HeavenSynth() {
       }
       const sx = s.p * w;
       const sy = s.y * h;
-      const base = Math.min(w, h) * 0.14;
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
+      const base = Math.min(w, h) * 0.13;
       for (let i = 0; i < 3; i++) {
         const phase = i * 0.7;
         const osc = Math.sin(t * 1.1 + phase);
         const r = base * (1 + i * 0.95) * (1 + osc * (0.06 + glow * 0.18));
-        const a = [0.85, 0.4, 0.2][i]! * fade * (0.55 + glow * 0.7) * (0.8 + osc * 0.2);
+        const a = [0.5, 0.24, 0.12][i]! * fade * (0.5 + glow * 0.6) * (0.85 + osc * 0.15);
         ctx.globalAlpha = Math.min(1, a);
         ctx.drawImage(sun, sx - r, sy - r, r * 2, r * 2);
       }
-      ctx.restore();
 
-      // ————— nuvole —————
-      ctx.save();
+      // ————— foschia / nuvole leggerissime —————
       for (const c of cloudsRef.current) {
-        c.x += c.v * (1 + glow * 1.4) * dt;
+        c.x += c.v * (1 + glow * 1.2) * dt;
         if (c.x - c.r > w) {
           c.x = -c.r;
           c.y = Math.random() * h;
-          c.r = h * (0.12 + Math.random() * 0.3);
-          c.v = 6 + Math.random() * 22;
-          c.a = 0.3 + Math.random() * 0.45;
+          c.r = h * (0.12 + Math.random() * 0.28);
+          c.v = 5 + Math.random() * 18;
+          c.a = 0.1 + Math.random() * 0.18;
         }
-        ctx.globalAlpha = Math.min(1, (c.a + glow * 0.25) * fade);
+        ctx.globalAlpha = Math.min(1, (c.a + glow * 0.12) * fade);
         ctx.drawImage(cloud, c.x - c.r, c.y - c.r * 0.7, c.r * 2, c.r * 1.4);
       }
       ctx.restore();
@@ -343,35 +335,35 @@ export default function HeavenSynth() {
         [13, 14], [14, 15], [15, 16],
         [17, 18], [18, 19], [19, 20],
       ];
+      // costellazione ivory/oro: linee sottilissime + punti di luce
       ctx.save();
-      ctx.shadowBlur = 26;
-      ctx.shadowColor = hand.handedness === "left" ? "rgba(37,99,235,0.65)" : "rgba(13,148,136,0.6)";
-      ctx.strokeStyle = "rgba(255,255,255,0.95)";
+      ctx.globalCompositeOperation = "lighter";
       ctx.lineCap = "round";
-      ctx.lineWidth = 10;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = "rgba(255,226,160,0.9)";
+      ctx.strokeStyle = "rgba(255,244,214,0.5)";
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       for (const [a, b] of links) {
         ctx.moveTo(px(a!), py(a!));
         ctx.lineTo(px(b!), py(b!));
       }
       ctx.stroke();
-      ctx.shadowBlur = 10;
-      ctx.strokeStyle = hand.handedness === "left" ? "rgba(30,64,175,0.95)" : "rgba(15,118,110,0.95)";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      if (cfg.current.showDebug) {
-        for (let i = 0; i < 21; i++) {
-          ctx.beginPath();
-          ctx.fillStyle = "rgba(255,255,255,0.98)";
-          ctx.shadowBlur = 14;
-          ctx.arc(px(i), py(i), i % 4 === 0 ? 6 : 4, 0, Math.PI * 2);
-          ctx.fill();
-        }
+
+      for (let i = 0; i < 21; i++) {
+        const r = i % 4 === 0 ? 3.4 : 2.2;
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255,248,228,0.95)";
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = "rgba(255,214,140,0.95)";
+        ctx.arc(px(i), py(i), r, 0, Math.PI * 2);
+        ctx.fill();
       }
       ctx.restore();
     },
     [],
   );
+
 
   /* ————— loop di tracking ————— */
 
