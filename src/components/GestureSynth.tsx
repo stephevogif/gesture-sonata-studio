@@ -11,6 +11,8 @@ import {
   SlidersHorizontal,
   Square,
   Sparkles,
+  Save,
+  Trash2,
 } from "lucide-react";
 
 
@@ -45,7 +47,43 @@ const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
-type PanelId = "sound" | "fx" | "scale" | "arp" | "calib";
+type PanelId = "sound" | "fx" | "scale" | "arp" | "calib" | "save";
+
+const PRESETS_KEY = "skysynth.presets.v1";
+const MAX_PRESETS = 40;
+
+type PresetData = {
+  mode: PlayMode;
+  freeMode: "single" | "split";
+  freePitch: "scale" | "glide";
+  instrument: InstrumentId;
+  leftInstrument: InstrumentId;
+  rightInstrument: InstrumentId;
+  scale: ScaleId;
+  rootPc: number;
+  arpLeft: boolean;
+  arpRight: boolean;
+  arpRate: number;
+  arpPattern: ArpPatternId;
+  arpGate: number;
+  arpOctaves: number;
+  arpSwing: number;
+  bpm: number;
+  arpSync: boolean;
+  arpDivision: DivisionId;
+  chord: ChordId;
+  hold: boolean;
+  reverb: number;
+  delayMix: number;
+  delayFeedback: number;
+  delaySync: boolean;
+  delayDivision: DivisionId;
+  eqType: "lowpass" | "highpass";
+  eqFreq: number;
+  gestureMod: number;
+};
+
+type Preset = { id: string; name: string; savedAt: number; data: PresetData };
 type CalibPhase = "idle" | "open" | "closed";
 
 type Particle = {
@@ -219,6 +257,123 @@ export default function GestureSynth() {
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string>("");
   const [hands, setHands] = useState<HandState[]>([]);
+
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [presetName, setPresetName] = useState("");
+  const [presetMsg, setPresetMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PRESETS_KEY);
+      if (raw) setPresets(JSON.parse(raw) as Preset[]);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const persistPresets = (list: Preset[]) => {
+    setPresets(list);
+    try {
+      localStorage.setItem(PRESETS_KEY, JSON.stringify(list));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const currentPreset = (): PresetData => ({
+    mode,
+    freeMode,
+    freePitch,
+    instrument,
+    leftInstrument,
+    rightInstrument,
+    scale,
+    rootPc,
+    arpLeft,
+    arpRight,
+    arpRate,
+    arpPattern,
+    arpGate,
+    arpOctaves,
+    arpSwing,
+    bpm,
+    arpSync,
+    arpDivision,
+    chord,
+    hold,
+    reverb,
+    delayMix,
+    delayFeedback,
+    delaySync,
+    delayDivision,
+    eqType,
+    eqFreq,
+    gestureMod,
+  });
+
+  const savePreset = () => {
+    const name = presetName.trim() || `Progetto ${presets.length + 1}`;
+    const existing = presets.find((p) => p.name.toLowerCase() === name.toLowerCase());
+    const entry: Preset = {
+      id: existing?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name,
+      savedAt: Date.now(),
+      data: currentPreset(),
+    };
+    if (existing) {
+      persistPresets(presets.map((p) => (p.id === existing.id ? entry : p)));
+      setPresetMsg(`"${name}" aggiornato`);
+    } else {
+      if (presets.length >= MAX_PRESETS) {
+        setPresetMsg(`Limite di ${MAX_PRESETS} progetti raggiunto: cancellane uno.`);
+        return;
+      }
+      persistPresets([entry, ...presets]);
+      setPresetMsg(`"${name}" salvato`);
+    }
+    setPresetName("");
+  };
+
+  const deletePreset = (id: string) => {
+    persistPresets(presets.filter((p) => p.id !== id));
+    setPresetMsg("Progetto cancellato");
+  };
+
+  const loadPreset = (p: Preset) => {
+    const d = p.data;
+    setMode(d.mode);
+    setFreeMode(d.freeMode);
+    setFreePitch(d.freePitch);
+    setInstrument(d.instrument);
+    engineRef.current?.setInstrument(d.instrument);
+    setLeftInstrument(d.leftInstrument);
+    setRightInstrument(d.rightInstrument);
+    setScale(d.scale);
+    setRootPc(d.rootPc);
+    setArpLeft(d.arpLeft);
+    setArpRight(d.arpRight);
+    setArpRate(d.arpRate);
+    setArpPattern(d.arpPattern);
+    setArpGate(d.arpGate);
+    setArpOctaves(d.arpOctaves);
+    setArpSwing(d.arpSwing);
+    setBpm(d.bpm);
+    setArpSync(d.arpSync);
+    setArpDivision(d.arpDivision);
+    setChord(d.chord);
+    setHold(d.hold);
+    setReverb(d.reverb);
+    setDelayMix(d.delayMix);
+    setDelayFeedback(d.delayFeedback);
+    setDelaySync(d.delaySync);
+    setDelayDivision(d.delayDivision);
+    setEqType(d.eqType);
+    setEqFreq(d.eqFreq);
+    setGestureMod(d.gestureMod);
+    setPresetName(p.name);
+    setPresetMsg(`"${p.name}" caricato`);
+  };
+
 
 
   // keep latest settings readable inside the rAF loop
@@ -955,6 +1110,7 @@ export default function GestureSynth() {
         {panelBtn("scale", "Scala", KeyboardMusic)}
         {panelBtn("arp", "Arp", Repeat)}
         {panelBtn("calib", "Taratura", Crosshair)}
+        {panelBtn("save", "Progetti", Save)}
 
         {running && (
           <button
@@ -1547,7 +1703,65 @@ export default function GestureSynth() {
           </div>
         </div>
       )}
+
+      {panel === "save" && (
+        <div className="mt-3 celestial-panel rounded-sm p-4">
+          <p className="text-sm text-muted-foreground">
+            Salva tutte le impostazioni correnti (suoni, scala, arp, effetti) e richiamale prima di
+            uno show. Fino a {MAX_PRESETS} progetti.
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder="Nome del progetto"
+              maxLength={40}
+              className="min-w-[180px] flex-1 rounded-sm border border-border bg-background/60 px-3 py-2 text-sm text-foreground"
+            />
+            <button onClick={savePreset} className="btn-hero flex items-center gap-2">
+              <Save className="h-4 w-4" />
+              Salva
+            </button>
+          </div>
+
+          <p className="mt-2 text-xs text-muted-foreground">
+            {presetMsg ?? `${presets.length}/${MAX_PRESETS} progetti salvati`}
+          </p>
+
+          <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+            {presets.length === 0 && (
+              <p className="text-xs text-muted-foreground">Nessun progetto salvato.</p>
+            )}
+            {presets.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-2 rounded-sm border border-border bg-card/60 px-3 py-2"
+              >
+                <button
+                  onClick={() => loadPreset(p)}
+                  className="flex-1 text-left"
+                  aria-label={`Apri ${p.name}`}
+                >
+                  <span className="block text-sm text-foreground">{p.name}</span>
+                  <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {new Date(p.savedAt).toLocaleString()}
+                  </span>
+                </button>
+                <button
+                  onClick={() => deletePreset(p.id)}
+                  aria-label={`Cancella ${p.name}`}
+                  className="rounded-sm border border-border p-2 text-muted-foreground"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+
 
   );
 }
