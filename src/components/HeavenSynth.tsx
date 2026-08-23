@@ -1013,19 +1013,37 @@ export default function HeavenSynth() {
         {panel === "scale" && (
           <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Tonalità e scala</h2>
-            <div className="flex flex-wrap gap-1.5">
-              {KEYS.map((n, i) => (
-                <button key={n} onClick={() => setRootPc(i)} className={chip(rootPc === i)}>
-                  {n}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {MODES.map((m) => (
-                <button key={m.id} onClick={() => setMode(m.id)} className={chip(mode === m.id)}>
-                  {m.name}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                Tonica
+                <select
+                  value={rootPc}
+                  onChange={(e) => setRootPc(Number(e.target.value))}
+                  className={field}
+                  aria-label="Tonica"
+                >
+                  {KEYS.map((n, i) => (
+                    <option key={n} value={i}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                Scala
+                <select
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value as ModeId)}
+                  className={field}
+                  aria-label="Scala"
+                >
+                  {MODES.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <div className="space-y-2 border-t border-white/20 pt-3">
               <h3 className="text-xs font-bold">Ascolto automatico</h3>
