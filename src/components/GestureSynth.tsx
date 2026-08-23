@@ -218,6 +218,9 @@ export default function GestureSynth() {
   const smoothRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const liveRatioRef = useRef(0);
   const starsRef = useRef<Star[]>([]);
+  const constellationsRef = useRef<Constellation[]>([]);
+  const constLastRef = useRef<number>(0);
+
   const musicLevelRef = useRef(0);
   const lastSizeRef = useRef({ width: 0, height: 0 });
 
