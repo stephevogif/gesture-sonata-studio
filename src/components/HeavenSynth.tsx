@@ -6,15 +6,12 @@ import {
   Eye,
   EyeOff,
   HelpCircle,
-  Layers,
   Music2,
   Pause,
   Play,
-  Radio,
   Repeat,
   Settings2,
-  Sparkles,
-
+  Sliders,
   Square,
   Trash2,
 } from "lucide-react";
@@ -30,37 +27,21 @@ import {
   MODES,
   midiName,
   midiToFreq,
-  modeSteps,
-  degreeSemitones,
   ROMAN,
   scaleNoteNames,
-  VOICINGS,
   type Chord,
   type ModeId,
-  type Tonality,
-  type VoicingId,
 } from "@/lib/theory";
-import {
-  Debouncer,
-  DEFAULT_DEGREE_RULES,
-  gestureToDegree,
-  heightToGain,
-  Smoother,
-  tiltToCutoff,
-  TonalitySwitch,
-  VOICING_BY_FINGERS,
-  type HandFrame,
-} from "@/lib/gestures";
+import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gestures";
 import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import TutorialArt from "@/components/TutorialArt";
 
-type PlayMode = "heavens" | "chords" | "notes" | "theremin";
-type PanelId = null | "sound" | "scale" | "loop" | "help";
+type PanelId = null | "sound" | "fx" | "scale" | "loop" | "help";
 
 type Hud = {
-  left: { degree: number | null; chord: string; gesture: string } | null;
-  right: { voicing: VoicingId; volume: number; filter: number } | null;
+  volume: number;
+  filter: number;
   heavens: {
     leftCount: number;
     rightCount: number;
@@ -71,6 +52,7 @@ type Hud = {
   } | null;
   fps: number;
 };
+
 
 
 const ONBOARD_KEY = "sky-studio-onboarded";
