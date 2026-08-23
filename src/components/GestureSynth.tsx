@@ -236,6 +236,14 @@ export default function GestureSynth() {
 
   const musicLevelRef = useRef(0);
   const lastSizeRef = useRef({ width: 0, height: 0 });
+  // stelle musicali: feedback visivo delle note appena suonate
+  const noteStarsRef = useRef<
+    { x: number; y: number; born: number; warm: boolean; seed: number }[]
+  >([]);
+  const curNoteRef = useRef<string>("");
+  const noteAtRef = useRef<number>(0);
+  const [curNote, setCurNote] = useState<string>("");
+
 
 
 
@@ -840,6 +848,14 @@ export default function GestureSynth() {
               const cx = prev ? prev.x + (rawX - prev.x) * 0.45 : rawX;
               const cy = prev ? prev.y + (rawY - prev.y) * 0.45 : rawY;
               smoothRef.current.set(vid, { x: cx, y: cy });
+              if (!wasOn) {
+                const ns = noteStarsRef.current;
+                ns.push({ x: cx, y: cy, born: now, warm: k % 2 === 0, seed: Math.random() });
+                if (ns.length > 9) ns.splice(0, ns.length - 9);
+                curNoteRef.current = midiToName(midi);
+                noteAtRef.current = now;
+              }
+
               glows.push({ x: cx, y: cy, hue: 38 + k * 3, level });
 
               // scintille dal punto di contatto: minuscole e brevissime
@@ -1012,6 +1028,55 @@ export default function GestureSynth() {
       }
       ctx.restore();
 
+      // stelle musicali + costellazione della frase appena suonata
+      {
+        const ns = noteStarsRef.current;
+        const LIFE = 5200;
+        while (ns.length && now - ns[0]!.born > LIFE) ns.shift();
+        if (ns.length) {
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          // linee della costellazione
+          ctx.lineWidth = 0.9;
+          for (let i = 1; i < ns.length; i++) {
+            const a = ns[i - 1]!;
+            const b = ns[i]!;
+            const al = Math.max(0, 1 - (now - b.born) / LIFE) * 0.45;
+            if (al < 0.02) continue;
+            ctx.strokeStyle = `rgba(190, 215, 255, ${al})`;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+          for (let i = 0; i < ns.length; i++) {
+            const s = ns[i]!;
+            const age = (now - s.born) / LIFE;
+            const pop = Math.min(1, (now - s.born) / 220);
+            const al = Math.max(0, 1 - age) * (0.35 + 0.65 * pop);
+            const r = (5 + 9 * pop) * (1 + 0.35 * Math.sin(now * 0.004 + s.seed * 9));
+            const col = s.warm ? "255, 226, 168" : "205, 230, 255";
+            const g2 = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 3);
+            g2.addColorStop(0, `rgba(255, 253, 246, ${al})`);
+            g2.addColorStop(0.3, `rgba(${col}, ${al * 0.5})`);
+            g2.addColorStop(1, `rgba(${col}, 0)`);
+            ctx.fillStyle = g2;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, r * 3, 0, Math.PI * 2);
+            ctx.fill();
+            // croce di luce
+            ctx.strokeStyle = `rgba(255, 250, 240, ${al * 0.75})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(s.x - r * 1.8, s.y);
+            ctx.lineTo(s.x + r * 1.8, s.y);
+            ctx.moveTo(s.x, s.y - r * 1.8);
+            ctx.lineTo(s.x, s.y + r * 1.8);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
 
       voiceIdsRef.current.forEach((id) => {
         if (!active.has(id)) {
@@ -1021,6 +1086,16 @@ export default function GestureSynth() {
       });
       voiceIdsRef.current = active;
       setHands(next);
+      if (next.length) {
+        const n = next[0]!.note;
+        if (n !== curNoteRef.current) {
+          curNoteRef.current = n;
+          noteAtRef.current = now;
+        }
+        noteAtRef.current = now;
+      }
+      setCurNote(now - noteAtRef.current < 1800 ? curNoteRef.current : "");
+
 
     }
     rafRef.current = requestAnimationFrame(loop);
@@ -1119,6 +1194,11 @@ export default function GestureSynth() {
     <div className="night-scene relative min-h-screen overflow-hidden">
       <div className="night-stars pointer-events-none fixed inset-0 z-0" />
       <div className="night-aurora pointer-events-none fixed inset-0 z-0" />
+      {/* il cielo è lo strumento: la performance area occupa tutto lo schermo */}
+      <video ref={videoRef} playsInline muted className="hidden" />
+      <canvas ref={canvasRef} className="night-sky-canvas" />
+      <div className="night-sky-fade pointer-events-none fixed inset-0 z-[1]" />
+
 
       {showTut && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(6,10,26,0.86)] p-5 backdrop-blur-sm">
@@ -1149,133 +1229,197 @@ export default function GestureSynth() {
         </div>
       )}
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-36 pt-5">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-28 pt-5">
         {/* header */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
           <button
             onClick={() => setPanel((p) => (p === "calib" ? null : "calib"))}
             aria-label="Taratura"
-            className="night-orb-btn"
+            className="night-orb-ghost"
           >
             <Crosshair className="h-4 w-4" />
           </button>
           <div className="min-w-0 text-center">
-            <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/70">
+            <p className="text-[9px] font-medium uppercase tracking-[0.5em] text-white/65">
               Steph Evo&apos;s
             </p>
-            <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/70">
+            <p className="text-[9px] font-medium uppercase tracking-[0.5em] text-white/65">
               Sky Synth
             </p>
           </div>
           <button
             onClick={() => setPanel((p) => (p === "save" ? null : "save"))}
             aria-label="Progetti"
-            className="night-orb-btn"
+            className="night-orb-ghost"
           >
             <Save className="h-4 w-4" />
           </button>
         </header>
 
-        <h1 className="night-title mt-5 text-center text-[2rem] leading-none sm:text-5xl">
+        <h1 className="night-title mt-4 text-center text-[2.4rem] leading-none tracking-[0.14em] sm:text-6xl">
           NIGHT SKY
         </h1>
+        <div className="mt-3 flex items-center justify-center gap-3 text-[#e8d3a4]/70">
+          <span className="h-px w-16 bg-gradient-to-r from-transparent to-current opacity-60" />
+          <span className="text-[10px]">✦</span>
+          <span className="h-px w-16 bg-gradient-to-l from-transparent to-current opacity-60" />
+        </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <button
-            onClick={() => setMode("pinch")}
-            aria-label="Tocco note"
-            className={`night-chip ${mode === "pinch" ? "night-chip-on" : ""}`}
-          >
-            <Sparkles className="mr-1.5 h-4 w-4" />
-            Tocco
-          </button>
-          <button
-            onClick={() => setMode(freeMode)}
-            aria-label="Libero"
-            className={`night-chip ${mode !== "pinch" ? "night-chip-on" : ""}`}
-          >
-            <Hand className="mr-1.5 h-4 w-4" />
-            Libero
-          </button>
-          <button
-            onClick={toggleListen}
-            aria-label={listening ? "Ferma il microfono" : "Rileva scala dal microfono"}
-            className={`night-chip ${listening ? "night-chip-on animate-pulse" : ""}`}
-          >
-            {listening ? (
-              <span className="mr-1.5 h-3.5 w-3.5 rounded-[2px] bg-current" />
-            ) : (
-              <Mic className="mr-1.5 h-4 w-4" />
-            )}
-            {listening
-              ? `Stop ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s`
-              : "Rileva"}
-          </button>
+        {/* mode selector unificato */}
+        <div className="mt-5 flex justify-center">
+          <div className="night-segment">
+            <button
+              onClick={() => setMode("pinch")}
+              aria-label="Tocco note"
+              aria-pressed={mode === "pinch"}
+              className={`night-seg ${mode === "pinch" ? "night-seg-on" : ""}`}
+            >
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              Tocco
+            </button>
+            <button
+              onClick={() => setMode(freeMode)}
+              aria-label="Libero"
+              aria-pressed={mode !== "pinch"}
+              className={`night-seg ${mode !== "pinch" ? "night-seg-on" : ""}`}
+            >
+              <Hand className="mr-1.5 h-3.5 w-3.5" />
+              Libero
+            </button>
+            <button
+              onClick={toggleListen}
+              aria-label={listening ? "Ferma il microfono" : "Rileva scala dal microfono"}
+              aria-pressed={listening}
+              className={`night-seg ${listening ? "night-seg-on" : ""}`}
+            >
+              {listening ? (
+                <span className="mr-1.5 h-3 w-3 rounded-[2px] bg-current" />
+              ) : (
+                <Mic className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              {listening
+                ? `${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s`
+                : "Rileva"}
+            </button>
+          </div>
+        </div>
+
+        {/* hold: toggle discreto */}
+        <div className="mt-3 flex justify-center">
           <button
             onClick={() => setHold((v) => !v)}
             aria-label="Mantieni le note"
             aria-pressed={hold}
-            className={`night-chip ${hold ? "night-chip-on" : ""}`}
+            className="flex items-center gap-2 text-[10px] uppercase tracking-[0.32em] text-white/70"
           >
-            <Lock className="mr-1.5 h-4 w-4" />
+            <Lock className="h-3.5 w-3.5" />
             Hold
+            <span className={`night-switch ${hold ? "night-switch-on" : ""}`}>
+              <span />
+            </span>
           </button>
         </div>
 
-        <div className="night-frame mt-4">
-          <div className="relative aspect-[3/4] w-full overflow-hidden sm:aspect-[4/3]">
-            <video ref={videoRef} playsInline muted className="hidden" />
-            <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
-            {!running && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-                <p className="max-w-sm text-sm text-white/75">
-                  {status || "Consenti l'accesso alla fotocamera per iniziare a suonare."}
-                </p>
-                <button onClick={start} className="night-chip night-chip-on">
-                  Inizia a suonare
-                </button>
-              </div>
-            )}
-            {running && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-2 p-3">
-                {(listening || listenMsg) && (
-                  <span className={`night-tag ${listening ? "night-tag-on" : ""}`}>
-                    {listening
-                      ? `🎙️ Ascolto ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s…`
-                      : listenMsg}
-                  </span>
-                )}
-                {hands.length === 0 ? (
-                  <span className="night-tag">Pronto</span>
-                ) : (
-                  hands.map((h, i) => (
-                    <span key={i} className="night-tag">
-                      {h.hand} · {h.inst}: <strong className="text-[#9fd4ff]">{h.note}</strong>{" "}
-                      {Math.round(h.level * 100)}%
-                    </span>
-                  ))
-                )}
-              </div>
-            )}
-            {calibPhase !== "idle" && (
-              <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-1 bg-[rgba(6,10,26,0.7)] p-3 text-center backdrop-blur">
-                <span className="night-title text-lg">
-                  {calibPhase === "open" ? "1/2 · Dita aperte" : "2/2 · Unisci pollice e indice"}
-                </span>
-                <span className="text-xs text-white/70">
-                  Tieni la posizione per qualche secondo…
-                </span>
-              </div>
-            )}
+        {/* performance sky */}
+        <div className="relative flex flex-1 flex-col items-center justify-center py-10 text-center">
+          <div
+            className={`pointer-events-none transition-opacity duration-500 ${
+              curNote ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="night-note-glow">
+              <span className="night-note">{curNote.replace(/\d+$/, "")}</span>
+              <span className="night-note-oct">{curNote.match(/\d+$/)?.[0] ?? ""}</span>
+            </div>
+          </div>
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-6 transition-opacity duration-700 ${
+              curNote ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            <p className="text-sm uppercase tracking-[0.42em] text-white/80">Touch the sky</p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.42em] text-white/50">
+              Play a note
+            </p>
+          </div>
+
+          {!running && (
+            <div className="absolute inset-x-0 top-4 flex flex-col items-center gap-3">
+              <p className="max-w-xs text-xs text-white/65">
+                {status || "Consenti l'accesso alla fotocamera per iniziare a suonare."}
+              </p>
+              <button onClick={start} className="night-chip night-chip-on">
+                Inizia a suonare
+              </button>
+            </div>
+          )}
+          {running && (listening || listenMsg) && (
+            <span className={`night-tag absolute top-0 ${listening ? "night-tag-on" : ""}`}>
+              {listening
+                ? `Ascolto ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s…`
+                : listenMsg}
+            </span>
+          )}
+          {calibPhase !== "idle" && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-1">
+              <span className="night-title text-lg">
+                {calibPhase === "open" ? "1/2 · Dita aperte" : "2/2 · Unisci pollice e indice"}
+              </span>
+              <span className="text-xs text-white/70">Tieni la posizione per qualche secondo…</span>
+            </div>
+          )}
+        </div>
+
+        {/* controlli secondari, simmetrici */}
+        <div className="grid grid-cols-2 items-end gap-3">
+          <button
+            onClick={() => setPanel((p) => (p === "arp" ? null : "arp"))}
+            className={`night-mini text-left ${arpLeft || arpRight ? "" : "opacity-50"}`}
+          >
+            <span className="night-mini-label">Arpeggio</span>
+            <span className="mt-2 flex items-center gap-1">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    i === 0 ? "bg-[#ffe3ab]" : "bg-white/30"
+                  }`}
+                />
+              ))}
+            </span>
+            <span className="mt-2 block text-[11px] tracking-widest text-white/75">
+              {arpRate} n/s
+            </span>
+          </button>
+          <div className="night-mini">
+            <span className="night-mini-label">Luminosità</span>
+            <input
+              type="range"
+              min={200}
+              max={8000}
+              step={50}
+              value={eqFreq}
+              onChange={(e) => setEqFreq(Number(e.target.value))}
+              aria-label="Cutoff filtro"
+              className="mt-2 w-full accent-[#ffe3ab]"
+            />
+            <span className="mt-1 block text-center text-[11px] tracking-widest text-white/75">
+              {eqFreq >= 1000 ? `${(eqFreq / 1000).toFixed(1)} kHz` : `${eqFreq} Hz`}
+            </span>
           </div>
         </div>
 
-        <div className="mt-4 flex justify-center">
-          <Link to="/studio" className="night-chip">
-            Vai a Heaven Synth
-            <ArrowRight className="ml-1.5 h-4 w-4" />
+        <div className="mt-3 flex justify-center">
+          <Link
+            to="/studio"
+            className="text-[10px] uppercase tracking-[0.32em] text-white/55 hover:text-white"
+          >
+            Heaven Synth
+            <ArrowRight className="ml-1.5 inline h-3 w-3" />
           </Link>
         </div>
+
+
 
 
       {/* Pannelli */}
@@ -1918,8 +2062,8 @@ export default function GestureSynth() {
 
       {/* barra inferiore */}
       <div className="night-bottom-shade" />
-      <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
-        <div className="night-glass mx-auto flex max-w-md items-center justify-between px-3 py-2">
+      <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-3">
+        <div className="night-glass night-bar mx-auto flex max-w-md items-center justify-between px-3 py-1.5">
           {panelBtn("sound", "Suono", Music4)}
           {panelBtn("scale", "Scala", KeyboardMusic)}
 
@@ -1928,8 +2072,9 @@ export default function GestureSynth() {
             aria-label={running ? "Stop" : "Play"}
             className={`night-play ${running ? "night-play-on" : ""}`}
           >
-            {running ? <Square className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+            {running ? <Square className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
+
 
           {panelBtn("arp", "Arp", Repeat)}
           {panelBtn("fx", "Effetti", SlidersHorizontal)}
