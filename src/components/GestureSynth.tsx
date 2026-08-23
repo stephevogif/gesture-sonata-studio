@@ -256,6 +256,123 @@ export default function GestureSynth() {
   const [status, setStatus] = useState<string>("");
   const [hands, setHands] = useState<HandState[]>([]);
 
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [presetName, setPresetName] = useState("");
+  const [presetMsg, setPresetMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PRESETS_KEY);
+      if (raw) setPresets(JSON.parse(raw) as Preset[]);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const persistPresets = (list: Preset[]) => {
+    setPresets(list);
+    try {
+      localStorage.setItem(PRESETS_KEY, JSON.stringify(list));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const currentPreset = (): PresetData => ({
+    mode,
+    freeMode,
+    freePitch,
+    instrument,
+    leftInstrument,
+    rightInstrument,
+    scale,
+    rootPc,
+    arpLeft,
+    arpRight,
+    arpRate,
+    arpPattern,
+    arpGate,
+    arpOctaves,
+    arpSwing,
+    bpm,
+    arpSync,
+    arpDivision,
+    chord,
+    hold,
+    reverb,
+    delayMix,
+    delayFeedback,
+    delaySync,
+    delayDivision,
+    eqType,
+    eqFreq,
+    gestureMod,
+  });
+
+  const savePreset = () => {
+    const name = presetName.trim() || `Progetto ${presets.length + 1}`;
+    const existing = presets.find((p) => p.name.toLowerCase() === name.toLowerCase());
+    const entry: Preset = {
+      id: existing?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name,
+      savedAt: Date.now(),
+      data: currentPreset(),
+    };
+    if (existing) {
+      persistPresets(presets.map((p) => (p.id === existing.id ? entry : p)));
+      setPresetMsg(`"${name}" aggiornato`);
+    } else {
+      if (presets.length >= MAX_PRESETS) {
+        setPresetMsg(`Limite di ${MAX_PRESETS} progetti raggiunto: cancellane uno.`);
+        return;
+      }
+      persistPresets([entry, ...presets]);
+      setPresetMsg(`"${name}" salvato`);
+    }
+    setPresetName("");
+  };
+
+  const deletePreset = (id: string) => {
+    persistPresets(presets.filter((p) => p.id !== id));
+    setPresetMsg("Progetto cancellato");
+  };
+
+  const loadPreset = (p: Preset) => {
+    const d = p.data;
+    setMode(d.mode);
+    setFreeMode(d.freeMode);
+    setFreePitch(d.freePitch);
+    setInstrument(d.instrument);
+    engineRef.current?.setInstrument(d.instrument);
+    setLeftInstrument(d.leftInstrument);
+    setRightInstrument(d.rightInstrument);
+    setScale(d.scale);
+    setRootPc(d.rootPc);
+    setArpLeft(d.arpLeft);
+    setArpRight(d.arpRight);
+    setArpRate(d.arpRate);
+    setArpPattern(d.arpPattern);
+    setArpGate(d.arpGate);
+    setArpOctaves(d.arpOctaves);
+    setArpSwing(d.arpSwing);
+    setBpm(d.bpm);
+    setArpSync(d.arpSync);
+    setArpDivision(d.arpDivision);
+    setChord(d.chord);
+    setHold(d.hold);
+    setReverb(d.reverb);
+    setDelayMix(d.delayMix);
+    setDelayFeedback(d.delayFeedback);
+    setDelaySync(d.delaySync);
+    setDelayDivision(d.delayDivision);
+    setEqType(d.eqType);
+    setEqFreq(d.eqFreq);
+    setGestureMod(d.gestureMod);
+    setPresetName(p.name);
+    setPresetMsg(`"${p.name}" caricato`);
+  };
+
+
 
   // keep latest settings readable inside the rAF loop
   const cfg = useRef({
