@@ -218,8 +218,13 @@ export class GestureSynthEngine {
   arpRate = 8; // notes per second
   arpDegrees: number[] = ARP_PATTERNS[0]!.degrees;
   arpRandom = false;
+  arpGate = 0.9;
+  arpOctaves = 1;
+  arpSwing = 0;
+  private arpTick = 0;
   private arpTargets = new Map<string, ArpTarget>();
-  private arpTimer: ReturnType<typeof setInterval> | null = null;
+  private arpTimer: ReturnType<typeof setTimeout> | null = null;
+
 
   async start() {
     if (this.ctx) {
