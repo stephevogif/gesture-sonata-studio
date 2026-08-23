@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import TutorialArt from "@/components/TutorialArt";
 import {
   ArrowLeft,
+  ArrowRight,
   Hand,
   HelpCircle,
   KeyboardMusic,
@@ -17,6 +18,7 @@ import {
   Square,
   Trash2,
 } from "lucide-react";
+
 
 
 
