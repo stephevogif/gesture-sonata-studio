@@ -652,8 +652,9 @@ export default function HeavenSynth() {
             </div>
             <button onClick={() => setShowDebug((v) => !v)} className={chip(showDebug)}>
               {showDebug ? <Eye className="mr-1 inline h-3.5 w-3.5" /> : <EyeOff className="mr-1 inline h-3.5 w-3.5" />}
-              Overlay debug
+              Costellazione mani
             </button>
+
           </section>
         )}
 
