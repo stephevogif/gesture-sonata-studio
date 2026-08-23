@@ -527,7 +527,9 @@ export default function HeavenSynth() {
               }
             : null,
           right: right ? { voicing, volume, filter: cutoff } : null,
+          heavens: heavensHud,
           fps,
+
         });
       }
     },
