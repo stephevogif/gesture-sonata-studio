@@ -1105,16 +1105,13 @@ export default function GestureSynth() {
       onClick={() => setPanel((p) => (p === id ? null : id))}
       aria-label={label}
       aria-pressed={panel === id}
-      className={`flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-sm border px-2 py-3 text-[10px] uppercase tracking-[0.18em] transition ${
-        panel === id
-          ? "border-primary bg-primary/15 text-primary"
-          : "border-border bg-card/70 text-muted-foreground"
-      }`}
+      className={`night-nav ${panel === id ? "night-nav-on" : ""}`}
     >
-      <Icon className="h-6 w-6" />
+      <Icon className="h-5 w-5" />
       {label}
     </button>
   );
+
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-5">
