@@ -185,6 +185,55 @@ export default function HeavenSynth() {
 
   const noteNames = useMemo(() => scaleNoteNames(rootPc, mode), [rootPc, mode]);
 
+  /* ————— ascolto microfono: tonica + scala automatiche ————— */
+  const [listening, setListening] = useState(false);
+  const [listenProgress, setListenProgress] = useState(0);
+  const [listenDuration, setListenDuration] = useState(16000);
+  const [listenMsg, setListenMsg] = useState<string | null>(null);
+  const listenAbortRef = useRef<AbortController | null>(null);
+
+  const runListening = useCallback(async (durationMs: number) => {
+    listenAbortRef.current?.abort();
+    const ac = new AbortController();
+    listenAbortRef.current = ac;
+    setListening(true);
+    setListenProgress(0);
+    setListenMsg(null);
+    try {
+      const res = await detectKey({
+        durationMs,
+        signal: ac.signal,
+        onProgress: ({ progress }) => setListenProgress(progress),
+      });
+      const md: ModeId =
+        res.scaleId === "dorian" ? "dorian" : res.mode === "minor" ? "minor" : "major";
+      setRootPc(res.rootPc);
+      setMode(md);
+      const name = `${KEYS[res.rootPc]} ${MODES.find((m) => m.id === md)?.name ?? ""}`;
+      setListenMsg(
+        res.confidence > 0.3
+          ? `Applicato: ${name}`
+          : `Applicato: ${name} — confidenza bassa, riprova con più suono`,
+      );
+    } catch (e) {
+      const err = e as Error;
+      if (err.name === "AbortError") setListenMsg("Ascolto interrotto.");
+      else if (err.name === "NotAllowedError") setListenMsg("Permesso microfono negato.");
+      else setListenMsg(err.message || "Non è stato possibile ascoltare.");
+    } finally {
+      setListening(false);
+      setListenProgress(0);
+    }
+  }, []);
+
+  const toggleListen = useCallback(() => {
+    if (listening) listenAbortRef.current?.abort();
+    else void runListening(listenDuration);
+  }, [listening, runListening, listenDuration]);
+
+  useEffect(() => () => listenAbortRef.current?.abort(), []);
+
+
   /* ————— audio ————— */
 
   const releaseAll = useCallback(() => {
