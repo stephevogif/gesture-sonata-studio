@@ -534,6 +534,27 @@
     0 6px 20px -8px rgba(20, 40, 75, 0.6);
 }
 
+@utility heaven-play-breathe {
+  animation: heaven-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes heaven-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 20px rgba(255, 214, 150, 0.4),
+      0 6px 20px -8px rgba(20, 40, 75, 0.6);
+  }
+  50% {
+    transform: scale(1.09);
+    box-shadow:
+      0 0 44px rgba(255, 220, 160, 0.95),
+      0 0 80px rgba(255, 205, 130, 0.45),
+      0 6px 20px -8px rgba(20, 40, 75, 0.6);
+  }
+}
+
 
 /* ————— Sky Synth: notte stellata (layout gemello di Seven Heavens) ————— */
 .night-scene {
