@@ -848,6 +848,14 @@ export default function GestureSynth() {
               const cx = prev ? prev.x + (rawX - prev.x) * 0.45 : rawX;
               const cy = prev ? prev.y + (rawY - prev.y) * 0.45 : rawY;
               smoothRef.current.set(vid, { x: cx, y: cy });
+              if (!wasOn) {
+                const ns = noteStarsRef.current;
+                ns.push({ x: cx, y: cy, born: now, warm: k % 2 === 0, seed: Math.random() });
+                if (ns.length > 9) ns.splice(0, ns.length - 9);
+                curNoteRef.current = midiToName(midi);
+                noteAtRef.current = now;
+              }
+
               glows.push({ x: cx, y: cy, hue: 38 + k * 3, level });
 
               // scintille dal punto di contatto: minuscole e brevissime
