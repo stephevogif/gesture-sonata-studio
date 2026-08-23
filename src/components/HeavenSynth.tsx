@@ -61,10 +61,10 @@ const STEPS = [
   { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: vedrai te stesso nel cielo, con le mani illuminate come costellazioni." },
   { a: "fingers" as const, t: "7 Heavens", d: "Le dita totali delle due mani (1–7) scelgono l'accordo I–VII della scala scelta." },
   { a: "height" as const, t: "Lato A = filtro", d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi." },
-  { a: "height" as const, t: "Lato B = volume", d: "Alza o abbassa la mano B per controllare il volume." },
+  { a: "height" as const, t: "Volume", d: "Il volume parte fisso al 100%: mostra 10 dita per passare al controllo con la mano B (altezza) e 10 dita di nuovo per tornare fisso." },
   { a: "settings" as const, t: "Suono ed effetti", d: "Strumento nel pannello Suono; riverbero, delay, risonanza e cutoff nel pannello Effetti." },
-  { a: "loop" as const, t: "Arpeggiatore", d: "9 dita accendono l'arp, 8 lo spengono; nel pannello Arp scegli tempo, divisione e pattern." },
-  { a: "keys" as const, t: "Hold", d: "10 dita tengono l'accordo: si libera appena scegli un altro grado (A = arp, H = hold)." },
+  { a: "loop" as const, t: "Arpeggiatore", d: "Chiudi e riapri velocemente entrambe le mani per accendere o spegnere l'arpeggiatore (tasto A)." },
+
 ];
 
 
@@ -154,6 +154,17 @@ export default function HeavenSynth() {
   const holdRef = useRef(false);
   const heldDegreeRef = useRef<number | null>(null);
   const lastStableRef = useRef<number | null>(null);
+
+  // ————— volume: fisso al 100% oppure controllato dalla mano (gesto 10 dita) —————
+  const [volFollow, setVolFollow] = useState(false);
+  const volFollowRef = useRef(false);
+  volFollowRef.current = volFollow;
+
+  // gesto "doppio pugno": chiudi e riapri entrambe le mani per accendere/spegnere l'arp
+  const fistAtRef = useRef(0);
+  const armedRef = useRef(false);
+  const lastArpGestureRef = useRef(0);
+
 
 
   const cfg = useRef({ rootPc, mode, instrument, showDebug, cutMax });
@@ -588,8 +599,9 @@ export default function HeavenSynth() {
       const right = hands.find((x) => x.handedness === "right") ?? null;
       const { rootPc: root, mode: md, cutMax: cmax } = cfg.current;
 
-      // ————— Lato B (destra): altezza = volume —————
-      const volume = right ? volSm.current.push(heightToGain(right.height)) : volSm.current.push(0);
+      // ————— Lato B (destra): altezza = volume (solo se il controllo mano è attivo) —————
+      const handVol = right ? heightToGain(right.height) : 0;
+      const volume = volSm.current.push(volFollowRef.current ? handVol : 1);
 
       // ————— Lato A (sinistra): altezza = low pass risonante —————
       const cutTarget = left ? 260 * Math.pow(Math.max(400, cmax) / 260, left.height) : cmax;
@@ -604,14 +616,37 @@ export default function HeavenSynth() {
       const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
       const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
       const total = lc + rc;
+
+      // gesto arp: entrambe le mani chiuse e subito riaperte
+      const nowGesture = performance.now();
+      if (left && right) {
+        if (lc === 0 && rc === 0) {
+          if (!armedRef.current) {
+            armedRef.current = true;
+            fistAtRef.current = nowGesture;
+          }
+        } else if (armedRef.current && lc >= 4 && rc >= 4) {
+          armedRef.current = false;
+          if (
+            nowGesture - fistAtRef.current < 900 &&
+            nowGesture - lastArpGestureRef.current > 1200
+          ) {
+            lastArpGestureRef.current = nowGesture;
+            setArpOn((v) => !v);
+          }
+        } else if (armedRef.current && nowGesture - fistAtRef.current > 1200) {
+          armedRef.current = false;
+        }
+      } else {
+        armedRef.current = false;
+      }
+
       const stable = heavensDeb.current.push(total >= 1 && total <= 10 ? total : null);
       if (stable !== lastStableRef.current) {
         lastStableRef.current = stable;
-        if (stable === 8) setArpOn(false);
-        else if (stable === 9) setArpOn(true);
-        else if (stable === 10) holdRef.current = !!currentRef.current.chord;
-        else if (stable != null && stable !== heldDegreeRef.current! + 1) holdRef.current = false;
+        if (stable === 10) setVolFollow((v) => !v);
       }
+
       let deg: number | null = null;
       if (hands.length && stable && stable <= 7) {
         deg = stable - 1;
@@ -624,7 +659,7 @@ export default function HeavenSynth() {
           previous: prevNotesRef.current,
         });
         if (arpOnRef.current) releaseAll();
-        else applyNotes(chord.notes, right ? Math.max(0.06, volume) : 0.6, bright);
+        else applyNotes(chord.notes, Math.max(0.06, volume), bright);
         prevNotesRef.current = chord.notes;
         currentRef.current.chord = chord;
         heldDegreeRef.current = deg;
@@ -739,6 +774,10 @@ export default function HeavenSynth() {
         ? "border-[rgba(255,222,160,0.9)] bg-[rgba(255,238,200,0.28)] text-[#3a2f16] shadow-sm"
         : "border-white/50 bg-white/25 text-[#3f4b62] hover:border-white/80"
     }`;
+
+  const field =
+    "mt-1.5 w-full appearance-none rounded-xl border border-white/60 bg-white/70 px-3 py-2.5 text-[13px] font-semibold tracking-normal text-[#2b3855] shadow-sm outline-none transition focus:border-[rgba(255,222,160,0.95)]";
+
 
   return (
     <div className="heaven-scene relative min-h-screen overflow-hidden text-[#33405a]">
@@ -885,7 +924,9 @@ export default function HeavenSynth() {
               </div>
             </div>
             <div className="heaven-glass px-4 py-3 text-right">
-              <p className="text-[9px] uppercase tracking-[0.32em] text-white/80">Volume</p>
+              <p className="text-[9px] uppercase tracking-[0.32em] text-white/80">
+                Volume {volFollow ? "· mano" : "· fisso"}
+              </p>
               <p className="mt-1 text-lg font-light text-white">{Math.round(hud.volume * 100)}%</p>
               <div className="heaven-meter heaven-meter-r mt-2">
                 <span style={{ width: `${Math.round(hud.volume * 100)}%` }} />
@@ -899,20 +940,43 @@ export default function HeavenSynth() {
         {panel === "sound" && (
           <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Suono</h2>
-            <div className="flex flex-wrap gap-1.5">
-              {INSTRUMENTS.map((it) => (
-                <button key={it.id} onClick={() => setInstrument(it.id)} className={chip(instrument === it.id)}>
-                  {it.name}
-                </button>
-              ))}
-            </div>
+            <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+              Strumento
+              <select
+                value={instrument}
+                onChange={(e) => setInstrument(e.target.value as InstrumentId)}
+                className={field}
+                aria-label="Strumento"
+              >
+                {INSTRUMENTS.map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {it.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+              Volume
+              <select
+                value={volFollow ? "hand" : "fixed"}
+                onChange={(e) => setVolFollow(e.target.value === "hand")}
+                className={field}
+                aria-label="Modalità volume"
+              >
+                <option value="fixed">Fisso 100%</option>
+                <option value="hand">Controllo con la mano</option>
+              </select>
+            </label>
             <button onClick={() => setShowDebug((v) => !v)} className={chip(showDebug)}>
               {showDebug ? <Eye className="mr-1 inline h-3.5 w-3.5" /> : <EyeOff className="mr-1 inline h-3.5 w-3.5" />}
               Costellazione mani
             </button>
-
+            <p className="text-[11px] text-slate-500">
+              Gesto: 10 dita alternano volume fisso al 100% e controllo con la mano.
+            </p>
           </section>
         )}
+
 
         {panel === "fx" && (
           <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
@@ -949,19 +1013,37 @@ export default function HeavenSynth() {
         {panel === "scale" && (
           <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Tonalità e scala</h2>
-            <div className="flex flex-wrap gap-1.5">
-              {KEYS.map((n, i) => (
-                <button key={n} onClick={() => setRootPc(i)} className={chip(rootPc === i)}>
-                  {n}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {MODES.map((m) => (
-                <button key={m.id} onClick={() => setMode(m.id)} className={chip(mode === m.id)}>
-                  {m.name}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                Tonica
+                <select
+                  value={rootPc}
+                  onChange={(e) => setRootPc(Number(e.target.value))}
+                  className={field}
+                  aria-label="Tonica"
+                >
+                  {KEYS.map((n, i) => (
+                    <option key={n} value={i}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                Scala
+                <select
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value as ModeId)}
+                  className={field}
+                  aria-label="Scala"
+                >
+                  {MODES.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <div className="space-y-2 border-t border-white/20 pt-3">
               <h3 className="text-xs font-bold">Ascolto automatico</h3>
@@ -1004,9 +1086,6 @@ export default function HeavenSynth() {
               <button onClick={() => setArpOn((v) => !v)} className={chip(arpOn)}>
                 {arpOn ? "Arp ON" : "Arp OFF"}
               </button>
-              <button onClick={() => { holdRef.current = false; }} className={chip(false)}>
-                Rilascia hold
-              </button>
             </div>
             <label className="block text-[11px] font-semibold text-slate-600">
               Tempo: <span className="text-slate-900">{bpm} BPM</span>
@@ -1020,30 +1099,48 @@ export default function HeavenSynth() {
                 aria-label="Tempo in BPM"
               />
             </label>
-            <div className="flex flex-wrap gap-1.5">
-              {([
-                ["1/4", 1],
-                ["1/8", 2],
-                ["1/8T", 3],
-                ["1/16", 4],
-              ] as const).map(([label, div]) => (
-                <button key={label} onClick={() => setArpDiv(div)} className={chip(arpDiv === div)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {([
-                ["up", "Salita"],
-                ["down", "Discesa"],
-                ["updown", "Su e giù"],
-                ["octaves", "Ottave"],
-                ["random", "Casuale"],
-              ] as const).map(([id, label]) => (
-                <button key={id} onClick={() => setArpMode(id)} className={chip(arpMode === id)}>
-                  {label}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                Divisione
+                <select
+                  value={arpDiv}
+                  onChange={(e) => setArpDiv(Number(e.target.value))}
+                  className={field}
+                  aria-label="Divisione arpeggio"
+                >
+                  {([
+                    ["1/4", 1],
+                    ["1/8", 2],
+                    ["1/8T", 3],
+                    ["1/16", 4],
+                  ] as const).map(([label, div]) => (
+                    <option key={label} value={div}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                Pattern
+                <select
+                  value={arpMode}
+                  onChange={(e) => setArpMode(e.target.value as typeof arpMode)}
+                  className={field}
+                  aria-label="Pattern arpeggio"
+                >
+                  {([
+                    ["up", "Salita"],
+                    ["down", "Discesa"],
+                    ["updown", "Su e giù"],
+                    ["octaves", "Ottave"],
+                    ["random", "Casuale"],
+                  ] as const).map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <label className="block text-[11px] font-semibold text-slate-600">
               Gate: <span className="text-slate-900">{Math.round(arpGate * 100)}%</span>
@@ -1058,9 +1155,10 @@ export default function HeavenSynth() {
               />
             </label>
             <p className="text-[11px] text-slate-500">
-              Gesti: 8 dita = arp OFF · 9 dita = arp ON · 10 dita = hold della nota (si libera
-              cambiando grado).
+              Gesto: chiudi e riapri velocemente entrambe le mani per accendere o spegnere l&apos;arp
+              (tasto A). Nessun numero di dita attiva più l&apos;arpeggiatore.
             </p>
+
           </section>
         )}
 
