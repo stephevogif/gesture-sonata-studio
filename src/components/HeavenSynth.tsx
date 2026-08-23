@@ -597,9 +597,12 @@ export default function HeavenSynth() {
           ref={videoRef}
           playsInline
           muted
-          className="h-full w-full scale-x-[-1] object-cover opacity-70"
+          aria-hidden
+          className="absolute h-px w-px opacity-0"
         />
+        <div className="heaven-stars absolute inset-0" />
         <div className="heaven-veil absolute inset-0" />
+
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
         <div className="heaven-vignette absolute inset-0" />
       </div>
