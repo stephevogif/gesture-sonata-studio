@@ -329,18 +329,46 @@
 /* ————— Seven Heavens: scena celestiale ————— */
 .heaven-scene {
   background:
-    radial-gradient(120% 80% at 50% 0%, #cfe4ff 0%, #9dc4f2 38%, #6ea6e6 70%, #4f8ad4 100%);
+    radial-gradient(120% 60% at 50% 96%, rgba(255, 236, 190, 0.95) 0%, rgba(255, 214, 170, 0.5) 26%, transparent 62%),
+    radial-gradient(90% 45% at 50% 88%, rgba(255, 248, 224, 0.9) 0%, transparent 60%),
+    linear-gradient(180deg, #5f8ed6 0%, #7ba9e4 24%, #a7c8ee 48%, #d3d9f2 70%, #f3ddd0 88%, #ffe9c9 100%);
+}
+
+/* stelle lontane + veli di nube in lenta deriva */
+.heaven-stars {
+  background-image:
+    radial-gradient(1.4px 1.4px at 18% 12%, rgba(255, 255, 255, 0.9), transparent 60%),
+    radial-gradient(1px 1px at 62% 8%, rgba(255, 255, 255, 0.75), transparent 60%),
+    radial-gradient(1.6px 1.6px at 44% 26%, rgba(255, 246, 220, 0.95), transparent 60%),
+    radial-gradient(1px 1px at 78% 20%, rgba(255, 255, 255, 0.7), transparent 60%),
+    radial-gradient(1.2px 1.2px at 30% 34%, rgba(255, 255, 255, 0.65), transparent 60%),
+    radial-gradient(1px 1px at 88% 34%, rgba(255, 255, 255, 0.6), transparent 60%),
+    radial-gradient(1.3px 1.3px at 8% 42%, rgba(255, 255, 255, 0.55), transparent 60%);
+  animation: heaven-twinkle 7s ease-in-out infinite;
+}
+
+@keyframes heaven-twinkle {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 .heaven-veil {
   background:
-    radial-gradient(90% 55% at 50% 12%, rgba(255, 236, 200, 0.55), transparent 62%),
-    linear-gradient(180deg, rgba(150,190,240,0.55) 0%, rgba(198, 222, 250, 0.5) 45%, rgba(255, 244, 228, 0.58) 100%);
+    radial-gradient(120% 60% at 12% 68%, rgba(255, 236, 214, 0.5), transparent 55%),
+    radial-gradient(120% 60% at 88% 74%, rgba(255, 230, 208, 0.45), transparent 55%),
+    radial-gradient(80% 40% at 50% 100%, rgba(255, 246, 226, 0.6), transparent 70%);
+  animation: heaven-drift 24s ease-in-out infinite alternate;
+}
+
+@keyframes heaven-drift {
+  from { transform: translate3d(-1.5%, 0, 0) scale(1.02); }
+  to { transform: translate3d(1.5%, -1%, 0) scale(1.06); }
 }
 
 .heaven-vignette {
-  background: radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(96,138,196,0.28) 100%);
+  background: radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(70, 108, 168, 0.3) 100%);
 }
+
 
 @utility heaven-title {
   font-family: var(--font-display);
