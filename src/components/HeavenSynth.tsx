@@ -458,21 +458,9 @@ export default function HeavenSynth() {
       const now = performance.now();
       if (now - hudTick.current > 110) {
         hudTick.current = now;
-        const cur = currentRef.current.chord;
-        setHud({
-          left: left
-            ? {
-                degree: cur && pm !== "theremin" ? cur.degree : null,
-                chord: cur ? cur.label : "—",
-                gesture: `${left.count} dita`,
-              }
-            : null,
-          right: right ? { voicing, volume, filter: cutoff } : null,
-          heavens: heavensHud,
-          fps,
-
-        });
+        setHud({ volume, filter: cutoff, heavens: heavensHud, fps });
       }
+
     },
     [applyNotes, drawHand, drawSky, releaseAll],
   );
