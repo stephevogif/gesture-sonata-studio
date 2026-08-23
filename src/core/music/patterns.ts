@@ -17,7 +17,8 @@ export type ArpPatternId =
   | "pulse"
   | "trance"
   | "acidline"
-  | "bassdrive";
+  | "bassdrive"
+  | "random";
 
 export type PatternDefinition<Id extends string> = {
   id: Id;
@@ -37,6 +38,8 @@ export const ARP_PATTERNS: PatternDefinition<ArpPatternId>[] = [
   { id: "trance", name: "Trance gate", degrees: [0, 0, 2, 0, 4, 0, 2, 0] },
   { id: "acidline", name: "Acid line", degrees: [0, 0, 7, 0, 3, 0, 5, 0] },
   { id: "bassdrive", name: "Bass drive", degrees: [0, 0, 0, 2, 0, 0, 3, 0] },
+  // "random" reuses the ladder but the engine picks the step at random
+  { id: "random", name: "Casuale", degrees: [0, 1, 2, 3, 4, 5] },
 ];
 
 export type ChordId = "off" | "fifth" | "triad" | "seventh" | "sus";
