@@ -1121,7 +1121,10 @@ export default function GestureSynth() {
       {showTut && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 p-5 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-sm border border-border bg-card p-5 shadow-xl">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-primary">
+            <p className="font-display text-[11px] tracking-[0.22em] text-foreground">
+              STEPH EVO&apos;S SKY SYNTH
+            </p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.3em] text-primary">
               Guida {tut + 1} / {TUT_STEPS.length}
             </p>
             <h3 className="mt-1 font-display text-base tracking-[0.1em] text-foreground">
