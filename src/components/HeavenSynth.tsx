@@ -155,6 +155,17 @@ export default function HeavenSynth() {
   const heldDegreeRef = useRef<number | null>(null);
   const lastStableRef = useRef<number | null>(null);
 
+  // ————— volume: fisso al 100% oppure controllato dalla mano (gesto 10 dita) —————
+  const [volFollow, setVolFollow] = useState(false);
+  const volFollowRef = useRef(false);
+  volFollowRef.current = volFollow;
+
+  // gesto "doppio pugno": chiudi e riapri entrambe le mani per accendere/spegnere l'arp
+  const fistAtRef = useRef(0);
+  const armedRef = useRef(false);
+  const lastArpGestureRef = useRef(0);
+
+
 
   const cfg = useRef({ rootPc, mode, instrument, showDebug, cutMax });
   useEffect(() => {
