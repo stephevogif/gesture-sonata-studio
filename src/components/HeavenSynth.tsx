@@ -549,64 +549,39 @@ export default function HeavenSynth() {
           </button>
         </header>
 
-        {/* modalità */}
-        <div className="mt-3 grid grid-cols-4 gap-1 rounded-full border border-slate-300 bg-white p-1">
-          {(
-            [
-              ["heavens", "7 Heavens", Sparkles],
-              ["chords", "Accordi", Layers],
-              ["notes", "Note", Music2],
-              ["theremin", "Theremin", Radio],
-            ] as const
-          ).map(([id, label, Icon]) => (
-            <button
-              key={id}
-              onClick={() => {
-                releaseAll();
-                heavensDeb.current.reset();
-                setPlayMode(id);
-              }}
-              className={`flex items-center justify-center gap-1 rounded-full px-1.5 py-2 text-[11px] font-semibold transition ${
-                playMode === id ? "bg-sky-700 text-white" : "text-slate-600"
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-            </button>
-          ))}
+        {/* 7 Heavens */}
+        <div className="mt-3 rounded-2xl border border-sky-200 bg-white p-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="rounded-full bg-sky-700 px-2 py-0.5 text-white">7 Heavens</span>
+            <span>
+              Key: <b className="text-slate-900">{KEYS[rootPc]}</b>
+            </span>
+            <span>
+              Scale: <b className="text-slate-900">{MODES.find((m) => m.id === mode)?.name}</b>
+            </span>
+            <span>
+              Left: <b className="text-slate-900">{hud.heavens?.leftCount ?? 0}</b>
+            </span>
+            <span>
+              Right: <b className="text-slate-900">{hud.heavens?.rightCount ?? 0}</b>
+            </span>
+            <span>
+              Total: <b className="text-slate-900">{hud.heavens?.total ?? 0}</b>
+            </span>
+          </div>
+          <div className="mt-2 flex items-baseline gap-3">
+            <span className="text-2xl font-bold text-sky-700">
+              {hud.heavens?.degree != null ? ROMAN[hud.heavens.degree] : "—"}
+            </span>
+            <span className="text-xl font-bold text-slate-900">{hud.heavens?.label ?? "—"}</span>
+            <span className="text-[12px] text-slate-500">{hud.heavens?.notes ?? "—"}</span>
+          </div>
+          <p className="mt-1 text-[11px] text-slate-500">
+            Dita totali (entrambe le mani) = grado dell&apos;accordo, da 1 a 7. Lato A su/giù = low pass
+            risonante · Lato B su/giù = volume.
+          </p>
         </div>
 
-        {playMode === "heavens" && (
-          <div className="mt-3 rounded-2xl border border-sky-200 bg-white p-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              <span>
-                Key: <b className="text-slate-900">{KEYS[rootPc]}</b>
-              </span>
-              <span>
-                Scale: <b className="text-slate-900">{MODES.find((m) => m.id === mode)?.name}</b>
-              </span>
-              <span>
-                Left: <b className="text-slate-900">{hud.heavens?.leftCount ?? 0}</b>
-              </span>
-              <span>
-                Right: <b className="text-slate-900">{hud.heavens?.rightCount ?? 0}</b>
-              </span>
-              <span>
-                Total: <b className="text-slate-900">{hud.heavens?.total ?? 0}</b>
-              </span>
-            </div>
-            <div className="mt-2 flex items-baseline gap-3">
-              <span className="text-2xl font-bold text-sky-700">
-                {hud.heavens?.degree != null ? ROMAN[hud.heavens.degree] : "—"}
-              </span>
-              <span className="text-xl font-bold text-slate-900">{hud.heavens?.label ?? "—"}</span>
-              <span className="text-[12px] text-slate-500">{hud.heavens?.notes ?? "—"}</span>
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500">
-              Dita totali (entrambe le mani) = grado dell&apos;accordo, da 1 a 7. Tonalità e scala restano bloccate.
-            </p>
-          </div>
-        )}
 
 
         {/* striscia della scala */}
