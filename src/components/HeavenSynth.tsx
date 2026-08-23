@@ -447,6 +447,73 @@ export default function HeavenSynth() {
     ctx.restore();
   }, []);
 
+  /* ————— aura luminosa sulle mani mentre suonano ————— */
+  const drawHandGlow = useCallback(
+    (ctx: CanvasRenderingContext2D, hand: HandFrame, w: number, h: number, music: number, volume: number) => {
+      if (music <= 0.02) return;
+      const sprite = sunSprite.current;
+      if (!sprite) return;
+      const lm = hand.landmarks;
+      const t = performance.now() / 1000;
+      const breath = 0.82 + Math.sin(t * 3.1) * 0.18;
+      const power = music * (0.45 + Math.min(1, volume) * 0.55);
+      const scale = Math.min(w, h);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+
+      // alone ampio attorno al palmo
+      const palm = lm[9] ?? lm[0]!;
+      const cx = (1 - palm.x) * w;
+      const cy = palm.y * h;
+      const halo = scale * (0.16 + power * 0.1) * breath;
+      ctx.globalAlpha = Math.min(0.65, power * 0.5 * breath);
+      ctx.drawImage(sprite, cx - halo, cy - halo, halo * 2, halo * 2);
+
+      // bagliori pulsanti sui polpastrelli
+      const tips = [4, 8, 12, 16, 20];
+      for (let k = 0; k < tips.length; k++) {
+        const p = lm[tips[k]!];
+        if (!p) continue;
+        const osc = 0.75 + Math.sin(t * 5.2 - k * 0.9) * 0.25;
+        const r = scale * (0.035 + power * 0.028) * osc;
+        const x = (1 - p.x) * w;
+        const y = p.y * h;
+        ctx.globalAlpha = Math.min(0.9, power * 0.85 * osc);
+        ctx.drawImage(sprite, x - r, y - r, r * 2, r * 2);
+      }
+
+      // scia dorata lungo lo scheletro: le dita diventano filamenti di luce
+      const links = [
+        [0, 5], [5, 9], [9, 13], [13, 17], [17, 0],
+        [0, 1], [1, 2], [2, 3], [3, 4],
+        [5, 6], [6, 7], [7, 8],
+        [9, 10], [10, 11], [11, 12],
+        [13, 14], [14, 15], [15, 16],
+        [17, 18], [18, 19], [19, 20],
+      ];
+      ctx.globalAlpha = Math.min(0.8, power * 0.7 * breath);
+      ctx.strokeStyle = "rgba(255,244,214,1)";
+      ctx.lineWidth = 1.2 + power * 1.8;
+      ctx.lineCap = "round";
+      ctx.shadowBlur = 18 + power * 22;
+      ctx.shadowColor = "rgba(255,214,140,0.95)";
+      ctx.beginPath();
+      for (const [a, b] of links) {
+        const pa = lm[a!];
+        const pb = lm[b!];
+        if (!pa || !pb) continue;
+        ctx.moveTo((1 - pa.x) * w, pa.y * h);
+        ctx.lineTo((1 - pb.x) * w, pb.y * h);
+      }
+      ctx.stroke();
+      ctx.restore();
+    },
+    [],
+  );
+
+
+
   const drawHand = useCallback(
     (ctx: CanvasRenderingContext2D, hand: HandFrame, w: number, h: number) => {
       const lm = hand.landmarks;
