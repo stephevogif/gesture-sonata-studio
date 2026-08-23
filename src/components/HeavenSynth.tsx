@@ -51,6 +51,7 @@ import {
 } from "@/lib/gestures";
 import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
+import TutorialArt from "@/components/TutorialArt";
 
 type PlayMode = "chords" | "notes" | "theremin";
 type PanelId = null | "sound" | "scale" | "loop" | "help";
@@ -64,13 +65,13 @@ type Hud = {
 const ONBOARD_KEY = "sky-studio-onboarded";
 
 const STEPS = [
-  { t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: il video non viene mostrato, vedi solo le mani luminose." },
-  { t: "Lato A = gradi della scala", d: "1–5 dita scelgono i gradi I–V. Indice + mignolo = VI, con il pollice = VII." },
-  { t: "Inclinazione Lato A", d: "Ruota il polso per passare da maggiore a minore (con zona neutra anti-tremolio)." },
-  { t: "Lato B = espressione", d: "Altezza = volume, dita = rivolto/settima/voicing, inclinazione = filtro." },
-  { t: "Personalizza", d: "Tonalità, scala, strumento e modalità nel pannello Impostazioni." },
-  { t: "Loop pedal", d: "Registra fino a 4 tracce con click di preconteggio: si avviano in automatico." },
-  { t: "Scorciatoie", d: "Spazio = play/pausa, 1–4 traccia, M mute, S solo, Canc svuota, Shift+Canc svuota tutto." },
+  { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: il video non viene mostrato, vedi solo le mani luminose." },
+  { a: "fingers" as const, t: "Lato A = gradi della scala", d: "1–5 dita scelgono i gradi I–V. Indice + mignolo = VI, con il pollice = VII." },
+  { a: "tilt" as const, t: "Inclinazione Lato A", d: "Ruota il polso per passare da maggiore a minore (con zona neutra anti-tremolio)." },
+  { a: "height" as const, t: "Lato B = espressione", d: "Altezza = volume, dita = rivolto/settima/voicing, inclinazione = filtro." },
+  { a: "settings" as const, t: "Personalizza", d: "Tonalità, scala, strumento e modalità nel pannello Impostazioni." },
+  { a: "loop" as const, t: "Loop pedal", d: "Registra fino a 4 tracce con click di preconteggio: si avviano in automatico." },
+  { a: "keys" as const, t: "Scorciatoie", d: "Spazio = play/pausa, 1–4 traccia, M mute, S solo, Canc svuota, Shift+Canc svuota tutto." },
 ];
 
 export default function HeavenSynth() {
@@ -464,7 +465,7 @@ export default function HeavenSynth() {
             <ArrowLeft className="h-4 w-4" /> Sky Synth
           </Link>
           <h1 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">
-            Chord <span className="text-sky-700">Studio</span>
+            Steph Evaux <span className="text-sky-700">Heaven Sent</span>
           </h1>
           <button
             onClick={running ? stop : start}
@@ -823,6 +824,9 @@ export default function HeavenSynth() {
               Passo {onboard + 1} di {STEPS.length}
             </p>
             <h3 className="mt-1 text-lg font-bold text-slate-900">{STEPS[onboard]!.t}</h3>
+            <div className="mt-3 rounded-xl bg-sky-50 p-2 text-sky-700">
+              <TutorialArt id={STEPS[onboard]!.a} />
+            </div>
             <p className="mt-2 text-sm text-slate-700">{STEPS[onboard]!.d}</p>
             <div className="mt-4 flex justify-between gap-2">
               <button
