@@ -855,9 +855,31 @@ export default function HeavenSynth() {
                 </button>
               ))}
             </div>
+            <div className="space-y-2 border-t border-white/20 pt-3">
+              <h3 className="text-xs font-bold">Ascolto automatico</h3>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[16000, 24000, 32000].map((d) => (
+                  <button
+                    key={d}
+                    disabled={listening}
+                    onClick={() => setListenDuration(d)}
+                    className={chip(listenDuration === d)}
+                  >
+                    {d / 1000}s
+                  </button>
+                ))}
+                <button onClick={toggleListen} className={chip(listening)}>
+                  {listening ? `Ferma (${Math.round(listenProgress * 100)}%)` : "Ascolta"}
+                </button>
+              </div>
+              {listenMsg && !listening && (
+                <p className="text-[11px] text-slate-500">{listenMsg}</p>
+              )}
+            </div>
             <p className="text-[11px] text-slate-500">
               Tonica e scala restano bloccate: le mani scelgono solo il grado (1–7).
             </p>
+
           </section>
         )}
 
