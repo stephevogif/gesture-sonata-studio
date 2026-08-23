@@ -5,6 +5,12 @@ export type InstrumentId =
   | "reese"
   | "acid"
   | "growl"
+  | "neuro"
+  | "fmbass"
+  | "sub808"
+  | "hoover"
+  | "supersaw"
+  | "digipluck"
   | "harp"
   | "piano"
   | "kalimba"
@@ -36,6 +42,12 @@ export const INSTRUMENTS: {
   { id: "reese", name: "Reese Bass", blurb: "Basso detunato, sporco e profondo", group: "electro" },
   { id: "acid", name: "Acid 303", blurb: "Squelch acido con filtro urlante", group: "electro" },
   { id: "growl", name: "Growl / Dubstep", blurb: "Wobble aggressivo e distorto", group: "electro" },
+  { id: "neuro", name: "Neuro Bass", blurb: "Saw distorto con filtro formante", group: "electro" },
+  { id: "fmbass", name: "FM Bass", blurb: "FM profonda, attacco secco", group: "electro" },
+  { id: "sub808", name: "808 Sub", blurb: "Sub caldo con pitch drop", group: "electro" },
+  { id: "hoover", name: "Hoover / Rave Stab", blurb: "Stab rave urlante", group: "electro" },
+  { id: "supersaw", name: "Supersaw Trance", blurb: "7 saw detunati, brillante", group: "electro" },
+  { id: "digipluck", name: "Digital Pluck", blurb: "Pluck secco per arp veloci", group: "electro" },
 ];
 
 /** Semitone transpose per instrument (bass patches play way lower). */
@@ -46,6 +58,12 @@ export const INSTRUMENT_SHIFT: Record<InstrumentId, number> = {
   reese: -24,
   acid: -12,
   growl: -24,
+  neuro: -24,
+  fmbass: -24,
+  sub808: -24,
+  hoover: 0,
+  supersaw: 0,
+  digipluck: 12,
   harp: 12,
   piano: 0,
   kalimba: 12,
@@ -55,6 +73,7 @@ export const INSTRUMENT_SHIFT: Record<InstrumentId, number> = {
   pluckAmb: 12,
   subpad: -12,
 };
+
 
 
 export type ScaleId =
