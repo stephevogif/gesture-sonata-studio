@@ -73,7 +73,7 @@ const STEPS = [
   { t: "Scorciatoie", d: "Spazio = play/pausa, 1–4 traccia, M mute, S solo, Canc svuota, Shift+Canc svuota tutto." },
 ];
 
-export default function ChordStudio() {
+export default function HeavenSynth() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);

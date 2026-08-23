@@ -1112,7 +1112,7 @@ export default function GestureSynth() {
           to="/studio"
           className="mt-3 inline-flex items-center gap-2 rounded-sm border border-border bg-card/60 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:border-primary hover:text-primary"
         >
-          Chord Studio
+          Heaven Synth
         </Link>
       </header>
 
