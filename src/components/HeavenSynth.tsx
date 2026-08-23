@@ -78,6 +78,8 @@ export default function HeavenSynth() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
+  const sunRef = useRef({ p: -0.25, y: 0.3 });
+
   const glowRef = useRef(0);
   const activeIdsRef = useRef<string[]>([]);
   const prevNotesRef = useRef<number[]>([]);
