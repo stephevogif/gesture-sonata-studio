@@ -1373,11 +1373,16 @@ export default function GestureSynth() {
                 {status || "Consenti l'accesso alla fotocamera per iniziare a suonare."}
               </p>
               {camError && <p className="max-w-xs text-xs text-[#ffd9a8]">{camError}</p>}
-              <button onClick={start} className="night-chip night-chip-on">
-                {camError ? "Riprova" : "Inizia a suonare"}
+              <button
+                onClick={start}
+                aria-label={camError ? "Riprova" : "Play"}
+                className={`night-play ${camError ? "" : "night-play-breathe"}`}
+              >
+                <Play className="h-5 w-5" />
               </button>
             </div>
           )}
+
           {running && (listening || listenMsg) && (
             <span className={`night-tag absolute top-0 ${listening ? "night-tag-on" : ""}`}>
               {listening
