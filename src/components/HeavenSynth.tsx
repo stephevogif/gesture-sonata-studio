@@ -116,24 +116,24 @@ export default function HeavenSynth() {
     filter: 8000,
   });
 
-  const degreeDeb = useRef(new Debouncer<number | null>(120));
   const heavensDeb = useRef(new Debouncer<number | null>(150));
-  const voicingDeb = useRef(new Debouncer<number>(120));
-  const tonalitySw = useRef(new TonalitySwitch(0.3));
-  const tiltSm = useRef(new Smoother(0.12));
   const volSm = useRef(new Smoother(0.16));
-  const pitchSm = useRef(new Smoother(0.2));
+  const cutSm = useRef(new Smoother(0.14));
 
   // ————— impostazioni —————
-  const [playMode, setPlayMode] = useState<PlayMode>("heavens");
   const [rootPc, setRootPc] = useState(9);
   const [mode, setMode] = useState<ModeId>("major");
-  const [tonalityLock, setTonalityLock] = useState<Tonality>("auto");
   const [instrument, setInstrument] = useState<InstrumentId>("pads");
   const [showDebug, setShowDebug] = useState(true);
-  const [quantize, setQuantize] = useState(true);
   const [panel, setPanel] = useState<PanelId>(null);
-  const [hud, setHud] = useState<Hud>({ left: null, right: null, heavens: null, fps: 0 });
+  const [hud, setHud] = useState<Hud>({ volume: 0, filter: 8000, heavens: null, fps: 0 });
+
+  // ————— effetti (come Sky Synth) —————
+  const [reverb, setReverb] = useState(45);
+  const [delayMix, setDelayMix] = useState(24);
+  const [delayFeedback, setDelayFeedback] = useState(32);
+  const [cutMax, setCutMax] = useState(8000);
+  const [resonance, setResonance] = useState(6);
 
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -151,11 +151,22 @@ export default function HeavenSynth() {
   });
   const looperRef = useRef<Looper | null>(null);
 
-  const cfg = useRef({ playMode, rootPc, mode, tonalityLock, instrument, showDebug, quantize });
+  const cfg = useRef({ rootPc, mode, instrument, showDebug, cutMax });
   useEffect(() => {
-    cfg.current = { playMode, rootPc, mode, tonalityLock, instrument, showDebug, quantize };
+    cfg.current = { rootPc, mode, instrument, showDebug, cutMax };
     engineRef.current?.setInstrument(instrument);
-  }, [playMode, rootPc, mode, tonalityLock, instrument, showDebug, quantize]);
+  }, [rootPc, mode, instrument, showDebug, cutMax]);
+
+  useEffect(() => {
+    engineRef.current?.setReverb(reverb / 100);
+  }, [reverb]);
+  useEffect(() => {
+    engineRef.current?.setDelay({ mix: delayMix / 100, feedback: delayFeedback / 100 });
+  }, [delayMix, delayFeedback]);
+  useEffect(() => {
+    engineRef.current?.setResonance(resonance);
+  }, [resonance]);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
