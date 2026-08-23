@@ -271,8 +271,12 @@ export default function GestureSynth() {
       rate: arpRate,
       degrees,
       random: arpPattern === "random",
+      gate: arpGate / 100,
+      octaves: arpOctaves,
+      swing: arpSwing / 100,
     });
-  }, [arpLeft, arpRight, arpRate, arpPattern]);
+  }, [arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing]);
+
 
   useEffect(() => {
     engineRef.current?.setReverb(reverb / 100);
