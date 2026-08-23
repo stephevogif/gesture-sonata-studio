@@ -1,121 +1,225 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Layers, Music2, Play, Square } from "lucide-react";
+import {
+  ArrowLeft,
+  Circle,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  Layers,
+  Music2,
+  Pause,
+  Play,
+  Radio,
+  Repeat,
+  Settings2,
+  Square,
+  Trash2,
+} from "lucide-react";
 import {
   GestureSynthEngine,
   INSTRUMENTS,
   INSTRUMENT_SHIFT,
-  NOTE_NAMES,
-  SCALES,
-  degreeToMidi,
-  midiToName,
-  scaleSteps,
   type InstrumentId,
-  type ScaleId,
 } from "@/lib/synth";
+import {
+  buildChord,
+  KEYS,
+  MODES,
+  midiName,
+  midiToFreq,
+  modeSteps,
+  degreeSemitones,
+  ROMAN,
+  scaleNoteNames,
+  VOICINGS,
+  type Chord,
+  type ModeId,
+  type Tonality,
+  type VoicingId,
+} from "@/lib/theory";
+import {
+  Debouncer,
+  DEFAULT_DEGREE_RULES,
+  gestureToDegree,
+  heightToGain,
+  Smoother,
+  tiltToCutoff,
+  TonalitySwitch,
+  VOICING_BY_FINGERS,
+  type HandFrame,
+} from "@/lib/gestures";
+import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper";
+import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 
-const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "I'"];
+type PlayMode = "chords" | "notes" | "theremin";
+type PanelId = null | "sound" | "scale" | "loop" | "help";
 
-type VoiceMode = "chords" | "single";
-
-type HandInfo = {
-  side: "left" | "right";
-  degree: number;
-  fingers: number;
-  level: number;
-  tilt: number;
+type Hud = {
+  left: { degree: number | null; chord: string; gesture: string } | null;
+  right: { voicing: VoicingId; volume: number; filter: number } | null;
+  fps: number;
 };
 
-/** conta le dita alzate (senza pollice) e restituisce anche lo stato del pollice */
-function readHand(lm: { x: number; y: number }[]) {
-  const tips = [8, 12, 16, 20];
-  const pips = [6, 10, 14, 18];
-  let count = 0;
-  const up: boolean[] = [];
-  for (let i = 0; i < tips.length; i++) {
-    const t = lm[tips[i]!]!;
-    const p = lm[pips[i]!]!;
-    const isUp = t.y < p.y - 0.015;
-    up.push(isUp);
-    if (isUp) count++;
-  }
-  const wrist = lm[0]!;
-  const thumbTip = lm[4]!;
-  const thumbIp = lm[3]!;
-  const d = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-    Math.hypot(a.x - b.x, a.y - b.y);
-  const thumbUp = d(thumbTip, wrist) > d(thumbIp, wrist) * 1.12;
+const ONBOARD_KEY = "sky-studio-onboarded";
 
-  const a = lm[5]!;
-  const b = lm[17]!;
-  const tilt = Math.atan2(b.y - a.y, b.x - a.x);
-
-  const y = (wrist.y + lm[9]!.y) / 2;
-  const openness = Math.min(1, (count + (thumbUp ? 1 : 0)) / 5);
-
-  return { count, up, thumbUp, tilt, y, openness };
-}
-
-/** mappa dita -> grado di scala (I..VII) */
-function fingersToDegree(up: boolean[], thumbUp: boolean, count: number): number | null {
-  if (count === 0 && !thumbUp) return null;
-  const [idx, mid, ring, pinky] = up;
-  if (idx && pinky && !mid && !ring) return thumbUp ? 6 : 5;
-  if (count >= 1 && count <= 5) return count - 1;
-  return thumbUp ? 0 : null;
-}
-
-type Cloud = { x: number; y: number; r: number; v: number; a: number };
+const STEPS = [
+  { t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: il video non viene mostrato, vedi solo le mani luminose." },
+  { t: "Lato A = gradi della scala", d: "1–5 dita scelgono i gradi I–V. Indice + mignolo = VI, con il pollice = VII." },
+  { t: "Inclinazione Lato A", d: "Ruota il polso per passare da maggiore a minore (con zona neutra anti-tremolio)." },
+  { t: "Lato B = espressione", d: "Altezza = volume, dita = rivolto/settima/voicing, inclinazione = filtro." },
+  { t: "Personalizza", d: "Tonalità, scala, strumento e modalità nel pannello Impostazioni." },
+  { t: "Loop pedal", d: "Registra fino a 4 tracce con click di preconteggio: si avviano in automatico." },
+  { t: "Scorciatoie", d: "Spazio = play/pausa, 1–4 traccia, M mute, S solo, Canc svuota, Shift+Canc svuota tutto." },
+];
 
 export default function ChordStudio() {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GestureSynthEngine | null>(null);
-  const landmarkerRef = useRef<any>(null);
-  const rafRef = useRef<number | null>(null);
-  const activeRef = useRef<Set<string>>(new Set());
-  const cloudsRef = useRef<Cloud[]>([]);
+  const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
   const glowRef = useRef(0);
+  const activeIdsRef = useRef<string[]>([]);
+  const prevNotesRef = useRef<number[]>([]);
+  const currentRef = useRef<{ chord: Chord | null; volume: number; filter: number }>({
+    chord: null,
+    volume: 0,
+    filter: 8000,
+  });
 
-  const [running, setRunning] = useState(false);
-  const [status, setStatus] = useState("");
-  const [hands, setHands] = useState<HandInfo[]>([]);
-  const [scale, setScale] = useState<ScaleId>("major");
+  const degreeDeb = useRef(new Debouncer<number | null>(120));
+  const voicingDeb = useRef(new Debouncer<number>(120));
+  const tonalitySw = useRef(new TonalitySwitch(0.3));
+  const tiltSm = useRef(new Smoother(0.12));
+  const volSm = useRef(new Smoother(0.16));
+  const pitchSm = useRef(new Smoother(0.2));
+
+  // ————— impostazioni —————
+  const [playMode, setPlayMode] = useState<PlayMode>("chords");
   const [rootPc, setRootPc] = useState(9);
+  const [mode, setMode] = useState<ModeId>("major");
+  const [tonalityLock, setTonalityLock] = useState<Tonality>("auto");
   const [instrument, setInstrument] = useState<InstrumentId>("pads");
-  const [minorFlip, setMinorFlip] = useState(true);
-  const [voiceMode, setVoiceMode] = useState<VoiceMode>("chords");
+  const [showDebug, setShowDebug] = useState(true);
+  const [quantize, setQuantize] = useState(true);
+  const [panel, setPanel] = useState<PanelId>(null);
+  const [hud, setHud] = useState<Hud>({ left: null, right: null, fps: 0 });
+  const [onboard, setOnboard] = useState(0);
+  const [showOnboard, setShowOnboard] = useState(false);
 
-  const cfg = useRef({ scale, rootPc, instrument, minorFlip, voiceMode });
+  // ————— loop pedal —————
+  const [bpm, setBpm] = useState(100);
+  const [bars, setBars] = useState(2);
+  const [loop, setLoop] = useState({
+    playing: false,
+    recording: false,
+    countIn: false,
+    step: 0,
+    selected: 0,
+    tracks: emptyTracks(),
+  });
+  const looperRef = useRef<Looper | null>(null);
+
+  const cfg = useRef({ playMode, rootPc, mode, tonalityLock, instrument, showDebug, quantize });
   useEffect(() => {
-    cfg.current = { scale, rootPc, instrument, minorFlip, voiceMode };
+    cfg.current = { playMode, rootPc, mode, tonalityLock, instrument, showDebug, quantize };
+    engineRef.current?.setInstrument(instrument);
+  }, [playMode, rootPc, mode, tonalityLock, instrument, showDebug, quantize]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!localStorage.getItem(ONBOARD_KEY)) setShowOnboard(true);
+  }, []);
+
+  const noteNames = useMemo(() => scaleNoteNames(rootPc, mode), [rootPc, mode]);
+
+  /* ————— audio ————— */
+
+  const releaseAll = useCallback(() => {
     const e = engineRef.current;
     if (!e) return;
-    e.setScale(scaleSteps(scale), rootPc);
-    e.setInstrument(instrument);
-    if (voiceMode === "single") e.setChord("off");
-  }, [scale, rootPc, instrument, minorFlip, voiceMode]);
+    activeIdsRef.current.forEach((id) => e.noteOff(id, true));
+    activeIdsRef.current = [];
+    prevNotesRef.current = [];
+    currentRef.current.chord = null;
+  }, []);
 
-  const degrees = scaleSteps(scale);
-  const noteLabels = Array.from({ length: 8 }, (_, i) =>
-    midiToName(degreeToMidi(i, degrees, rootPc)).replace(/\d+$/, ""),
-  );
+  const applyNotes = useCallback((notes: number[], gain: number, bright: number) => {
+    const e = engineRef.current;
+    if (!e) return;
+    const inst = cfg.current.instrument;
+    const shift = INSTRUMENT_SHIFT[inst] ?? 0;
+    const ids = notes.map((_, i) => `ch${i}`);
+    activeIdsRef.current
+      .filter((id) => !ids.includes(id))
+      .forEach((id) => e.noteOff(id, true));
+    notes.forEach((m, i) => {
+      const amp = gain * (i === 0 ? 1 : 0.7);
+      e.noteOn(ids[i]!, midiToFreq(m + shift), Math.max(0.02, amp), bright, inst);
+    });
+    activeIdsRef.current = ids;
+  }, []);
+
+  /* ————— loop pedal ————— */
+
+  const getLooper = useCallback(() => {
+    if (looperRef.current) return looperRef.current;
+    const l = new Looper({
+      bpm,
+      bars,
+      onEvent: (track, ev) => {
+        const e = engineRef.current;
+        if (!e) return;
+        const inst = cfg.current.instrument;
+        const shift = INSTRUMENT_SHIFT[inst] ?? 0;
+        const dur = (60 / Math.max(30, l.bpm) / 4) * 3.2;
+        ev.notes.forEach((m, i) => {
+          const id = `lp${track.id}-${i}`;
+          e.noteOn(id, midiToFreq(m + shift), ev.volume * track.volume * 0.8, 0.5, inst);
+          setTimeout(() => e.noteOff(id, true), dur * 1000);
+        });
+      },
+      capture: () => {
+        const c = currentRef.current;
+        if (!c.chord) return null;
+        return {
+          notes: c.chord.notes,
+          label: c.chord.label,
+          volume: Math.max(0.2, c.volume),
+          filter: c.filter,
+        };
+      },
+      onState: (patch) => setLoop((s) => ({ ...s, ...patch }) as typeof s),
+    });
+    looperRef.current = l;
+    return l;
+  }, [bpm, bars]);
+
+  useEffect(() => {
+    looperRef.current?.setBpm(bpm);
+    engineRef.current?.setTempo(bpm);
+  }, [bpm]);
+  useEffect(() => {
+    looperRef.current?.setBars(bars);
+  }, [bars]);
+  useEffect(() => () => looperRef.current?.dispose(), []);
+
+  /* ————— rendering ————— */
 
   const drawSky = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, glow: number) => {
     const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, "#f6fbff");
-    sky.addColorStop(0.5, "#e6f1fb");
-    sky.addColorStop(1, "#dbe8f7");
+    sky.addColorStop(0, "#f7fbff");
+    sky.addColorStop(0.55, "#e3eefb");
+    sky.addColorStop(1, "#d3e2f5");
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
     if (cloudsRef.current.length === 0) {
-      cloudsRef.current = Array.from({ length: 14 }, () => ({
+      cloudsRef.current = Array.from({ length: 12 }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
         r: h * (0.12 + Math.random() * 0.28),
-        v: 0.08 + Math.random() * 0.25,
-        a: 0.1 + Math.random() * 0.22,
+        v: 0.08 + Math.random() * 0.22,
+        a: 0.1 + Math.random() * 0.2,
       }));
     }
     for (const c of cloudsRef.current) {
@@ -129,74 +233,11 @@ export default function ChordStudio() {
       ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
       ctx.fill();
     }
-
-    const halo = ctx.createRadialGradient(w / 2, h * 0.35, 0, w / 2, h * 0.35, h * 0.7);
-    halo.addColorStop(0, `rgba(180,215,255,${0.1 + glow * 0.28})`);
-    halo.addColorStop(1, "rgba(180,215,255,0)");
-    ctx.fillStyle = halo;
-    ctx.fillRect(0, 0, w, h);
   }, []);
 
-  const loop = useCallback(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const engine = engineRef.current;
-    const landmarker = landmarkerRef.current;
-    if (!video || !canvas || !engine || !landmarker) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const w = video.videoWidth || 640;
-    const h = video.videoHeight || 480;
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
-    }
-
-    let result: any = null;
-    try {
-      result = landmarker.detectForVideo(video, performance.now());
-    } catch {
-      /* frame non pronto */
-    }
-
-    const seen = new Set<string>();
-    const info: HandInfo[] = [];
-    const lmList: any[] = result?.landmarks ?? [];
-    const handed: any[] = result?.handedness ?? result?.handednesses ?? [];
-
-    const parsed = lmList.map((lm: any[], i: number) => {
-      const label = handed[i]?.[0]?.categoryName === "Left" ? "right" : "left";
-      return { label: label as "left" | "right", lm, read: readHand(lm) };
-    });
-    const rightHand = parsed.find((p) => p.label === "right") ?? null;
-    const expr = rightHand
-      ? {
-          level: Math.max(0, Math.min(1, (1 - rightHand.read.y) / 0.7)),
-          bright: Math.max(0, Math.min(1, 0.5 + rightHand.read.tilt)),
-          fingers: rightHand.read.count,
-        }
-      : { level: 0.75, bright: 0.5, fingers: 3 };
-
-    engine.setChord(
-      cfg.current.voiceMode === "single"
-        ? "off"
-        : expr.fingers >= 4
-          ? "seventh"
-          : expr.fingers >= 2
-            ? "triad"
-            : expr.fingers === 1
-              ? "fifth"
-              : "off",
-    );
-
-    // sfondo: solo cielo e nuvole, nessuna immagine dalla fotocamera
-    const target = parsed.length > 0 ? expr.level : 0;
-    glowRef.current += (target - glowRef.current) * 0.06;
-    drawSky(ctx, w, h, glowRef.current);
-
-    for (const p of parsed) {
-      const { lm, read, label } = p;
+  const drawHand = useCallback(
+    (ctx: CanvasRenderingContext2D, hand: HandFrame, w: number, h: number) => {
+      const lm = hand.landmarks;
       const px = (n: number) => (1 - lm[n]!.x) * w;
       const py = (n: number) => lm[n]!.y * h;
       const links = [
@@ -207,13 +248,10 @@ export default function ChordStudio() {
         [13, 14], [14, 15], [15, 16],
         [17, 18], [18, 19], [19, 20],
       ];
-
-      // alone morbido
       ctx.save();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.shadowBlur = 28;
-      ctx.shadowColor = label === "left" ? "rgba(120,180,255,0.9)" : "rgba(160,210,240,0.9)";
-      ctx.strokeStyle = "rgba(255,255,255,0.92)";
+      ctx.shadowBlur = 26;
+      ctx.shadowColor = hand.handedness === "left" ? "rgba(37,99,235,0.65)" : "rgba(13,148,136,0.6)";
+      ctx.strokeStyle = "rgba(255,255,255,0.95)";
       ctx.lineCap = "round";
       ctx.lineWidth = 10;
       ctx.beginPath();
@@ -222,284 +260,596 @@ export default function ChordStudio() {
         ctx.lineTo(px(b!), py(b!));
       }
       ctx.stroke();
-
-      ctx.shadowBlur = 12;
-      ctx.strokeStyle = label === "left" ? "rgba(90,150,230,0.95)" : "rgba(120,190,225,0.95)";
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = hand.handedness === "left" ? "rgba(30,64,175,0.95)" : "rgba(15,118,110,0.95)";
       ctx.lineWidth = 3;
       ctx.stroke();
-
-      for (let i = 0; i < 21; i++) {
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(255,255,255,0.95)";
-        ctx.shadowBlur = 16;
-        ctx.arc(px(i), py(i), i % 4 === 0 ? 6 : 4, 0, Math.PI * 2);
-        ctx.fill();
+      if (cfg.current.showDebug) {
+        for (let i = 0; i < 21; i++) {
+          ctx.beginPath();
+          ctx.fillStyle = "rgba(255,255,255,0.98)";
+          ctx.shadowBlur = 14;
+          ctx.arc(px(i), py(i), i % 4 === 0 ? 6 : 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       ctx.restore();
+    },
+    [],
+  );
 
-      if (label !== "left") continue;
+  /* ————— loop di tracking ————— */
 
-      const degree = fingersToDegree(read.up, read.thumbUp, read.count);
-      if (degree === null) continue;
-      const minor = cfg.current.minorFlip && read.tilt > 0.35;
-      const id = "L";
-      const inst = cfg.current.instrument;
-      const baseMidi =
-        degreeToMidi(degree, scaleSteps(cfg.current.scale), cfg.current.rootPc, INSTRUMENT_SHIFT[inst] ?? 0) +
-        (minor ? -1 : 0);
-      engine.noteOnChord(id, baseMidi, degree, Math.max(0.15, expr.level), expr.bright, inst);
-      engine.setFilterMod(expr.bright);
-      seen.add(id);
-      info.push({ side: "left", degree, fingers: read.count, level: expr.level, tilt: read.tilt });
-    }
+  const hudTick = useRef(0);
 
-    if (rightHand) {
-      info.push({
-        side: "right",
-        degree: -1,
-        fingers: expr.fingers,
-        level: expr.level,
-        tilt: rightHand.read.tilt,
-      });
-    }
+  const onFrame = useCallback(
+    ({ hands, video, fps }: TrackingFrame) => {
+      const canvas = canvasRef.current;
+      const engine = engineRef.current;
+      if (!canvas || !engine) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    for (const id of [...activeRef.current]) {
-      if (!seen.has(id)) {
-        engine.noteOff(id, true);
-        activeRef.current.delete(id);
+      const w = video.videoWidth || 640;
+      const h = video.videoHeight || 480;
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
       }
-    }
-    seen.forEach((id) => activeRef.current.add(id));
-    setHands(info);
 
-    rafRef.current = requestAnimationFrame(loop);
-  }, [drawSky]);
+      const left = hands.find((x) => x.handedness === "left") ?? null;
+      const right = hands.find((x) => x.handedness === "right") ?? null;
+      const { playMode: pm, rootPc: root, mode: md, tonalityLock: lock } = cfg.current;
 
-  const start = useCallback(async () => {
-    try {
-      setStatus("Avvio…");
-      const engine = engineRef.current ?? new GestureSynthEngine();
-      engineRef.current = engine;
-      await engine.start();
-      engine.setScale(scaleSteps(cfg.current.scale), cfg.current.rootPc);
-      engine.setInstrument(cfg.current.instrument);
-      engine.setReverb(0.5);
+      // ————— espressione (Lato B) —————
+      const volume = right ? volSm.current.push(heightToGain(right.height)) : volSm.current.push(0);
+      const tiltR = right ? tiltSm.current.push(right.tilt) : tiltSm.current.value;
+      const cutoff = tiltToCutoff(tiltR);
+      engine.setEq("lowpass", cutoff);
+      const bright = Math.max(0, Math.min(1, 0.3 + tiltR * 0.5 + 0.3));
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 640, height: 480 },
-        audio: false,
-      });
-      const video = videoRef.current!;
-      video.srcObject = stream;
-      await video.play();
+      const voicingIdx = right
+        ? (voicingDeb.current.push(Math.max(1, Math.min(5, right.count))) ?? 1) - 1
+        : 0;
+      const voicing = (VOICING_BY_FINGERS[voicingIdx] ?? "triad") as VoicingId;
 
-      if (!landmarkerRef.current) {
-        setStatus("Preparazione…");
-        const vision = await import("@mediapipe/tasks-vision");
-        const files = await vision.FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
+      let chord: Chord | null = null;
+
+      if (pm === "theremin") {
+        if (left) {
+          const steps = modeSteps(md);
+          const raw = 48 + left.height * 30;
+          const midi = cfg.current.quantize
+            ? (() => {
+                const deg = Math.round((raw - 48 - root) / 12 * steps.length);
+                return 48 + root + degreeSemitones(steps, deg);
+              })()
+            : pitchSm.current.push(raw);
+          const g = right ? volume : 0.6;
+          applyNotes([Math.round(midi * 100) / 100], Math.max(0.05, g), bright);
+          currentRef.current.chord = {
+            degree: 0,
+            rootMidi: midi,
+            rootName: midiName(Math.round(midi)),
+            quality: "major",
+            seventh: false,
+            notes: [Math.round(midi)],
+            label: midiName(Math.round(midi)),
+          };
+        } else {
+          releaseAll();
+        }
+      } else if (left) {
+        const degree = degreeDeb.current.push(
+          gestureToDegree(left.fingers, left.count, DEFAULT_DEGREE_RULES),
         );
-        landmarkerRef.current = await vision.HandLandmarker.createFromOptions(files, {
-          baseOptions: {
-            modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-            delegate: "GPU",
-          },
-          runningMode: "VIDEO",
-          numHands: 2,
+        if (degree === null || degree === undefined) {
+          releaseAll();
+        } else {
+          const tonality: Tonality =
+            lock === "auto" ? tonalitySw.current.push(tiltSm.current.value || left.tilt) : lock;
+          chord = buildChord({
+            rootPc: root,
+            mode: md,
+            degree,
+            tonality,
+            voicing: pm === "notes" ? "triad" : voicing,
+            previous: prevNotesRef.current,
+          });
+          const notes = pm === "notes" ? [chord.notes[0]!] : chord.notes;
+          const gain = right ? Math.max(0.08, volume) : 0.6;
+          applyNotes(notes, gain, bright);
+          prevNotesRef.current = notes;
+          currentRef.current.chord = { ...chord, notes };
+        }
+      } else {
+        releaseAll();
+      }
+
+      currentRef.current.volume = volume;
+      currentRef.current.filter = cutoff;
+
+      // ————— disegno —————
+      const target = hands.length ? Math.max(0.2, volume) : 0;
+      glowRef.current += (target - glowRef.current) * 0.06;
+      drawSky(ctx, w, h, glowRef.current);
+      for (const hand of hands) drawHand(ctx, hand, w, h);
+
+      // ————— HUD (throttle) —————
+      const now = performance.now();
+      if (now - hudTick.current > 110) {
+        hudTick.current = now;
+        const cur = currentRef.current.chord;
+        setHud({
+          left: left
+            ? {
+                degree: cur && pm !== "theremin" ? cur.degree : null,
+                chord: cur ? cur.label : "—",
+                gesture: `${left.count} dita`,
+              }
+            : null,
+          right: right ? { voicing, volume, filter: cutoff } : null,
+          fps,
         });
       }
+    },
+    [applyNotes, drawHand, drawSky, releaseAll],
+  );
 
-      setStatus("");
-      setRunning(true);
-      rafRef.current = requestAnimationFrame(loop);
-    } catch (e) {
-      console.error(e);
-      setStatus("Impossibile accedere alla fotocamera.");
-      setRunning(false);
-    }
-  }, [loop]);
+  const { videoRef, running, status, start: startCam, stop: stopCam } = useHandTracking(onFrame);
+
+  const start = useCallback(async () => {
+    const engine = engineRef.current ?? new GestureSynthEngine();
+    engineRef.current = engine;
+    await engine.start();
+    engine.setChord("off");
+    engine.setInstrument(cfg.current.instrument);
+    engine.setReverb(0.45);
+    engine.setTempo(bpm);
+    await startCam();
+  }, [bpm, startCam]);
 
   const stop = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
+    stopCam();
+    releaseAll();
     engineRef.current?.allOff();
-    activeRef.current.clear();
-    const v = videoRef.current;
-    const stream = v?.srcObject as MediaStream | null;
-    stream?.getTracks().forEach((t) => t.stop());
-    if (v) v.srcObject = null;
-    setRunning(false);
-    setHands([]);
-  }, []);
+    looperRef.current?.pause();
+    setHud({ left: null, right: null, fps: 0 });
+  }, [releaseAll, stopCam]);
 
   useEffect(() => () => stop(), [stop]);
 
-  const active = hands.find((h) => h.side === "left");
+  /* ————— scorciatoie ————— */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName)) return;
+      const l = getLooper();
+      if (e.code === "Space") {
+        e.preventDefault();
+        l.toggle();
+      } else if (/^Digit[1-4]$/.test(e.code)) {
+        l.select(Number(e.code.slice(5)) - 1);
+      } else if (e.key.toLowerCase() === "m") {
+        l.toggleMute();
+      } else if (e.key.toLowerCase() === "s") {
+        l.toggleSolo();
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        e.shiftKey ? l.clearAll() : l.clear();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [getLooper]);
+
+  const activeDegree = hud.left?.degree ?? null;
+
+  const chip = (active: boolean) =>
+    `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
+      active
+        ? "border-sky-700 bg-sky-700 text-white shadow-sm"
+        : "border-slate-300 bg-white text-slate-700 hover:border-sky-500"
+    }`;
 
   return (
-    <div className="sky-theme min-h-screen">
-      <div className="mx-auto w-full max-w-3xl px-4 py-5">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="mx-auto w-full max-w-3xl px-4 pb-28 pt-4">
+        {/* header */}
         <header className="flex items-center justify-between gap-2">
           <Link
             to="/"
-            className="sky-chip flex items-center gap-2 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
+            className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-2 text-[12px] font-semibold text-slate-700"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Sky Synth
+            <ArrowLeft className="h-4 w-4" /> Sky Synth
           </Link>
-          <h1 className="font-display text-base tracking-[0.14em] text-foreground sm:text-xl">
-            Chord <span className="text-primary">Studio</span>
+          <h1 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">
+            Chord <span className="text-sky-700">Studio</span>
           </h1>
           <button
             onClick={running ? stop : start}
-            className="sky-chip sky-chip-active flex items-center gap-2 px-3 py-2 text-[10px] uppercase tracking-[0.2em]"
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold text-white shadow ${
+              running ? "bg-rose-600" : "bg-sky-700"
+            }`}
           >
             {running ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             {running ? "Stop" : "Play"}
           </button>
         </header>
 
-        <div className="mt-4 flex justify-center gap-2">
-          <button
-            onClick={() => setVoiceMode("chords")}
-            className={`sky-chip flex items-center gap-2 px-4 py-2 text-[10px] uppercase tracking-[0.2em] ${
-              voiceMode === "chords" ? "sky-chip-active" : "text-muted-foreground"
-            }`}
-          >
-            <Layers className="h-4 w-4" />
-            Accordi
-          </button>
-          <button
-            onClick={() => setVoiceMode("single")}
-            className={`sky-chip flex items-center gap-2 px-4 py-2 text-[10px] uppercase tracking-[0.2em] ${
-              voiceMode === "single" ? "sky-chip-active" : "text-muted-foreground"
-            }`}
-          >
-            <Music2 className="h-4 w-4" />
-            Note singole
-          </button>
+        {/* modalità */}
+        <div className="mt-3 grid grid-cols-3 gap-1 rounded-full border border-slate-300 bg-white p-1">
+          {(
+            [
+              ["chords", "Accordi", Layers],
+              ["notes", "Note", Music2],
+              ["theremin", "Theremin", Radio],
+            ] as const
+          ).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => {
+                releaseAll();
+                setPlayMode(id);
+              }}
+              className={`flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-[12px] font-semibold transition ${
+                playMode === id ? "bg-sky-700 text-white" : "text-slate-600"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
         </div>
 
-        <div className="sky-frame mt-4">
-          <div className="relative aspect-[3/4] w-full overflow-hidden bg-stage sm:aspect-[4/3]">
+        {/* striscia della scala */}
+        <div className="mt-3 flex justify-between gap-1">
+          {noteNames.map((n, i) => (
+            <div
+              key={i}
+              className={`flex flex-1 flex-col items-center rounded-xl border py-1.5 ${
+                activeDegree === i % 7 && (i < 7 || activeDegree === 0)
+                  ? "border-sky-700 bg-sky-700 text-white"
+                  : "border-slate-300 bg-white text-slate-800"
+              }`}
+            >
+              <span className="text-[13px] font-bold leading-none">{n}</span>
+              <span className="mt-1 text-[9px] font-semibold tracking-widest opacity-70">
+                {i === 7 ? "I'" : ROMAN[i]}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* palco */}
+        <div className="mt-3 overflow-hidden rounded-3xl border border-slate-300 bg-white shadow-sm">
+          <div className="relative aspect-[3/4] w-full bg-slate-100 sm:aspect-[4/3]">
             <video ref={videoRef} playsInline muted className="hidden" />
             <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
 
             {running && (
-              <div className="pointer-events-none absolute inset-x-0 top-0 p-3">
-                <p className="text-center text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-                  {NOTE_NAMES[rootPc]} {SCALES.find((s) => s.id === scale)?.name} ·{" "}
-                  {voiceMode === "chords" ? "accordi" : "note singole"}
-                </p>
-                <div className="mt-2 flex justify-center gap-1">
-                  {noteLabels.map((n, i) => (
-                    <div
-                      key={i}
-                      className={`sky-chip flex min-w-9 flex-col items-center px-1.5 py-1 ${
-                        active?.degree === i ? "sky-chip-active" : "text-foreground/80"
-                      }`}
-                    >
-                      <span className="text-sm font-semibold leading-none">{n}</span>
-                      <span className="mt-1 text-[9px] tracking-widest text-muted-foreground">
-                        {ROMAN[i]}
-                      </span>
-                    </div>
-                  ))}
+              <>
+                <div className="pointer-events-none absolute left-3 top-3 rounded-xl bg-white/90 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow">
+                  <div className="text-[9px] uppercase tracking-widest text-sky-800">Lato A</div>
+                  {hud.left ? (
+                    <>
+                      <div>
+                        Grado: <b>{hud.left.degree !== null ? ROMAN[hud.left.degree] : "—"}</b>
+                      </div>
+                      <div>
+                        Accordo: <b>{hud.left.chord}</b>
+                      </div>
+                      <div className="text-slate-500">{hud.left.gesture}</div>
+                    </>
+                  ) : (
+                    <div className="text-slate-500">nessuna mano</div>
+                  )}
                 </div>
-              </div>
+                <div className="pointer-events-none absolute right-3 top-3 rounded-xl bg-white/90 px-3 py-2 text-right text-[11px] font-semibold text-slate-800 shadow">
+                  <div className="text-[9px] uppercase tracking-widest text-teal-800">Lato B</div>
+                  {hud.right ? (
+                    <>
+                      <div>
+                        Voicing: <b>{VOICINGS.find((v) => v.id === hud.right!.voicing)?.name}</b>
+                      </div>
+                      <div>Volume: {Math.round(hud.right.volume * 100)}%</div>
+                      <div>Filtro: {(hud.right.filter / 1000).toFixed(1)} kHz</div>
+                    </>
+                  ) : (
+                    <div className="text-slate-500">nessuna mano</div>
+                  )}
+                </div>
+                <div className="pointer-events-none absolute bottom-2 right-3 text-[10px] font-semibold text-slate-500">
+                  {Math.round(hud.fps)} fps
+                </div>
+              </>
             )}
 
             {!running && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-                <p className="max-w-sm text-sm text-muted-foreground">
+                <p className="max-w-sm text-sm font-medium text-slate-700">
                   {status ||
-                    "Lato A sceglie il grado della scala e l'inclinazione passa da maggiore a minore. Lato B: altezza = volume, dita = ricchezza armonica, inclinazione = timbro."}
+                    "Lato A sceglie il grado della scala (dita) e maggiore/minore (inclinazione). Lato B controlla volume, voicing e filtro."}
                 </p>
-                <button onClick={start} className="btn-hero rounded-full">
+                <button
+                  onClick={start}
+                  className="rounded-full bg-sky-700 px-6 py-3 text-sm font-bold text-white shadow"
+                >
                   Inizia a suonare
                 </button>
               </div>
             )}
+          </div>
+        </div>
 
-            {running && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap gap-2 p-3">
-                {hands.length === 0 ? (
-                  <span className="sky-chip px-3 py-1 text-[11px] text-muted-foreground">Pronto</span>
-                ) : (
-                  hands.map((h, i) => (
-                    <span key={i} className="sky-chip px-3 py-1 text-[11px] text-foreground">
-                      {h.side === "left" ? "Lato A" : "Lato B"} ·{" "}
-                      {h.side === "left" ? (
-                        <strong className="text-primary">
-                          {midiToName(degreeToMidi(h.degree, degrees, rootPc))}
-                        </strong>
-                      ) : (
-                        <>
-                          {h.fingers} · {Math.round(h.level * 100)}%
-                        </>
-                      )}
-                    </span>
-                  ))
-                )}
+        {/* pannello attivo */}
+        {panel === "sound" && (
+          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+            <h2 className="text-sm font-bold">Suono</h2>
+            <div className="flex flex-wrap gap-1.5">
+              {INSTRUMENTS.map((it) => (
+                <button key={it.id} onClick={() => setInstrument(it.id)} className={chip(instrument === it.id)}>
+                  {it.name}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => setShowDebug((v) => !v)} className={chip(showDebug)}>
+                {showDebug ? <Eye className="mr-1 inline h-3.5 w-3.5" /> : <EyeOff className="mr-1 inline h-3.5 w-3.5" />}
+                Overlay debug
+              </button>
+              <button onClick={() => setQuantize((v) => !v)} className={chip(quantize)}>
+                Theremin in scala
+              </button>
+            </div>
+          </section>
+        )}
+
+        {panel === "scale" && (
+          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+            <h2 className="text-sm font-bold">Tonalità e scala</h2>
+            <div className="flex flex-wrap gap-1.5">
+              {KEYS.map((n, i) => (
+                <button key={n} onClick={() => setRootPc(i)} className={chip(rootPc === i)}>
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {MODES.map((m) => (
+                <button key={m.id} onClick={() => setMode(m.id)} className={chip(mode === m.id)}>
+                  {m.name}
+                </button>
+              ))}
+            </div>
+            <div>
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Tonalità Lato A
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  [
+                    ["auto", "Auto dal polso"],
+                    ["major", "Blocca maggiore"],
+                    ["minor", "Blocca minore"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button key={id} onClick={() => setTonalityLock(id)} className={chip(tonalityLock === id)}>
+                    {label}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+            <div>
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Gesture → grado
+              </p>
+              <ul className="grid grid-cols-2 gap-1 text-[11px] text-slate-700">
+                {DEFAULT_DEGREE_RULES.slice()
+                  .sort((a, b) => a.degree - b.degree)
+                  .map((r) => (
+                    <li key={r.id} className="rounded-lg bg-slate-100 px-2 py-1">
+                      <b>{ROMAN[r.degree]}</b> · {r.label}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </section>
+        )}
 
-        <div className="sky-panel mt-4 space-y-3 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Tonica</span>
-            {NOTE_NAMES.map((n, i) => (
+        {panel === "loop" && (
+          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold">Loop pedal</h2>
+              <span className="text-[11px] font-semibold text-slate-500">
+                {loop.countIn ? "Preconteggio…" : loop.recording ? "REC" : loop.playing ? "Play" : "Stop"}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                BPM
+                <input
+                  type="range"
+                  min={60}
+                  max={180}
+                  value={bpm}
+                  onChange={(e) => setBpm(Number(e.target.value))}
+                  className="w-28"
+                />
+                <span className="w-8 text-slate-900">{bpm}</span>
+              </label>
+              <div className="flex gap-1.5">
+                {[1, 2, 4].map((b) => (
+                  <button key={b} onClick={() => setBars(b)} className={chip(bars === b)}>
+                    {b} {b === 1 ? "battuta" : "battute"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={n}
-                onClick={() => setRootPc(i)}
-                className={`sky-chip px-2.5 py-1 text-[11px] ${
-                  rootPc === i ? "sky-chip-active" : "text-muted-foreground"
-                }`}
+                onClick={() => getLooper().record()}
+                className="flex items-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-[12px] font-bold text-white"
               >
-                {n}
+                <Circle className="h-3.5 w-3.5 fill-current" /> Rec traccia {loop.selected + 1}
               </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Scala</span>
-            {SCALES.map((s) => (
               <button
-                key={s.id}
-                onClick={() => setScale(s.id)}
-                className={`sky-chip px-2.5 py-1 text-[11px] ${
-                  scale === s.id ? "sky-chip-active" : "text-muted-foreground"
-                }`}
+                onClick={() => getLooper().toggle()}
+                className="flex items-center gap-1.5 rounded-full bg-sky-700 px-4 py-2 text-[12px] font-bold text-white"
               >
-                {s.name}
+                {loop.playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                {loop.playing ? "Pausa" : "Play"}
               </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Strumento</span>
-            {INSTRUMENTS.map((it) => (
               <button
-                key={it.id}
-                onClick={() => setInstrument(it.id)}
-                className={`sky-chip px-2.5 py-1 text-[11px] ${
-                  instrument === it.id ? "sky-chip-active" : "text-muted-foreground"
-                }`}
+                onClick={() => getLooper().clearAll()}
+                className="flex items-center gap-1.5 rounded-full border border-slate-300 px-4 py-2 text-[12px] font-semibold text-slate-700"
               >
-                {it.name}
+                <Trash2 className="h-4 w-4" /> Svuota tutto
               </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setMinorFlip((v) => !v)}
-            className={`sky-chip px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] ${
-              minorFlip ? "sky-chip-active" : "text-muted-foreground"
-            }`}
-          >
-            Inclinazione maggiore/minore
-          </button>
-        </div>
+            </div>
+
+            <div className="space-y-2">
+              {loop.tracks.map((t: LoopTrack) => (
+                <div
+                  key={t.id}
+                  className={`rounded-xl border p-2 ${
+                    loop.selected === t.id ? "border-sky-700 bg-sky-50" : "border-slate-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => getLooper().select(t.id)}
+                      className="rounded-md bg-slate-900 px-2 py-1 text-[11px] font-bold text-white"
+                    >
+                      {t.id + 1}
+                    </button>
+                    <button onClick={() => getLooper().toggleMute(t.id)} className={chip(t.mute)}>
+                      M
+                    </button>
+                    <button onClick={() => getLooper().toggleSolo(t.id)} className={chip(t.solo)}>
+                      S
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={t.volume}
+                      onChange={(e) => getLooper().setVolume(t.id, Number(e.target.value))}
+                      className="ml-1 w-20"
+                    />
+                    <button
+                      onClick={() => getLooper().clear(t.id)}
+                      className="ml-auto text-slate-500"
+                      aria-label={`Svuota traccia ${t.id + 1}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-2 flex gap-[2px]">
+                    {Array.from({ length: bars * STEPS_PER_BAR }, (_, s) => {
+                      const ev = t.events.find((e) => e.step === s);
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => ev && getLooper().toggleCell(t.id, s)}
+                          className={`h-6 flex-1 rounded-[3px] ${
+                            ev
+                              ? ev.muted
+                                ? "bg-slate-300"
+                                : "bg-sky-600"
+                              : s % 4 === 0
+                                ? "bg-slate-200"
+                                : "bg-slate-100"
+                          } ${loop.step === s && loop.playing ? "ring-2 ring-rose-500" : ""}`}
+                          aria-label={`Step ${s + 1}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Spazio play/pausa · 1–4 traccia · M mute · S solo · Canc svuota · Shift+Canc tutto
+            </p>
+          </section>
+        )}
+
+        {panel === "help" && (
+          <section className="mt-3 space-y-2 rounded-2xl border border-slate-300 bg-white p-4">
+            <h2 className="text-sm font-bold">Guida rapida</h2>
+            <ol className="space-y-1.5 text-[12px] text-slate-700">
+              {STEPS.map((s, i) => (
+                <li key={i}>
+                  <b>{i + 1}. {s.t}</b> — {s.d}
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
       </div>
+
+      {/* barra inferiore */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-300 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-center justify-around px-2 py-2">
+          {(
+            [
+              ["sound", "Suono", Settings2],
+              ["scale", "Scala", Music2],
+              ["loop", "Loop", Repeat],
+              ["help", "Guida", HelpCircle],
+            ] as const
+          ).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => setPanel((p) => (p === id ? null : id))}
+              className={`flex min-w-16 flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold ${
+                panel === id ? "bg-sky-700 text-white" : "text-slate-600"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* onboarding */}
+      {showOnboard && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/60 p-5">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-sky-700">
+              Passo {onboard + 1} di {STEPS.length}
+            </p>
+            <h3 className="mt-1 text-lg font-bold text-slate-900">{STEPS[onboard]!.t}</h3>
+            <p className="mt-2 text-sm text-slate-700">{STEPS[onboard]!.d}</p>
+            <div className="mt-4 flex justify-between gap-2">
+              <button
+                onClick={() => {
+                  localStorage.setItem(ONBOARD_KEY, "1");
+                  setShowOnboard(false);
+                }}
+                className="rounded-full border border-slate-300 px-4 py-2 text-[12px] font-semibold text-slate-700"
+              >
+                Salta
+              </button>
+              <button
+                onClick={() => {
+                  if (onboard < STEPS.length - 1) setOnboard(onboard + 1);
+                  else {
+                    localStorage.setItem(ONBOARD_KEY, "1");
+                    setShowOnboard(false);
+                  }
+                }}
+                className="rounded-full bg-sky-700 px-5 py-2 text-[12px] font-bold text-white"
+              >
+                {onboard < STEPS.length - 1 ? "Avanti" : "Inizia"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
