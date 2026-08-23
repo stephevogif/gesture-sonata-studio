@@ -530,6 +530,15 @@ export default function GestureSynth() {
 
   useEffect(() => () => stop(), [stop]);
 
+  // in background rilascia la fotocamera: nessuno stream appeso al ritorno
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === "hidden" && camRef.current) stop();
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    return () => document.removeEventListener("visibilitychange", onHidden);
+  }, [stop]);
+
   // carica taratura salvata
   useEffect(() => {
     try {
