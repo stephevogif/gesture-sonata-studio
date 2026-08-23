@@ -857,6 +857,8 @@ export default function HeavenSynth() {
           {(
             [
               ["sound", "Suono", Settings2],
+              ["fx", "Effetti", Sliders],
+
               ["scale", "Scala", Music2],
               ["loop", "Loop", Repeat],
               ["help", "Guida", HelpCircle],
