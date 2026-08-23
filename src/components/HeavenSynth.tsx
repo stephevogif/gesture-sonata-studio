@@ -674,11 +674,20 @@ export default function HeavenSynth() {
     [applyNotes, drawHand, drawHandGlow, drawSky, drawParticles, emitParticles, releaseAll],
   );
 
-  const { videoRef, running, status, start: startCam, stop: stopCam } = useHandTracking(onFrame);
+  const {
+    videoRef,
+    running,
+    status,
+    error: camError,
+    start: startCam,
+    stop: stopCam,
+  } = useHandTracking(onFrame);
 
   const start = useCallback(async () => {
     const engine = engineRef.current ?? new GestureSynthEngine();
     engineRef.current = engine;
+    // audio e fotocamera partono insieme: avvio più rapido
+    const camReady = startCam();
     await engine.start();
     engine.setChord("off");
     engine.setInstrument(cfg.current.instrument);
@@ -686,7 +695,7 @@ export default function HeavenSynth() {
     engine.setDelay({ mix: delayMix / 100, feedback: delayFeedback / 100 });
     engine.setResonance(resonance);
     engine.setTempo(bpm);
-    await startCam();
+    await camReady;
   }, [bpm, delayFeedback, delayMix, resonance, reverb, startCam]);
 
   const stop = useCallback(() => {
@@ -845,9 +854,14 @@ export default function HeavenSynth() {
               <p className="mt-2 text-[11px] uppercase tracking-[0.28em] text-white/70">
                 {running ? "Raise your hands to play" : status || "Tocca ▶ per iniziare"}
               </p>
+              {!running && camError && (
+                <p className="mx-auto mt-3 max-w-xs text-[11px] leading-relaxed text-[#ffd9a8]">
+                  {camError}
+                </p>
+              )}
               {!running && (
                 <button onClick={start} className="heaven-pill mt-6">
-                  Inizia a suonare
+                  {camError ? "Riprova" : "Inizia a suonare"}
                 </button>
               )}
             </div>
