@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import TutorialArt from "@/components/TutorialArt";
 import {
+  ArrowRight,
   Crosshair,
   Hand,
   KeyboardMusic,
   Lock,
   Mic,
   Music4,
-
+  Play,
   Repeat,
   SlidersHorizontal,
   Square,
@@ -16,6 +17,7 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
+
 
 
 import {
