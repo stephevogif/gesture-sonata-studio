@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import TutorialArt from "@/components/TutorialArt";
 import {
   Crosshair,
   Hand,
@@ -201,6 +202,15 @@ const STEPS = 21;
 const CALIB_KEY = "cth-calibration-v1";
 const DEFAULT_CALIB = { on: 0.42, off: 0.62 };
 
+const TUT_KEY = "sky-synth-onboarded";
+const TUT_STEPS = [
+  { a: "camera" as const, t: "Fotocamera", d: "Consenti l'accesso: il video resta nascosto, vedi solo i punti luminosi che seguono i movimenti." },
+  { a: "pinch" as const, t: "Modalità Tocco", d: "Avvicina un dito al pollice per far partire una nota: ogni dito è un grado della scala." },
+  { a: "height" as const, t: "Modalità Libera", d: "Alza per aumentare il volume (massimo al 70% dello schermo), apri o chiudi per aprire il filtro." },
+  { a: "keys" as const, t: "Scala e tonica", d: "Scegli scala e tonica, oppure usa il microfono: ascolta e le applica in automatico." },
+  { a: "settings" as const, t: "Suono ed effetti", d: "Le icone in basso aprono strumenti, effetti, arpeggiatore e progetti salvati." },
+];
+
 export default function GestureSynth() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -228,6 +238,15 @@ export default function GestureSynth() {
 
 
   const [panel, setPanel] = useState<PanelId | null>(null);
+  const [showTut, setShowTut] = useState(false);
+  const [tut, setTut] = useState(0);
+  useEffect(() => {
+    if (!localStorage.getItem(TUT_KEY)) setShowTut(true);
+  }, []);
+  const closeTut = useCallback(() => {
+    localStorage.setItem(TUT_KEY, "1");
+    setShowTut(false);
+  }, []);
   const [mode, setMode] = useState<PlayMode>("split");
   const [freeMode, setFreeMode] = useState<Exclude<PlayMode, "pinch">>("split");
   const [freePitch, setFreePitch] = useState<"scale" | "glide">("scale");
@@ -1099,6 +1118,34 @@ export default function GestureSynth() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-5">
+      {showTut && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 p-5 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-sm border border-border bg-card p-5 shadow-xl">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-primary">
+              Guida {tut + 1} / {TUT_STEPS.length}
+            </p>
+            <h3 className="mt-1 font-display text-base tracking-[0.1em] text-foreground">
+              {TUT_STEPS[tut]!.t}
+            </h3>
+            <div className="mt-3 rounded-sm border border-border/60 bg-background/60 p-2 text-primary">
+              <TutorialArt id={TUT_STEPS[tut]!.a} />
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">{TUT_STEPS[tut]!.d}</p>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <button onClick={closeTut} className="rounded-sm border border-border px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                Salta
+              </button>
+              <button
+                onClick={() => (tut < TUT_STEPS.length - 1 ? setTut(tut + 1) : closeTut())}
+                className="rounded-sm bg-primary px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-foreground"
+              >
+                {tut < TUT_STEPS.length - 1 ? "Avanti" : "Inizia"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="text-center">
         <div className="celestial-rule mx-auto mb-3 w-2/3" />
         <h1 className="font-display text-xl leading-tight tracking-[0.16em] text-foreground sm:text-2xl">
