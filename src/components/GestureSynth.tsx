@@ -870,8 +870,23 @@ export default function GestureSynth() {
             ? `Stop ${Math.ceil((listenDuration / 1000) * (1 - listenProgress))}s`
             : "Rileva"}
         </button>
+        <button
+          onClick={() => setHold((v) => !v)}
+          aria-label="Mantieni le note"
+          aria-pressed={hold}
+          className={
+            (hold
+              ? "border-primary bg-primary/15 text-primary"
+              : "border-border bg-card/60 text-muted-foreground") +
+            " flex items-center gap-2 rounded-sm border px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+          }
+        >
+          <Lock className="h-5 w-5" />
+          Hold
+        </button>
 
       </div>
+
 
       <div className="celestial-frame mt-3 rounded-sm shadow-glow">
 
