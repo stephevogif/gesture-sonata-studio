@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { SKY_WARP_KEY } from "./SkyArrival";
 
 type Phase = "intro" | "home";
 
@@ -23,6 +24,23 @@ function Sparkle({ tone }: { tone: "night" | "heaven" }) {
     </span>
   );
 }
+
+function TapHand({ delay }: { delay: string }) {
+  return (
+    <span className="sky-hand sky-hand-portal" style={{ animationDelay: delay }} aria-hidden>
+      <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7">
+        <path d="M12 3l3 3M12 3L9 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path
+          d="M10 21h4.5a3 3 0 0 0 3-3v-4.2c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3V12c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3V9.2c0-.7-.6-1.3-1.3-1.3S10 8.5 10 9.2v6l-1.4-1.4a1.3 1.3 0 0 0-1.9 1.8L10 21z"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
 
 export default function SkyHome() {
   const navigate = useNavigate();
