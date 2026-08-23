@@ -60,7 +60,7 @@ const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
-type PanelId = "sound" | "fx" | "scale" | "arp" | "calib" | "save";
+type PanelId = "sound" | "fx" | "scale" | "arp" | "save" | "help";
 
 const PRESETS_KEY = "skysynth.presets.v1";
 const MAX_PRESETS = 40;
