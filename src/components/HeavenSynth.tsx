@@ -526,7 +526,7 @@ export default function HeavenSynth() {
       }
 
     },
-    [applyNotes, drawHand, drawSky, releaseAll],
+    [applyNotes, drawHand, drawSky, drawParticles, emitParticles, releaseAll],
   );
 
   const { videoRef, running, status, start: startCam, stop: stopCam } = useHandTracking(onFrame);
