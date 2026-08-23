@@ -402,10 +402,10 @@ export default function HeavenSynth() {
 
       // ————— espressione (Lato B) —————
       const volume = right ? volSm.current.push(heightToGain(right.height)) : volSm.current.push(0);
-      const tiltR = right ? tiltSm.current.push(right.tilt) : tiltSm.current.value;
-      const cutoff = tiltToCutoff(tiltR);
+      const tiltR = pm === "heavens" ? 0 : right ? tiltSm.current.push(right.tilt) : tiltSm.current.value;
+      const cutoff = pm === "heavens" ? 7000 : tiltToCutoff(tiltR);
       engine.setEq("lowpass", cutoff);
-      const bright = Math.max(0, Math.min(1, 0.3 + tiltR * 0.5 + 0.3));
+      const bright = pm === "heavens" ? 0.6 : Math.max(0, Math.min(1, 0.3 + tiltR * 0.5 + 0.3));
 
       const voicingIdx = right
         ? (voicingDeb.current.push(Math.max(1, Math.min(5, right.count))) ?? 1) - 1
@@ -413,8 +413,41 @@ export default function HeavenSynth() {
       const voicing = (VOICING_BY_FINGERS[voicingIdx] ?? "triad") as VoicingId;
 
       let chord: Chord | null = null;
+      let heavensHud: Hud["heavens"] = null;
 
-      if (pm === "theremin") {
+      if (pm === "heavens") {
+        // 7 HEAVENS: dita totali (sinistra + destra) = grado dell'accordo diatonico
+        const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
+        const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
+        const total = lc + rc;
+        const stable = heavensDeb.current.push(total >= 1 && total <= 7 ? total : null);
+        let deg: number | null = null;
+        if (hands.length && stable) {
+          deg = stable - 1;
+          chord = buildChord({
+            rootPc: root,
+            mode: md,
+            degree: deg,
+            tonality: "auto",
+            voicing: "triad",
+            previous: prevNotesRef.current,
+          });
+          applyNotes(chord.notes, 0.6, bright);
+          prevNotesRef.current = chord.notes;
+          currentRef.current.chord = chord;
+        } else {
+          releaseAll();
+        }
+        heavensHud = {
+          leftCount: lc,
+          rightCount: rc,
+          total,
+          degree: deg,
+          label: chord?.label ?? "—",
+          notes: chord ? chord.notes.map((n) => midiName(n)).join(" · ") : "—",
+        };
+      } else if (pm === "theremin") {
+
         if (left) {
           const steps = modeSteps(md);
           const raw = 48 + left.height * 30;
