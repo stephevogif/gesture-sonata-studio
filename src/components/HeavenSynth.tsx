@@ -37,6 +37,9 @@ import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gesture
 import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import TutorialArt from "@/components/TutorialArt";
+import { detectKey } from "@/lib/keyDetect";
+
+
 
 type PanelId = null | "sound" | "fx" | "scale" | "loop" | "help";
 
