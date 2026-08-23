@@ -1209,7 +1209,7 @@ export default function GestureSynth() {
             <p className="mt-1 text-[10px] uppercase tracking-[0.3em] text-[#9fd4ff]">
               Guida {tut + 1} / {TUT_STEPS.length}
             </p>
-            <h3 className="night-title mt-2 text-lg tracking-[0.1em]">{TUT_STEPS[tut]!.t}</h3>
+            <h2 className="night-title mt-2 text-lg tracking-[0.1em]">{TUT_STEPS[tut]!.t}</h2>
             <div className="mt-3 rounded-2xl border border-white/15 bg-white/5 p-2 text-[#9fd4ff]">
               <TutorialArt id={TUT_STEPS[tut]!.a} />
             </div>
@@ -1488,6 +1488,7 @@ export default function GestureSynth() {
                   Lato A
                 </label>
                 <select
+                  aria-label="Strumento Lato A"
                   className={`mt-2 ${selectClass}`}
                   value={leftInstrument}
                   onChange={(e) => setLeftInstrument(e.target.value as InstrumentId)}
@@ -1508,6 +1509,7 @@ export default function GestureSynth() {
                   Lato B
                 </label>
                 <select
+                  aria-label="Strumento Lato B"
                   className={`mt-2 ${selectClass}`}
                   value={rightInstrument}
                   onChange={(e) => setRightInstrument(e.target.value as InstrumentId)}
@@ -1532,6 +1534,7 @@ export default function GestureSynth() {
                 Accordi
               </label>
               <select
+                aria-label="Tipo di accordo"
                 className={`mt-2 ${selectClass}`}
                 value={chord}
                 onChange={(e) => setChord(e.target.value as ChordId)}
@@ -1572,6 +1575,7 @@ export default function GestureSynth() {
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">Scala</label>
             <select
+              aria-label="Scala musicale"
               className={`mt-2 ${selectClass}`}
               value={scale}
               onChange={(e) => setScale(e.target.value as ScaleId)}
@@ -1586,6 +1590,7 @@ export default function GestureSynth() {
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground">Tonica</label>
             <select
+              aria-label="Tonica"
               className={`mt-2 ${selectClass}`}
               value={rootPc}
               onChange={(e) => setRootPc(Number(e.target.value))}
@@ -1640,6 +1645,7 @@ export default function GestureSynth() {
                 {listening ? "Annulla" : "Ascolta"}
               </button>
               <select
+                aria-label="Durata ascolto microfono"
                 className={selectClass}
                 value={listenDuration}
                 disabled={listening}
@@ -1704,6 +1710,7 @@ export default function GestureSynth() {
                 Pattern
               </label>
               <select
+                aria-label="Pattern arpeggio"
                 className={`mt-2 ${selectClass}`}
                 value={arpPattern}
                 onChange={(e) => setArpPattern(e.target.value as ArpPatternId)}
@@ -1720,6 +1727,7 @@ export default function GestureSynth() {
                 Tempo: {bpm} BPM
               </label>
               <input
+                aria-label="Tempo BPM"
                 type="range"
                 min={40}
                 max={200}
@@ -1756,6 +1764,7 @@ export default function GestureSynth() {
                   Divisione
                 </label>
                 <select
+                  aria-label="Divisione arpeggio"
                   className={`mt-2 ${selectClass}`}
                   value={arpDivision}
                   onChange={(e) => setArpDivision(e.target.value as DivisionId)}
@@ -1773,6 +1782,7 @@ export default function GestureSynth() {
                   Velocità: {arpRate} note/s
                 </label>
                 <input
+                  aria-label="Velocità arpeggio"
                   type="range"
                   min={2}
                   max={16}
@@ -1789,6 +1799,7 @@ export default function GestureSynth() {
                 Gate: {arpGate}%
               </label>
               <input
+                aria-label="Gate arpeggio"
                 type="range"
                 min={10}
                 max={140}
@@ -1803,6 +1814,7 @@ export default function GestureSynth() {
                 Ottave: {arpOctaves}
               </label>
               <input
+                aria-label="Ottave arpeggio"
                 type="range"
                 min={1}
                 max={3}
@@ -1817,6 +1829,7 @@ export default function GestureSynth() {
                 Swing: {arpSwing}%
               </label>
               <input
+                aria-label="Swing arpeggio"
                 type="range"
                 min={0}
                 max={60}
@@ -1838,6 +1851,7 @@ export default function GestureSynth() {
               Riverbero: {reverb}%
             </label>
             <input
+              aria-label="Riverbero"
               type="range"
               min={0}
               max={100}
@@ -1852,6 +1866,7 @@ export default function GestureSynth() {
               Filtro EQ
             </label>
             <select
+              aria-label="Tipo filtro EQ"
               className={`mt-2 ${selectClass}`}
               value={eqType}
               onChange={(e) => setEqType(e.target.value as "lowpass" | "highpass")}
@@ -1865,6 +1880,7 @@ export default function GestureSynth() {
               Cutoff: {eqFreq >= 1000 ? `${(eqFreq / 1000).toFixed(1)} kHz` : `${eqFreq} Hz`}
             </label>
             <input
+              aria-label="Cutoff filtro EQ"
               type="range"
               min={60}
               max={16000}
@@ -1879,6 +1895,7 @@ export default function GestureSynth() {
               Delay mix: {delayMix}%
             </label>
             <input
+              aria-label="Delay mix"
               type="range"
               min={0}
               max={100}
@@ -1893,6 +1910,7 @@ export default function GestureSynth() {
               Delay feedback: {delayFeedback}%
             </label>
             <input
+              aria-label="Delay feedback"
               type="range"
               min={0}
               max={85}
@@ -1924,6 +1942,7 @@ export default function GestureSynth() {
             </div>
             {delaySync && (
               <select
+                aria-label="Divisione delay"
                 className={`mt-2 ${selectClass}`}
                 value={delayDivision}
                 onChange={(e) => setDelayDivision(e.target.value as DivisionId)}
@@ -1941,6 +1960,7 @@ export default function GestureSynth() {
               Modulazione gesto → filtro: {gestureMod}%
             </label>
             <input
+              aria-label="Modulazione gesto filtro"
               type="range"
               min={0}
               max={100}
@@ -1989,6 +2009,7 @@ export default function GestureSynth() {
               Sensibilità: {sensitivity > 0 ? `+${sensitivity}` : sensitivity}
             </label>
             <input
+              aria-label="Sensibilità"
               type="range"
               min={-15}
               max={15}
@@ -2018,6 +2039,7 @@ export default function GestureSynth() {
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <input
+              aria-label="Nome del progetto"
               value={presetName}
               onChange={(e) => setPresetName(e.target.value)}
               placeholder="Nome del progetto"
