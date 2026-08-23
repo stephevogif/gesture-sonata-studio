@@ -392,7 +392,61 @@ export class GestureSynthEngine {
         vibratoGain.gain.value = 2;
         attack = 0.008;
         release = 0.12;
+      } else if (inst === "neuro") {
+        addOsc("sawtooth", -18, 0.4);
+        addOsc("sawtooth", 18, 0.4);
+        addOsc("square", 0, 0.25, 0.5);
+        filter.type = "lowpass";
+        filter.frequency.value = 800;
+        filter.Q.value = 10;
+        drive.curve = this.makeCurve(1.2);
+        driveGain.gain.value = 0.55;
+        vibrato.frequency.value = 0.3;
+        vibratoGain.gain.value = 5;
+        attack = 0.012;
+        release = 0.16;
+        lfo = ctx.createOscillator();
+        lfo.type = "triangle";
+        lfo.frequency.value = 3.2;
+        lfoGain = ctx.createGain();
+        lfoGain.gain.value = 900;
+        lfo.connect(lfoGain).connect(filter.frequency);
+        lfo.start(now);
+      } else if (inst === "fmbass") {
+        const carrier = addOsc("sine", 0, 0.8);
+        const mod = ctx.createOscillator();
+        mod.type = "sine";
+        mod.frequency.value = freq * 2;
+        const modGain = ctx.createGain();
+        modGain.gain.value = freq * 3;
+        mod.connect(modGain).connect(carrier.frequency);
+        mod.start(now);
+        oscs.push(mod);
+        ratios.push(2);
+        filter.type = "lowpass";
+        filter.frequency.value = 1200;
+        filter.Q.value = 4;
+        drive.curve = this.makeCurve(0.4);
+        driveGain.gain.value = 0.85;
+        vibrato.frequency.value = 0.2;
+        vibratoGain.gain.value = 2;
+        attack = 0.005;
+        release = 0.2;
+      } else if (inst === "sub808") {
+        const o = addOsc("sine", 0, 0.95);
+        o.frequency.setValueAtTime(freq * 2.2, now);
+        o.frequency.exponentialRampToValueAtTime(Math.max(20, freq), now + 0.08);
+        filter.type = "lowpass";
+        filter.frequency.value = 400;
+        filter.Q.value = 1;
+        drive.curve = this.makeCurve(0.25);
+        driveGain.gain.value = 0.95;
+        vibrato.frequency.value = 0.1;
+        vibratoGain.gain.value = 1;
+        attack = 0.006;
+        release = 0.9;
       } else {
+
         addOsc("square", -10, 0.45);
         addOsc("sawtooth", 10, 0.45);
         filter.type = "lowpass";
