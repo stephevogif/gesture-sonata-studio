@@ -14,9 +14,10 @@ function Sparkle({ tone }: { tone: "night" | "heaven" }) {
           fill="currentColor"
         />
         <path
-          d="M50 18 L53 47 L82 50 L53 53 L50 82 L47 53 L18 50 L47 47 Z"
+          d="M50 12 L54 46 L88 50 L54 54 L50 88 L46 54 L12 50 L46 46 Z"
           fill="currentColor"
-          opacity="0.85"
+          opacity="0.8"
+          transform="rotate(45 50 50)"
         />
       </svg>
     </span>
