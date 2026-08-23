@@ -21,28 +21,124 @@ export type CameraHandle = {
   stop: () => void;
 };
 
-/** Opens the user-facing camera and binds it to `video`. */
+export type CameraErrorCode =
+  | "denied"
+  | "busy"
+  | "notfound"
+  | "unsupported"
+  | "model"
+  | "unknown";
+
+export class CameraError extends Error {
+  readonly code: CameraErrorCode;
+  constructor(code: CameraErrorCode, message: string) {
+    super(message);
+    this.name = "CameraError";
+    this.code = code;
+  }
+}
+
+const MESSAGES: Record<CameraErrorCode, string> = {
+  denied:
+    "Permesso fotocamera negato. Attivalo dall'icona nella barra degli indirizzi, poi riprova.",
+  busy: "La fotocamera è usata da un'altra app o scheda. Chiudila e riprova.",
+  notfound: "Nessuna fotocamera trovata su questo dispositivo.",
+  unsupported: "Questo browser non permette l'accesso alla fotocamera (serve HTTPS).",
+  model: "Caricamento del tracciamento non riuscito. Controlla la rete e riprova.",
+  unknown: "Avvio non riuscito. Riprova.",
+};
+
+export function cameraErrorFrom(error: unknown): CameraError {
+  if (error instanceof CameraError) return error;
+  const name = (error as { name?: string } | null)?.name ?? "";
+  let code: CameraErrorCode = "unknown";
+  if (name === "NotAllowedError" || name === "SecurityError") code = "denied";
+  else if (name === "NotReadableError" || name === "AbortError") code = "busy";
+  else if (name === "NotFoundError" || name === "DevicesNotFoundError") code = "notfound";
+  else if (name === "OverconstrainedError") code = "busy";
+  return new CameraError(code, MESSAGES[code]);
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const IDEAL: MediaStreamConstraints = {
+  video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+  audio: false,
+};
+const SIMPLE: MediaStreamConstraints = { video: true, audio: false };
+
+async function requestStream(): Promise<MediaStream> {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    throw new CameraError("unsupported", MESSAGES.unsupported);
+  }
+  try {
+    return await navigator.mediaDevices.getUserMedia(IDEAL);
+  } catch (first) {
+    const err = cameraErrorFrom(first);
+    if (err.code === "denied" || err.code === "notfound") throw err;
+    try {
+      return await navigator.mediaDevices.getUserMedia(SIMPLE);
+    } catch (second) {
+      // il dispositivo può essere occupato per un istante: un solo nuovo tentativo
+      await sleep(350);
+      try {
+        return await navigator.mediaDevices.getUserMedia(SIMPLE);
+      } catch {
+        throw cameraErrorFrom(second);
+      }
+    }
+  }
+}
+
+/**
+ * Opens the user-facing camera and binds it to `video`.
+ * Any failure after the stream is granted releases the device immediately, so a
+ * retry never hits a camera left busy by a half-finished start.
+ */
 export async function openCamera(video: HTMLVideoElement): Promise<CameraHandle> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
-    audio: false,
-  });
-  video.srcObject = stream;
-  video.setAttribute("playsinline", "true");
-  video.muted = true;
-  await video.play();
-  return {
-    video,
-    stop: () => {
-      stream.getTracks().forEach((track) => track.stop());
-      video.srcObject = null;
-    },
+  const stream = await requestStream();
+  const release = () => {
+    stream.getTracks().forEach((track) => track.stop());
+    if (video.srcObject === stream) video.srcObject = null;
   };
+  try {
+    video.srcObject = stream;
+    video.setAttribute("playsinline", "true");
+    video.muted = true;
+    try {
+      await video.play();
+    } catch (playError) {
+      // play() interrotto da un re-render non è fatale finché il video scorre
+      if ((playError as { name?: string })?.name !== "AbortError") throw playError;
+    }
+    return { video, stop: release };
+  } catch (error) {
+    release();
+    throw cameraErrorFrom(error);
+  }
 }
 
 const WASM_BUNDLE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const HAND_MODEL =
   "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+
+/** Loads the MediaPipe hand landmarker; throws a typed CameraError on failure. */
+export async function loadHandLandmarker(numHands = 2): Promise<any> {
+  try {
+    const vision = await import("@mediapipe/tasks-vision");
+    const files = await vision.FilesetResolver.forVisionTasks(WASM_BUNDLE);
+    return await vision.HandLandmarker.createFromOptions(files, {
+      baseOptions: { modelAssetPath: HAND_MODEL, delegate: "GPU" },
+      runningMode: "VIDEO",
+      numHands,
+      minHandDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+  } catch {
+    throw new CameraError("model", MESSAGES.model);
+  }
+}
+
 
 type RawDetector = {
   detectForVideo: (video: HTMLVideoElement, timestamp: number) => unknown;
