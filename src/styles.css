@@ -932,7 +932,7 @@
 }
 
 @utility sky-home-bg {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: linear-gradient(
     180deg,
@@ -948,7 +948,7 @@
 }
 
 @utility sky-home-nebula {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background:
     radial-gradient(60% 34% at 18% 22%, rgba(90, 120, 255, 0.24), transparent 70%),
@@ -957,7 +957,7 @@
 }
 
 @utility sky-home-clouds {
-  position: absolute;
+  position: fixed;
   inset: auto 0 0 0;
   height: 46%;
   background:
@@ -969,8 +969,9 @@
 }
 
 @utility sky-home-stars {
-  position: absolute;
+  position: fixed;
   inset: 0 0 42% 0;
+  pointer-events: none;
 
   & span {
     position: absolute;
