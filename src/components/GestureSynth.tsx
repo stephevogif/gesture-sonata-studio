@@ -41,6 +41,12 @@ import {
   type ScaleId,
 } from "@/lib/synth";
 import { detectKey } from "@/lib/keyDetect";
+import {
+  cameraErrorFrom,
+  loadHandLandmarker,
+  openCamera,
+  type CameraHandle,
+} from "@/core/tracking/provider";
 
 
 
@@ -356,6 +362,9 @@ export default function GestureSynth() {
 
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<string>("");
+  const [camError, setCamError] = useState<string>("");
+  const startingRef = useRef(false);
+  const camRef = useRef<CameraHandle | null>(null);
   const [hands, setHands] = useState<HandState[]>([]);
 
   const [presets, setPresets] = useState<Preset[]>([]);
@@ -503,6 +512,8 @@ export default function GestureSynth() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     engineRef.current?.allOff();
+    camRef.current?.stop();
+    camRef.current = null;
     const v = videoRef.current;
     const stream = v?.srcObject as MediaStream | null;
     stream?.getTracks().forEach((t) => t.stop());
@@ -518,6 +529,15 @@ export default function GestureSynth() {
   }, []);
 
   useEffect(() => () => stop(), [stop]);
+
+  // in background rilascia la fotocamera: nessuno stream appeso al ritorno
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === "hidden" && camRef.current) stop();
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    return () => document.removeEventListener("visibilitychange", onHidden);
+  }, [stop]);
 
   // carica taratura salvata
   useEffect(() => {
@@ -1102,6 +1122,10 @@ export default function GestureSynth() {
   }, []);
 
   const start = useCallback(async () => {
+    // un solo avvio alla volta: il doppio tap non apre due fotocamere
+    if (startingRef.current || running) return;
+    startingRef.current = true;
+    setCamError("");
     try {
       setStatus("Avvio audio e fotocamera…");
       const engine = engineRef.current ?? new GestureSynthEngine();
@@ -1119,6 +1143,9 @@ export default function GestureSynth() {
       engine.chordMode = chord;
       engine.hold = hold;
       engine.filterModAmount = gestureMod / 100;
+
+      // audio e fotocamera partono insieme
+      const camReady = openCamera(videoRef.current!);
       await engine.start();
       engine.setArp({
         enabled: arpLeft || arpRight,
@@ -1132,41 +1159,29 @@ export default function GestureSynth() {
         division: arpDivision,
       });
 
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 640, height: 480 },
-        audio: false,
-      });
-      const video = videoRef.current!;
-      video.srcObject = stream;
-      await video.play();
+      camRef.current = await camReady;
 
       if (!landmarkerRef.current) {
         setStatus("Preparazione…");
-        const vision = await import("@mediapipe/tasks-vision");
-        const files = await vision.FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
-        );
-        landmarkerRef.current = await vision.HandLandmarker.createFromOptions(files, {
-          baseOptions: {
-            modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-            delegate: "GPU",
-          },
-          runningMode: "VIDEO",
-          numHands: 2,
-        });
+        landmarkerRef.current = await loadHandLandmarker(2);
       }
 
       setStatus("");
       setRunning(true);
       rafRef.current = requestAnimationFrame(loop);
-    } catch (e) {
-      console.error(e);
-      setStatus("Impossibile accedere alla fotocamera o all'audio.");
+    } catch (raw) {
+      const err = cameraErrorFrom(raw);
+      console.error(err);
+      // rilascia sempre la fotocamera, così il tentativo dopo non la trova occupata
+      camRef.current?.stop();
+      camRef.current = null;
+      setStatus("");
+      setCamError(err.message);
       setRunning(false);
+    } finally {
+      startingRef.current = false;
     }
-  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, arpSync, arpDivision, bpm, chord, hold, delayMix, delayFeedback, delaySync, delayDivision, gestureMod, reverb, eqType, eqFreq, loop]);
+  }, [running, instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, arpSync, arpDivision, bpm, chord, hold, delayMix, delayFeedback, delaySync, delayDivision, gestureMod, reverb, eqType, eqFreq, loop]);
 
   const pickInstrument = (id: InstrumentId) => {
     setInstrument(id);
@@ -1348,8 +1363,9 @@ export default function GestureSynth() {
               <p className="max-w-xs text-xs text-white/65">
                 {status || "Consenti l'accesso alla fotocamera per iniziare a suonare."}
               </p>
+              {camError && <p className="max-w-xs text-xs text-[#ffd9a8]">{camError}</p>}
               <button onClick={start} className="night-chip night-chip-on">
-                Inizia a suonare
+                {camError ? "Riprova" : "Inizia a suonare"}
               </button>
             </div>
           )}
