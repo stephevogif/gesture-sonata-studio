@@ -393,105 +393,51 @@ export default function HeavenSynth() {
 
       const left = hands.find((x) => x.handedness === "left") ?? null;
       const right = hands.find((x) => x.handedness === "right") ?? null;
-      const { playMode: pm, rootPc: root, mode: md, tonalityLock: lock } = cfg.current;
+      const { rootPc: root, mode: md, cutMax: cmax } = cfg.current;
 
-      // ————— espressione (Lato B) —————
+      // ————— Lato B (destra): altezza = volume —————
       const volume = right ? volSm.current.push(heightToGain(right.height)) : volSm.current.push(0);
-      const tiltR = pm === "heavens" ? 0 : right ? tiltSm.current.push(right.tilt) : tiltSm.current.value;
-      const cutoff = pm === "heavens" ? 7000 : tiltToCutoff(tiltR);
-      engine.setEq("lowpass", cutoff);
-      const bright = pm === "heavens" ? 0.6 : Math.max(0, Math.min(1, 0.3 + tiltR * 0.5 + 0.3));
 
-      const voicingIdx = right
-        ? (voicingDeb.current.push(Math.max(1, Math.min(5, right.count))) ?? 1) - 1
-        : 0;
-      const voicing = (VOICING_BY_FINGERS[voicingIdx] ?? "triad") as VoicingId;
+      // ————— Lato A (sinistra): altezza = low pass risonante —————
+      const cutTarget = left ? 260 * Math.pow(Math.max(400, cmax) / 260, left.height) : cmax;
+      const cutoff = cutSm.current.push(cutTarget);
+      engine.setEq("lowpass", cutoff);
+      const bright = Math.max(0.1, Math.min(1, left ? left.height : 0.6));
 
       let chord: Chord | null = null;
       let heavensHud: Hud["heavens"] = null;
 
-      if (pm === "heavens") {
-        // 7 HEAVENS: dita totali (sinistra + destra) = grado dell'accordo diatonico
-        const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
-        const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
-        const total = lc + rc;
-        const stable = heavensDeb.current.push(total >= 1 && total <= 7 ? total : null);
-        let deg: number | null = null;
-        if (hands.length && stable) {
-          deg = stable - 1;
-          chord = buildChord({
-            rootPc: root,
-            mode: md,
-            degree: deg,
-            tonality: "auto",
-            voicing: "triad",
-            previous: prevNotesRef.current,
-          });
-          applyNotes(chord.notes, 0.6, bright);
-          prevNotesRef.current = chord.notes;
-          currentRef.current.chord = chord;
-        } else {
-          releaseAll();
-        }
-        heavensHud = {
-          leftCount: lc,
-          rightCount: rc,
-          total,
+      // 7 HEAVENS: dita totali (sinistra + destra) = grado dell'accordo diatonico
+      const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
+      const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
+      const total = lc + rc;
+      const stable = heavensDeb.current.push(total >= 1 && total <= 7 ? total : null);
+      let deg: number | null = null;
+      if (hands.length && stable) {
+        deg = stable - 1;
+        chord = buildChord({
+          rootPc: root,
+          mode: md,
           degree: deg,
-          label: chord?.label ?? "—",
-          notes: chord ? chord.notes.map((n) => midiName(n)).join(" · ") : "—",
-        };
-      } else if (pm === "theremin") {
-
-        if (left) {
-          const steps = modeSteps(md);
-          const raw = 48 + left.height * 30;
-          const midi = cfg.current.quantize
-            ? (() => {
-                const deg = Math.round((raw - 48 - root) / 12 * steps.length);
-                return 48 + root + degreeSemitones(steps, deg);
-              })()
-            : pitchSm.current.push(raw);
-          const g = right ? volume : 0.6;
-          applyNotes([Math.round(midi * 100) / 100], Math.max(0.05, g), bright);
-          currentRef.current.chord = {
-            degree: 0,
-            rootMidi: midi,
-            rootName: midiName(Math.round(midi)),
-            quality: "major",
-            seventh: false,
-            notes: [Math.round(midi)],
-            label: midiName(Math.round(midi)),
-          };
-        } else {
-          releaseAll();
-        }
-      } else if (left) {
-        const degree = degreeDeb.current.push(
-          gestureToDegree(left.fingers, left.count, DEFAULT_DEGREE_RULES),
-        );
-        if (degree === null || degree === undefined) {
-          releaseAll();
-        } else {
-          const tonality: Tonality =
-            lock === "auto" ? tonalitySw.current.push(tiltSm.current.value || left.tilt) : lock;
-          chord = buildChord({
-            rootPc: root,
-            mode: md,
-            degree,
-            tonality,
-            voicing: pm === "notes" ? "triad" : voicing,
-            previous: prevNotesRef.current,
-          });
-          const notes = pm === "notes" ? [chord.notes[0]!] : chord.notes;
-          const gain = right ? Math.max(0.08, volume) : 0.6;
-          applyNotes(notes, gain, bright);
-          prevNotesRef.current = notes;
-          currentRef.current.chord = { ...chord, notes };
-        }
+          tonality: "auto",
+          voicing: "triad",
+          previous: prevNotesRef.current,
+        });
+        applyNotes(chord.notes, right ? Math.max(0.06, volume) : 0.6, bright);
+        prevNotesRef.current = chord.notes;
+        currentRef.current.chord = chord;
       } else {
         releaseAll();
       }
+      heavensHud = {
+        leftCount: lc,
+        rightCount: rc,
+        total,
+        degree: deg,
+        label: chord?.label ?? "—",
+        notes: chord ? chord.notes.map((n) => midiName(n)).join(" · ") : "—",
+      };
+
 
       currentRef.current.volume = volume;
       currentRef.current.filter = cutoff;
