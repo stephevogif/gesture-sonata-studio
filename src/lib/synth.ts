@@ -136,15 +136,31 @@ export function midiToName(m: number): string {
   return `${NOTE_NAMES[((m % 12) + 12) % 12] ?? "C"}${Math.floor(m / 12) - 1}`;
 }
 
-export type ArpPatternId = "up" | "down" | "updown" | "octaves" | "random";
+export type ArpPatternId =
+  | "up"
+  | "down"
+  | "updown"
+  | "updown2"
+  | "triplet"
+  | "octaves"
+  | "octaveJump"
+  | "fullScale"
+  | "tranceGate"
+  | "random";
 
 export const ARP_PATTERNS: { id: ArpPatternId; name: string; degrees: number[] }[] = [
   { id: "up", name: "Su", degrees: [0, 1, 2, 3] },
   { id: "down", name: "Giù", degrees: [3, 2, 1, 0] },
   { id: "updown", name: "Su / Giù", degrees: [0, 1, 2, 3, 2, 1] },
+  { id: "updown2", name: "Su / Giù x2", degrees: [0, 1, 2, 3, 4, 5, 4, 3, 2, 1] },
+  { id: "triplet", name: "Terzine", degrees: [0, 2, 4] },
   { id: "octaves", name: "Ottave", degrees: [0, 2, 5, 7] },
+  { id: "octaveJump", name: "Salti d'ottava", degrees: [0, 7, 1, 8, 2, 9] },
+  { id: "fullScale", name: "Scala completa", degrees: [0, 1, 2, 3, 4, 5, 6, 7] },
+  { id: "tranceGate", name: "Trance gate", degrees: [0, 0, 2, 0, 4, 0, 2, 5] },
   { id: "random", name: "Random", degrees: [0, 1, 2, 3, 4, 5] },
 ];
+
 
 type VoiceNodes = {
   oscs: OscillatorNode[];
