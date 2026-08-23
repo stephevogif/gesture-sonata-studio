@@ -1133,7 +1133,50 @@ export default function GestureSynth() {
                 className="mt-3 w-full accent-[var(--primary)]"
               />
             </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Gate: {arpGate}%
+              </label>
+              <input
+                type="range"
+                min={10}
+                max={140}
+                step={5}
+                value={arpGate}
+                onChange={(e) => setArpGate(Number(e.target.value))}
+                className="mt-3 w-full accent-[var(--primary)]"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Ottave: {arpOctaves}
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={1}
+                value={arpOctaves}
+                onChange={(e) => setArpOctaves(Number(e.target.value))}
+                className="mt-3 w-full accent-[var(--primary)]"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Swing: {arpSwing}%
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={60}
+                step={5}
+                value={arpSwing}
+                onChange={(e) => setArpSwing(Number(e.target.value))}
+                className="mt-3 w-full accent-[var(--primary)]"
+              />
+            </div>
           </div>
+
         </div>
       )}
 
