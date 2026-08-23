@@ -325,3 +325,152 @@
   letter-spacing: 0.22em;
   box-shadow: 0 18px 40px -22px oklch(0.5 0.09 250 / 0.7);
 }
+
+/* ————— Seven Heavens: scena celestiale ————— */
+.heaven-scene {
+  background:
+    radial-gradient(120% 80% at 50% 0%, #cfe4ff 0%, #9dc4f2 38%, #6ea6e6 70%, #4f8ad4 100%);
+}
+
+.heaven-veil {
+  background:
+    radial-gradient(90% 55% at 50% 12%, rgba(255, 236, 200, 0.55), transparent 62%),
+    linear-gradient(180deg, rgba(150,190,240,0.55) 0%, rgba(198, 222, 250, 0.5) 45%, rgba(255, 244, 228, 0.58) 100%);
+}
+
+.heaven-vignette {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 45%, rgba(96,138,196,0.28) 100%);
+}
+
+@utility heaven-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: #fffaf0;
+  text-shadow: 0 0 26px rgba(255, 226, 168, 0.55), 0 2px 12px rgba(70, 105, 160, 0.35);
+}
+
+@utility heaven-glass {
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 45px -28px rgba(40, 70, 120, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+@utility heaven-orb-btn {
+  display: inline-flex;
+  height: 2.6rem;
+  width: 2.6rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  color: #fffaf0;
+  transition: background 0.2s ease;
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+@utility heaven-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 1.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #fffaf0;
+  text-shadow: 0 1px 8px rgba(60, 95, 150, 0.35);
+}
+
+@utility heaven-thread {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 248, 226, 0.55), transparent);
+}
+
+@utility heaven-node {
+  position: relative;
+  display: grid;
+  height: 2.2rem;
+  width: 2.2rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: rgba(255, 250, 240, 0.8);
+  transition: all 0.22s ease;
+}
+
+@utility heaven-node-on {
+  border-color: rgba(255, 226, 160, 0.95);
+  background: rgba(255, 232, 180, 0.35);
+  color: #fffdf6;
+  transform: scale(1.28);
+  box-shadow: 0 0 22px rgba(255, 218, 150, 0.85), 0 0 46px rgba(255, 208, 130, 0.45);
+}
+
+@utility heaven-meter {
+  height: 2px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  & > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255, 248, 226, 0.6), #ffe3ab);
+    transition: width 0.15s linear;
+  }
+}
+
+@utility heaven-meter-r {
+  transform: scaleX(-1);
+}
+
+@utility heaven-nav {
+  display: inline-flex;
+  min-width: 3.4rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.3rem 0.2rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 252, 245, 0.78);
+  transition: color 0.2s ease;
+}
+
+@utility heaven-nav-on {
+  color: #ffe3ab;
+  text-shadow: 0 0 14px rgba(255, 214, 140, 0.8);
+}
+
+@utility heaven-play {
+  display: grid;
+  height: 3.6rem;
+  width: 3.6rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 226, 160, 0.8);
+  background: rgba(255, 236, 195, 0.24);
+  color: #fffaf0;
+  box-shadow: 0 0 26px rgba(255, 214, 150, 0.5);
+  transition: all 0.25s ease;
+}
+
+@utility heaven-play-on {
+  background: rgba(255, 232, 180, 0.45);
+  box-shadow: 0 0 34px rgba(255, 214, 150, 0.85), 0 0 60px rgba(255, 205, 130, 0.4);
+}

@@ -58,7 +58,7 @@ type Hud = {
 const ONBOARD_KEY = "sky-studio-onboarded";
 
 const STEPS = [
-  { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: il video non viene mostrato, vedi solo le mani luminose." },
+  { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: vedrai te stesso nel cielo, con le mani illuminate come costellazioni." },
   { a: "fingers" as const, t: "7 Heavens", d: "Le dita totali delle due mani (1–7) scelgono l'accordo I–VII della scala scelta." },
   { a: "height" as const, t: "Lato A = filtro", d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi." },
   { a: "height" as const, t: "Lato B = volume", d: "Alza o abbassa la mano B per controllare il volume." },
@@ -251,33 +251,26 @@ export default function HeavenSynth() {
 
   const drawSky = useCallback(
     (ctx: CanvasRenderingContext2D, w: number, h: number, glow: number, fade: number, dt: number) => {
-      // gradiente cielo (cache: ricreato solo al cambio dimensione)
+      // il canvas è TRASPARENTE: sotto si vede la webcam reale
+      ctx.clearRect(0, 0, w, h);
+
       const cache = skyCache.current;
-      if (cache.w !== w || cache.h !== h || !cache.grad) {
-        const sky = ctx.createLinearGradient(0, 0, 0, h);
-        sky.addColorStop(0, "#1e63c8");
-        sky.addColorStop(0.35, "#4f92e0");
-        sky.addColorStop(0.7, "#a8cef4");
-        sky.addColorStop(1, "#eaf5ff");
-        cache.grad = sky;
+      if (cache.w !== w || cache.h !== h) {
         cache.w = w;
         cache.h = h;
         cloudsRef.current = [];
       }
-      ctx.fillStyle = cache.grad!;
-      ctx.fillRect(0, 0, w, h);
 
-      // sprite riusabili (nessun gradiente creato per frame)
-      if (!cloudSprite.current) cloudSprite.current = makeBlobSprite(256, "255,255,255");
+      if (!cloudSprite.current) cloudSprite.current = makeBlobSprite(256, "255,252,244");
       if (!sunSprite.current) sunSprite.current = makeSunSprite(256);
 
       if (cloudsRef.current.length === 0) {
-        cloudsRef.current = Array.from({ length: 14 }, () => ({
+        cloudsRef.current = Array.from({ length: 10 }, () => ({
           x: Math.random() * w,
           y: Math.random() * h,
-          r: h * (0.12 + Math.random() * 0.3),
-          v: 6 + Math.random() * 22,
-          a: 0.3 + Math.random() * 0.45,
+          r: h * (0.12 + Math.random() * 0.28),
+          v: 5 + Math.random() * 18,
+          a: 0.1 + Math.random() * 0.18,
         }));
       }
 
@@ -286,6 +279,9 @@ export default function HeavenSynth() {
       const t = performance.now() / 1000;
       const sun = sunSprite.current!;
       const cloud = cloudSprite.current!;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
 
       // ————— sole: tre cerchi concentrici con respiro sfasato —————
       const s = sunRef.current;
@@ -296,31 +292,27 @@ export default function HeavenSynth() {
       }
       const sx = s.p * w;
       const sy = s.y * h;
-      const base = Math.min(w, h) * 0.14;
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
+      const base = Math.min(w, h) * 0.13;
       for (let i = 0; i < 3; i++) {
         const phase = i * 0.7;
         const osc = Math.sin(t * 1.1 + phase);
         const r = base * (1 + i * 0.95) * (1 + osc * (0.06 + glow * 0.18));
-        const a = [0.85, 0.4, 0.2][i]! * fade * (0.55 + glow * 0.7) * (0.8 + osc * 0.2);
+        const a = [0.5, 0.24, 0.12][i]! * fade * (0.5 + glow * 0.6) * (0.85 + osc * 0.15);
         ctx.globalAlpha = Math.min(1, a);
         ctx.drawImage(sun, sx - r, sy - r, r * 2, r * 2);
       }
-      ctx.restore();
 
-      // ————— nuvole —————
-      ctx.save();
+      // ————— foschia / nuvole leggerissime —————
       for (const c of cloudsRef.current) {
-        c.x += c.v * (1 + glow * 1.4) * dt;
+        c.x += c.v * (1 + glow * 1.2) * dt;
         if (c.x - c.r > w) {
           c.x = -c.r;
           c.y = Math.random() * h;
-          c.r = h * (0.12 + Math.random() * 0.3);
-          c.v = 6 + Math.random() * 22;
-          c.a = 0.3 + Math.random() * 0.45;
+          c.r = h * (0.12 + Math.random() * 0.28);
+          c.v = 5 + Math.random() * 18;
+          c.a = 0.1 + Math.random() * 0.18;
         }
-        ctx.globalAlpha = Math.min(1, (c.a + glow * 0.25) * fade);
+        ctx.globalAlpha = Math.min(1, (c.a + glow * 0.12) * fade);
         ctx.drawImage(cloud, c.x - c.r, c.y - c.r * 0.7, c.r * 2, c.r * 1.4);
       }
       ctx.restore();
@@ -343,35 +335,35 @@ export default function HeavenSynth() {
         [13, 14], [14, 15], [15, 16],
         [17, 18], [18, 19], [19, 20],
       ];
+      // costellazione ivory/oro: linee sottilissime + punti di luce
       ctx.save();
-      ctx.shadowBlur = 26;
-      ctx.shadowColor = hand.handedness === "left" ? "rgba(37,99,235,0.65)" : "rgba(13,148,136,0.6)";
-      ctx.strokeStyle = "rgba(255,255,255,0.95)";
+      ctx.globalCompositeOperation = "lighter";
       ctx.lineCap = "round";
-      ctx.lineWidth = 10;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = "rgba(255,226,160,0.9)";
+      ctx.strokeStyle = "rgba(255,244,214,0.5)";
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       for (const [a, b] of links) {
         ctx.moveTo(px(a!), py(a!));
         ctx.lineTo(px(b!), py(b!));
       }
       ctx.stroke();
-      ctx.shadowBlur = 10;
-      ctx.strokeStyle = hand.handedness === "left" ? "rgba(30,64,175,0.95)" : "rgba(15,118,110,0.95)";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      if (cfg.current.showDebug) {
-        for (let i = 0; i < 21; i++) {
-          ctx.beginPath();
-          ctx.fillStyle = "rgba(255,255,255,0.98)";
-          ctx.shadowBlur = 14;
-          ctx.arc(px(i), py(i), i % 4 === 0 ? 6 : 4, 0, Math.PI * 2);
-          ctx.fill();
-        }
+
+      for (let i = 0; i < 21; i++) {
+        const r = i % 4 === 0 ? 3.4 : 2.2;
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255,248,228,0.95)";
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = "rgba(255,214,140,0.95)";
+        ctx.arc(px(i), py(i), r, 0, Math.PI * 2);
+        ctx.fill();
       }
       ctx.restore();
     },
     [],
   );
+
 
   /* ————— loop di tracking ————— */
 
@@ -453,7 +445,7 @@ export default function HeavenSynth() {
       fadeRef.current += ((hands.length ? 1 : 0) - fadeRef.current) * (1 - Math.exp(-dt * (hands.length ? 3 : 1.6)));
       drawSky(ctx, w, h, glowRef.current, fadeRef.current, dt);
 
-      for (const hand of hands) drawHand(ctx, hand, w, h);
+      if (cfg.current.showDebug) for (const hand of hands) drawHand(ctx, hand, w, h);
 
       // ————— HUD (throttle) —————
       const now = performance.now();
@@ -517,137 +509,140 @@ export default function HeavenSynth() {
   }, [getLooper]);
 
   const activeDegree = hud.heavens?.degree ?? null;
+  const playing = activeDegree != null;
 
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
       active
-        ? "border-sky-700 bg-sky-700 text-white shadow-sm"
-        : "border-slate-300 bg-white text-slate-700 hover:border-sky-500"
+        ? "border-[rgba(255,222,160,0.9)] bg-[rgba(255,238,200,0.28)] text-[#3a2f16] shadow-sm"
+        : "border-white/50 bg-white/25 text-[#3f4b62] hover:border-white/80"
     }`;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="mx-auto w-full max-w-3xl px-4 pb-28 pt-4">
+    <div className="heaven-scene relative min-h-screen overflow-hidden text-[#33405a]">
+      {/* strato camera: sfondo vivo di tutta la pagina */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <video
+          ref={videoRef}
+          playsInline
+          muted
+          className="h-full w-full scale-x-[-1] object-cover opacity-70"
+        />
+        <div className="heaven-veil absolute inset-0" />
+        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
+        <div className="heaven-vignette absolute inset-0" />
+      </div>
+
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-32 pt-5">
         {/* header */}
-        <header className="flex items-center justify-between gap-2">
-          <Link
-            to="/"
-            className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-2 text-[12px] font-semibold text-slate-700"
-          >
-            <ArrowLeft className="h-4 w-4" /> Sky Synth
+        <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+          <Link to="/" aria-label="Sky Synth" className="heaven-orb-btn">
+            <ArrowLeft className="h-4 w-4" />
           </Link>
-          <h1 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">
-            STEPH EVO&apos;S <span className="text-sky-700">HEAVEN SYNTH</span>
-          </h1>
+          <div className="min-w-0 text-center">
+            <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/85 drop-shadow">
+              Steph Evo&apos;s
+            </p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/85 drop-shadow">
+              Heaven Synth
+            </p>
+          </div>
           <button
-            onClick={running ? stop : start}
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold text-white shadow ${
-              running ? "bg-rose-600" : "bg-sky-700"
-            }`}
+            onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
+            aria-label="Guida"
+            className="heaven-orb-btn"
           >
-            {running ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            {running ? "Stop" : "Play"}
+            <HelpCircle className="h-4 w-4" />
           </button>
+
         </header>
 
-        {/* 7 Heavens */}
-        <div className="mt-3 rounded-2xl border border-sky-200 bg-white p-3">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            <span className="rounded-full bg-sky-700 px-2 py-0.5 text-white">7 Heavens</span>
-            <span>
-              Key: <b className="text-slate-900">{KEYS[rootPc]}</b>
-            </span>
-            <span>
-              Scale: <b className="text-slate-900">{MODES.find((m) => m.id === mode)?.name}</b>
-            </span>
-            <span>
-              Left: <b className="text-slate-900">{hud.heavens?.leftCount ?? 0}</b>
-            </span>
-            <span>
-              Right: <b className="text-slate-900">{hud.heavens?.rightCount ?? 0}</b>
-            </span>
-            <span>
-              Total: <b className="text-slate-900">{hud.heavens?.total ?? 0}</b>
-            </span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-3">
-            <span className="text-2xl font-bold text-sky-700">
-              {hud.heavens?.degree != null ? ROMAN[hud.heavens.degree] : "—"}
-            </span>
-            <span className="text-xl font-bold text-slate-900">{hud.heavens?.label ?? "—"}</span>
-            <span className="text-[12px] text-slate-500">{hud.heavens?.notes ?? "—"}</span>
-          </div>
-          <p className="mt-1 text-[11px] text-slate-500">
-            Dita totali (entrambe le mani) = grado dell&apos;accordo, da 1 a 7. Lato A su/giù = low pass
-            risonante · Lato B su/giù = volume.
-          </p>
+        <h1 className="heaven-title mt-5 text-center text-[2.1rem] leading-none sm:text-5xl">
+          SEVEN HEAVENS
+        </h1>
+
+        {/* root + scala */}
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => setPanel((p) => (p === "scale" ? null : "scale"))}
+            className="heaven-pill"
+          >
+            {KEYS[rootPc]} · {MODES.find((m) => m.id === mode)?.name.toUpperCase()}
+            <span className="ml-2 opacity-70">⌄</span>
+          </button>
         </div>
 
-
-
-        {/* striscia della scala */}
-        <div className="mt-3 flex justify-between gap-1">
-          {noteNames.map((n, i) => (
-            <div
-              key={i}
-              className={`flex flex-1 flex-col items-center rounded-xl border py-1.5 ${
-                activeDegree === i % 7 && (i < 7 || activeDegree === 0)
-                  ? "border-sky-700 bg-sky-700 text-white"
-                  : "border-slate-300 bg-white text-slate-800"
-              }`}
-            >
-              <span className="text-[13px] font-bold leading-none">{n}</span>
-              <span className="mt-1 text-[9px] font-semibold tracking-widest opacity-70">
-                {i === 7 ? "I'" : ROMAN[i]}
-              </span>
+        {/* i sette cieli */}
+        <div className="relative mt-7 flex items-center justify-between px-1">
+          <div className="heaven-thread pointer-events-none absolute inset-x-2 top-1/2" />
+          {ROMAN.slice(0, 7).map((r, i) => (
+            <div key={r} className={`heaven-node ${activeDegree === i ? "heaven-node-on" : ""}`}>
+              {r}
             </div>
           ))}
         </div>
 
-        {/* palco */}
-        <div className="mt-3 overflow-hidden rounded-3xl border border-slate-300 bg-white shadow-sm">
-          <div className="relative aspect-[3/4] w-full bg-slate-100 sm:aspect-[4/3]">
-            <video ref={videoRef} playsInline muted className="hidden" />
-            <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
-
-            {running && (
-              <>
-                <div className="pointer-events-none absolute left-3 top-3 rounded-xl bg-white/90 px-3 py-2 text-[11px] font-semibold text-slate-800 shadow">
-                  <div className="text-[9px] uppercase tracking-widest text-sky-800">Lato A</div>
-                  <div>Filtro: {(hud.filter / 1000).toFixed(1)} kHz</div>
-                  <div className="text-slate-500">{hud.heavens?.leftCount ?? 0} dita</div>
-                </div>
-                <div className="pointer-events-none absolute right-3 top-3 rounded-xl bg-white/90 px-3 py-2 text-right text-[11px] font-semibold text-slate-800 shadow">
-                  <div className="text-[9px] uppercase tracking-widest text-teal-800">Lato B</div>
-                  <div>Volume: {Math.round(hud.volume * 100)}%</div>
-                  <div className="text-slate-500">{hud.heavens?.rightCount ?? 0} dita</div>
-                </div>
-                <div className="pointer-events-none absolute bottom-2 right-3 text-[10px] font-semibold text-slate-500">
-                  {Math.round(hud.fps)} fps
-                </div>
-              </>
-            )}
-
-            {!running && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-                <p className="max-w-sm text-sm font-medium text-slate-700">
-                  {status ||
-                    "Mostra da 1 a 7 dita (anche con due mani) per suonare i 7 accordi della scala. Lato A su/giù apre il filtro, Lato B su/giù alza il volume."}
-                </p>
-                <button
-                  onClick={start}
-                  className="rounded-full bg-sky-700 px-6 py-3 text-sm font-bold text-white shadow"
-                >
+        {/* current heaven */}
+        <div className="mt-10 flex min-h-[190px] flex-col items-center justify-start text-center">
+          {playing ? (
+            <div key={activeDegree} className="animate-fade-in">
+              <p className="text-[10px] font-medium uppercase tracking-[0.5em] text-white/90 drop-shadow">
+                Heaven
+              </p>
+              <p className="heaven-title mt-1 text-[4.2rem] leading-[0.9]">{ROMAN[activeDegree!]}</p>
+              <div className="mx-auto mt-3 h-px w-24 bg-white/50" />
+              <p className="mt-3 text-2xl font-light uppercase tracking-[0.14em] text-white drop-shadow">
+                {hud.heavens?.label}
+              </p>
+              <p className="mt-1 text-sm tracking-[0.3em] text-[#ffe9bd] drop-shadow">
+                {hud.heavens?.notes}
+              </p>
+            </div>
+          ) : (
+            <div className="animate-fade-in">
+              <p className="text-base font-light uppercase tracking-[0.34em] text-white/95 drop-shadow">
+                Reach for a heaven
+              </p>
+              <p className="mt-2 text-[11px] uppercase tracking-[0.28em] text-white/70">
+                {running ? "Raise your hands to play" : status || "Tocca ▶ per iniziare"}
+              </p>
+              {!running && (
+                <button onClick={start} className="heaven-pill mt-6">
                   Inizia a suonare
                 </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
+
+        <div className="flex-1" />
+
+        {/* filtro / volume */}
+        {running && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="heaven-glass px-4 py-3">
+              <p className="text-[9px] uppercase tracking-[0.32em] text-white/80">Filter</p>
+              <p className="mt-1 text-lg font-light text-white">
+                {(hud.filter / 1000).toFixed(1)} kHz
+              </p>
+              <div className="heaven-meter mt-2">
+                <span style={{ width: `${Math.min(100, (hud.filter / Math.max(1000, cutMax)) * 100)}%` }} />
+              </div>
+            </div>
+            <div className="heaven-glass px-4 py-3 text-right">
+              <p className="text-[9px] uppercase tracking-[0.32em] text-white/80">Volume</p>
+              <p className="mt-1 text-lg font-light text-white">{Math.round(hud.volume * 100)}%</p>
+              <div className="heaven-meter heaven-meter-r mt-2">
+                <span style={{ width: `${Math.round(hud.volume * 100)}%` }} />
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* pannello attivo */}
         {panel === "sound" && (
-          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Suono</h2>
             <div className="flex flex-wrap gap-1.5">
               {INSTRUMENTS.map((it) => (
@@ -658,13 +653,14 @@ export default function HeavenSynth() {
             </div>
             <button onClick={() => setShowDebug((v) => !v)} className={chip(showDebug)}>
               {showDebug ? <Eye className="mr-1 inline h-3.5 w-3.5" /> : <EyeOff className="mr-1 inline h-3.5 w-3.5" />}
-              Overlay debug
+              Costellazione mani
             </button>
+
           </section>
         )}
 
         {panel === "fx" && (
-          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Effetti</h2>
             {(
               [
@@ -696,7 +692,7 @@ export default function HeavenSynth() {
         )}
 
         {panel === "scale" && (
-          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Tonalità e scala</h2>
             <div className="flex flex-wrap gap-1.5">
               {KEYS.map((n, i) => (
@@ -720,7 +716,7 @@ export default function HeavenSynth() {
 
 
         {panel === "loop" && (
-          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold">Loop pedal</h2>
               <span className="text-[11px] font-semibold text-slate-500">
@@ -839,7 +835,7 @@ export default function HeavenSynth() {
         )}
 
         {panel === "help" && (
-          <section className="mt-3 space-y-2 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-2 p-4 text-white">
             <h2 className="text-sm font-bold">Guida rapida</h2>
             <ol className="space-y-1.5 text-[12px] text-slate-700">
               {STEPS.map((s, i) => (
@@ -853,24 +849,42 @@ export default function HeavenSynth() {
       </div>
 
       {/* barra inferiore */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-300 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-around px-2 py-2">
+      <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
+        <div className="heaven-glass mx-auto flex max-w-md items-center justify-between px-4 py-2">
           {(
             [
-              ["sound", "Suono", Settings2],
-              ["fx", "Effetti", Sliders],
-
-              ["scale", "Scala", Music2],
-              ["loop", "Loop", Repeat],
-              ["help", "Guida", HelpCircle],
+              ["sound", "Sound", Settings2],
+              ["scale", "Scale", Music2],
             ] as const
           ).map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setPanel((p) => (p === id ? null : id))}
-              className={`flex min-w-16 flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold ${
-                panel === id ? "bg-sky-700 text-white" : "text-slate-600"
-              }`}
+              className={`heaven-nav ${panel === id ? "heaven-nav-on" : ""}`}
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+            </button>
+          ))}
+
+          <button
+            onClick={running ? stop : start}
+            aria-label={running ? "Stop" : "Play"}
+            className={`heaven-play ${running ? "heaven-play-on" : ""}`}
+          >
+            {running ? <Square className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+          </button>
+
+          {(
+            [
+              ["loop", "Loop", Repeat],
+              ["fx", "FX", Sliders],
+            ] as const
+          ).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => setPanel((p) => (p === id ? null : id))}
+              className={`heaven-nav ${panel === id ? "heaven-nav-on" : ""}`}
             >
               <Icon className="h-5 w-5" />
               {label}
@@ -878,6 +892,7 @@ export default function HeavenSynth() {
           ))}
         </div>
       </nav>
+
 
       {/* onboarding */}
       {showOnboard && (
