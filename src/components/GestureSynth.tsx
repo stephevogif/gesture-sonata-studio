@@ -729,6 +729,14 @@ export default function GestureSynth() {
       engine.reverbAmount = reverb / 100;
       engine.eqType = eqType;
       engine.eqFreq = eqFreq;
+      engine.bpm = bpm;
+      engine.delayMix = delayMix / 100;
+      engine.delayFeedback = delayFeedback / 100;
+      engine.delaySync = delaySync;
+      engine.delayDivision = delayDivision;
+      engine.chordMode = chord;
+      engine.hold = hold;
+      engine.filterModAmount = gestureMod / 100;
       await engine.start();
       engine.setArp({
         enabled: arpLeft || arpRight,
@@ -738,8 +746,10 @@ export default function GestureSynth() {
         gate: arpGate / 100,
         octaves: arpOctaves,
         swing: arpSwing / 100,
-
+        sync: arpSync,
+        division: arpDivision,
       });
+
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 640, height: 480 },
