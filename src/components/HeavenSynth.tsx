@@ -1086,9 +1086,6 @@ export default function HeavenSynth() {
               <button onClick={() => setArpOn((v) => !v)} className={chip(arpOn)}>
                 {arpOn ? "Arp ON" : "Arp OFF"}
               </button>
-              <button onClick={() => { holdRef.current = false; }} className={chip(false)}>
-                Rilascia hold
-              </button>
             </div>
             <label className="block text-[11px] font-semibold text-slate-600">
               Tempo: <span className="text-slate-900">{bpm} BPM</span>
