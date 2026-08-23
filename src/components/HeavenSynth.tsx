@@ -148,18 +148,17 @@ export default function HeavenSynth() {
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
 
-  // ————— loop pedal —————
+  // ————— arpeggiatore —————
   const [bpm, setBpm] = useState(100);
-  const [bars, setBars] = useState(2);
-  const [loop, setLoop] = useState({
-    playing: false,
-    recording: false,
-    countIn: false,
-    step: 0,
-    selected: 0,
-    tracks: emptyTracks(),
-  });
-  const looperRef = useRef<Looper | null>(null);
+  const [arpOn, setArpOn] = useState(false);
+  const [arpDiv, setArpDiv] = useState(2);
+  const [arpMode, setArpMode] = useState<"up" | "down" | "updown" | "octaves" | "random">("up");
+  const [arpGate, setArpGate] = useState(0.7);
+  const arpOnRef = useRef(false);
+  const holdRef = useRef(false);
+  const heldDegreeRef = useRef<number | null>(null);
+  const lastStableRef = useRef<number | null>(null);
+
 
   const cfg = useRef({ rootPc, mode, instrument, showDebug, cutMax });
   useEffect(() => {
