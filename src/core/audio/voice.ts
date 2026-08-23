@@ -20,9 +20,9 @@ export type VoiceBuses = {
   delay?: AudioNode | undefined;
 };
 
-function saturationCurve(amount: number): Float32Array {
+function saturationCurve(amount: number): Float32Array<ArrayBuffer> {
   const size = 1024;
-  const curve = new Float32Array(size);
+  const curve = new Float32Array(new ArrayBuffer(size * 4));
   const k = amount * 100;
   for (let i = 0; i < size; i++) {
     const x = (i * 2) / size - 1;
