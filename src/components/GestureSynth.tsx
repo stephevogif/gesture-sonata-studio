@@ -1149,7 +1149,7 @@ export default function GestureSynth() {
       <header className="text-center">
         <div className="celestial-rule mx-auto mb-3 w-2/3" />
         <h1 className="font-display text-xl leading-tight tracking-[0.16em] text-foreground sm:text-2xl">
-          Steph Evo&apos;s <span className="text-primary">Sky Synth</span>
+          STEPH EVO&apos;S <span className="text-primary">SKY SYNTH</span>
         </h1>
         <p className="mt-2 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
           Carta sonora · Ed. I
@@ -1157,9 +1157,10 @@ export default function GestureSynth() {
         <div className="celestial-rule mx-auto mt-3 w-2/3" />
         <Link
           to="/studio"
-          className="mt-3 inline-flex items-center gap-2 rounded-sm border border-border bg-card/60 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:border-primary hover:text-primary"
+          className="mt-3 inline-flex items-center gap-2 rounded-sm border border-border bg-card/60 px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground transition hover:border-primary hover:text-primary"
         >
-          Heaven Synth
+          Vai a Heaven Synth
+          <span aria-hidden>→</span>
         </Link>
       </header>
 
