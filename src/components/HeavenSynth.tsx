@@ -260,49 +260,49 @@ export default function HeavenSynth() {
     activeIdsRef.current = ids;
   }, []);
 
-  /* ————— loop pedal ————— */
-
-  const getLooper = useCallback(() => {
-    if (looperRef.current) return looperRef.current;
-    const l = new Looper({
-      bpm,
-      bars,
-      onEvent: (track, ev) => {
-        const e = engineRef.current;
-        if (!e) return;
-        const inst = cfg.current.instrument;
-        const shift = INSTRUMENT_SHIFT[inst] ?? 0;
-        const dur = (60 / Math.max(30, l.bpm) / 4) * 3.2;
-        ev.notes.forEach((m, i) => {
-          const id = `lp${track.id}-${i}`;
-          e.noteOn(id, midiToFreq(m + shift), ev.volume * track.volume * 0.8, 0.5, inst);
-          setTimeout(() => e.noteOff(id, true), dur * 1000);
-        });
-      },
-      capture: () => {
-        const c = currentRef.current;
-        if (!c.chord) return null;
-        return {
-          notes: c.chord.notes,
-          label: c.chord.label,
-          volume: Math.max(0.2, c.volume),
-          filter: c.filter,
-        };
-      },
-      onState: (patch) => setLoop((s) => ({ ...s, ...patch }) as typeof s),
-    });
-    looperRef.current = l;
-    return l;
-  }, [bpm, bars]);
+  /* ————— arpeggiatore ————— */
 
   useEffect(() => {
-    looperRef.current?.setBpm(bpm);
+    arpOnRef.current = arpOn;
+    if (!arpOn) return;
+    const interval = ((60 / Math.max(40, bpm)) / arpDiv) * 1000;
+    let i = 0;
+    const id = setInterval(() => {
+      const e = engineRef.current;
+      const c = currentRef.current.chord;
+      if (!e || !c || !c.notes.length) return;
+      const inst = cfg.current.instrument;
+      const shift = INSTRUMENT_SHIFT[inst] ?? 0;
+      const base = c.notes;
+      const seq =
+        arpMode === "down"
+          ? [...base].reverse()
+          : arpMode === "updown"
+            ? [...base, ...[...base].reverse().slice(1, -1)]
+            : arpMode === "octaves"
+              ? [...base, ...base.map((n) => n + 12)]
+              : base;
+      const m =
+        arpMode === "random"
+          ? (base[Math.floor(Math.random() * base.length)] ?? base[0]!)
+          : (seq[i % seq.length] ?? base[0]!);
+      i += 1;
+      e.pluck(
+        "arp",
+        midiToFreq(m + shift),
+        Math.max(0.1, currentRef.current.volume),
+        0.6,
+        inst,
+        (interval / 1000) * arpGate,
+      );
+    }, interval);
+    return () => clearInterval(id);
+  }, [arpOn, bpm, arpDiv, arpMode, arpGate]);
+
+  useEffect(() => {
     engineRef.current?.setTempo(bpm);
   }, [bpm]);
-  useEffect(() => {
-    looperRef.current?.setBars(bars);
-  }, [bars]);
-  useEffect(() => () => looperRef.current?.dispose(), []);
+
 
   /* ————— rendering ————— */
 
