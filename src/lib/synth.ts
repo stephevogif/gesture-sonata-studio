@@ -196,15 +196,47 @@ type ArpTarget = {
   step: number;
 };
 
+export type ChordId = "off" | "fifth" | "triad" | "seventh" | "sus";
+
+export const CHORDS: { id: ChordId; name: string; degrees: number[] }[] = [
+  { id: "off", name: "Nota singola", degrees: [0] },
+  { id: "fifth", name: "Quinte", degrees: [0, 4] },
+  { id: "triad", name: "Triade", degrees: [0, 2, 4] },
+  { id: "seventh", name: "Settima", degrees: [0, 2, 4, 6] },
+  { id: "sus", name: "Sospeso", degrees: [0, 3, 4] },
+];
+
+export type DivisionId = "1/4" | "1/8" | "1/8T" | "1/16" | "1/16T";
+
+export const DIVISIONS: { id: DivisionId; name: string; perBeat: number }[] = [
+  { id: "1/4", name: "1/4", perBeat: 1 },
+  { id: "1/8", name: "1/8", perBeat: 2 },
+  { id: "1/8T", name: "1/8 terzine", perBeat: 3 },
+  { id: "1/16", name: "1/16", perBeat: 4 },
+  { id: "1/16T", name: "1/16 terzine", perBeat: 6 },
+];
+
 export class GestureSynthEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private wet: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
   private eq: BiquadFilterNode | null = null;
+  private delaySend: GainNode | null = null;
+  private delayL: DelayNode | null = null;
+  private delayR: DelayNode | null = null;
+  private delayFb: GainNode | null = null;
   reverbAmount = 0.35;
+  delayMix = 0.25;
+  delayFeedback = 0.35;
+  delaySync = true;
+  delayDivision: DivisionId = "1/8";
+  delayTime = 0.3;
   eqType: BiquadFilterType = "lowpass";
   eqFreq = 12000;
+  /** 0..1 gesture modulation of the master cutoff */
+  filterMod = 0.5;
+  filterModAmount = 0;
   private voices = new Map<string, VoiceNodes>();
   private buildInst: InstrumentId = "violin";
   instrument: InstrumentId = "violin";
@@ -212,10 +244,17 @@ export class GestureSynthEngine {
   // musical settings
   scale: number[] = scaleSteps("minorPent");
   rootPc = 2; // D
+  chordMode: ChordId = "off";
+  hold = false;
+
+  // tempo
+  bpm = 100;
 
   // arpeggiator
   arpEnabled = false;
-  arpRate = 8; // notes per second
+  arpRate = 8; // notes per second (used when sync is off)
+  arpSync = true;
+  arpDivision: DivisionId = "1/8";
   arpDegrees: number[] = ARP_PATTERNS[0]!.degrees;
   arpRandom = false;
   arpGate = 0.9;
@@ -225,6 +264,20 @@ export class GestureSynthEngine {
   private arpTargets = new Map<string, ArpTarget>();
   private arpTimer: ReturnType<typeof setTimeout> | null = null;
 
+  private divisionSec(div: DivisionId) {
+    const perBeat = DIVISIONS.find((d) => d.id === div)?.perBeat ?? 2;
+    return 60 / Math.max(20, this.bpm) / perBeat;
+  }
+
+  /** effective arpeggiator speed in notes per second */
+  effectiveRate() {
+    return this.arpSync ? 1 / this.divisionSec(this.arpDivision) : Math.max(1, this.arpRate);
+  }
+
+  private effectiveDelayTime() {
+    const t = this.delaySync ? this.divisionSec(this.delayDivision) : this.delayTime;
+    return Math.max(0.02, Math.min(1.9, t));
+  }
 
   async start() {
     if (this.ctx) {
@@ -255,6 +308,30 @@ export class GestureSynthEngine {
     d1.connect(master);
     d2.connect(master);
 
+    // ping-pong delay bus
+    const delaySend = ctx.createGain();
+    delaySend.gain.value = this.delayMix;
+    const dL = ctx.createDelay(2);
+    const dR = ctx.createDelay(2);
+    const t = this.effectiveDelayTime();
+    dL.delayTime.value = t;
+    dR.delayTime.value = t;
+    const panL = ctx.createStereoPanner();
+    panL.pan.value = -0.65;
+    const panR = ctx.createStereoPanner();
+    panR.pan.value = 0.65;
+    const dTone = ctx.createBiquadFilter();
+    dTone.type = "lowpass";
+    dTone.frequency.value = 3200;
+    const dFb = ctx.createGain();
+    dFb.gain.value = this.delayFeedback;
+
+    delaySend.connect(dL);
+    dL.connect(panL).connect(master);
+    dL.connect(dR);
+    dR.connect(panR).connect(master);
+    dR.connect(dTone).connect(dFb).connect(dL);
+
     const eq = ctx.createBiquadFilter();
     eq.type = this.eqType;
     eq.frequency.value = this.eqFreq;
@@ -267,9 +344,14 @@ export class GestureSynthEngine {
     this.wet = wet;
     this.analyser = analyser;
     this.eq = eq;
+    this.delaySend = delaySend;
+    this.delayL = dL;
+    this.delayR = dR;
+    this.delayFb = dFb;
     await ctx.resume();
     this.syncArpTimer();
   }
+
 
   getAnalyser() {
     return this.analyser;
