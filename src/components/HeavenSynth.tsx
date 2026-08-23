@@ -53,14 +53,23 @@ import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import TutorialArt from "@/components/TutorialArt";
 
-type PlayMode = "chords" | "notes" | "theremin";
+type PlayMode = "heavens" | "chords" | "notes" | "theremin";
 type PanelId = null | "sound" | "scale" | "loop" | "help";
 
 type Hud = {
   left: { degree: number | null; chord: string; gesture: string } | null;
   right: { voicing: VoicingId; volume: number; filter: number } | null;
+  heavens: {
+    leftCount: number;
+    rightCount: number;
+    total: number;
+    degree: number | null;
+    label: string;
+    notes: string;
+  } | null;
   fps: number;
 };
+
 
 const ONBOARD_KEY = "sky-studio-onboarded";
 
