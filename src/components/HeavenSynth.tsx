@@ -78,6 +78,8 @@ export default function HeavenSynth() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
+  const sunRef = useRef({ p: -0.25, y: 0.3 });
+
   const glowRef = useRef(0);
   const activeIdsRef = useRef<string[]>([]);
   const prevNotesRef = useRef<number[]>([]);
@@ -215,17 +217,60 @@ export default function HeavenSynth() {
     ctx.fillRect(0, 0, w, h);
 
     if (cloudsRef.current.length === 0) {
-      cloudsRef.current = Array.from({ length: 12 }, () => ({
+      cloudsRef.current = Array.from({ length: 16 }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
-        r: h * (0.12 + Math.random() * 0.28),
-        v: 0.08 + Math.random() * 0.22,
-        a: 0.1 + Math.random() * 0.2,
+        r: h * (0.1 + Math.random() * 0.3),
+        v: 0.08 + Math.random() * 0.35,
+        a: 0.08 + Math.random() * 0.22,
       }));
     }
+
+    const t = performance.now() / 1000;
+
+    // ————— sole: tre cerchi concentrici con respiro sfasato —————
+    if (glow > 0.02) {
+      sunRef.current.p += (0.0004 + glow * 0.0016);
+      if (sunRef.current.p > 1.25) {
+        sunRef.current.p = -0.25;
+        sunRef.current.y = 0.18 + Math.random() * 0.34;
+      }
+      const sx = sunRef.current.p * w;
+      const sy = sunRef.current.y * h;
+      const base = Math.min(w, h) * 0.12;
+      const layers = [
+        { mul: 1, alpha: 0.5, phase: 0 },
+        { mul: 1.9, alpha: 0.22, phase: 0.7 },
+        { mul: 3.1, alpha: 0.1, phase: 1.4 },
+      ];
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (const l of layers) {
+        const breath = 1 + Math.sin(t * 1.1 + l.phase) * (0.08 + glow * 0.22);
+        const r = base * l.mul * breath;
+        const a = l.alpha * (0.35 + glow * 0.9) * (0.75 + Math.sin(t * 1.1 + l.phase) * 0.25);
+        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+        g.addColorStop(0, `rgba(255,247,220,${a})`);
+        g.addColorStop(0.55, `rgba(255,224,160,${a * 0.45})`);
+        g.addColorStop(1, "rgba(255,214,140,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     for (const c of cloudsRef.current) {
-      c.x += c.v;
-      if (c.x - c.r > w) c.x = -c.r;
+      c.x += c.v * (1 + glow * 1.6);
+      c.y += Math.sin(t * 0.25 + c.r) * 0.08;
+      if (c.x - c.r > w) {
+        c.x = -c.r;
+        c.y = Math.random() * h;
+        c.r = h * (0.1 + Math.random() * 0.3);
+        c.v = 0.08 + Math.random() * 0.35;
+        c.a = 0.08 + Math.random() * 0.22;
+      }
       const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
       g.addColorStop(0, `rgba(255,255,255,${c.a + glow * 0.2})`);
       g.addColorStop(1, "rgba(255,255,255,0)");
@@ -235,6 +280,7 @@ export default function HeavenSynth() {
       ctx.fill();
     }
   }, []);
+
 
   const drawHand = useCallback(
     (ctx: CanvasRenderingContext2D, hand: HandFrame, w: number, h: number) => {
