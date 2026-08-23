@@ -693,7 +693,7 @@ export default function HeavenSynth() {
         </h1>
 
         {/* root + scala */}
-        <div className="mt-4 flex justify-center">
+        <div className="mt-4 flex items-center justify-center gap-2">
           <button
             onClick={() => setPanel((p) => (p === "scale" ? null : "scale"))}
             className="heaven-pill"
@@ -701,7 +701,23 @@ export default function HeavenSynth() {
             {KEYS[rootPc]} · {MODES.find((m) => m.id === mode)?.name.toUpperCase()}
             <span className="ml-2 opacity-70">⌄</span>
           </button>
+          <button
+            onClick={toggleListen}
+            aria-pressed={listening}
+            aria-label={listening ? "Ferma il microfono" : "Rileva scala dal microfono"}
+            className={`heaven-orb-btn ${listening ? "animate-pulse" : ""}`}
+          >
+            {listening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
         </div>
+        {(listening || listenMsg) && (
+          <p className="mt-2 text-center text-[11px] font-semibold text-slate-600">
+            {listening
+              ? `Ascolto… ${Math.round(listenProgress * 100)}%`
+              : listenMsg}
+          </p>
+        )}
+
 
         {/* i sette cieli */}
         <div className="relative mt-7 flex items-center justify-between px-1">
