@@ -451,9 +451,11 @@ export default function GestureSynth() {
         arpLeft: aL,
         arpRight: aR,
         freePitch: fp,
+        gestureMod: gm,
       } = cfg.current;
 
       let maxSoundLevel = 0;
+      let maxMod = 0;
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
         
@@ -512,7 +514,7 @@ export default function GestureSynth() {
                 INSTRUMENT_SHIFT[inst] ?? 0,
               );
               if (arp) engine.setArpTarget(vid, degree, level, bright, inst);
-              else engine.noteOn(vid, midiToFreq(midi), level, bright, inst);
+              else engine.noteOnChord(vid, midi, degree, level, bright, inst);
               next.push({
                 note: midiToName(midi),
                 level,
@@ -575,7 +577,7 @@ export default function GestureSynth() {
           if (level > 0.06) {
             soundLevel = level;
             if (arp) engine.setArpTarget(id, degree, level, freeBright, inst);
-            else engine.noteOn(id, midiToFreq(playMidi), level, freeBright, inst);
+            else engine.noteOnChord(id, playMidi, degree, level, freeBright, inst);
             next.push({
               note: midiToName(Math.round(playMidi)),
               level,
@@ -589,6 +591,7 @@ export default function GestureSynth() {
 
 
         maxSoundLevel = Math.max(maxSoundLevel, soundLevel);
+        if (soundLevel > 0) maxMod = Math.max(maxMod, bright);
 
         // scheletro ben visibile
         ctx.save();
@@ -672,6 +675,7 @@ export default function GestureSynth() {
       });
 
       musicLevelRef.current = musicLevelRef.current * 0.92 + maxSoundLevel * 0.08;
+      if (gm > 0) engine.setFilterMod(maxMod, gm / 100);
 
       // update + draw particelle
       hueRef.current = (hueRef.current + 2.5) % 360;
