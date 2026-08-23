@@ -1321,7 +1321,7 @@ export default function GestureSynth() {
         </div>
 
         {/* performance sky */}
-        <div className="relative flex flex-1 flex-col items-center justify-center py-8 text-center">
+        <div className="relative flex flex-1 flex-col items-center justify-center py-10 text-center">
           <div
             className={`pointer-events-none transition-opacity duration-500 ${
               curNote ? "opacity-100" : "opacity-0"
@@ -1333,7 +1333,7 @@ export default function GestureSynth() {
             </div>
           </div>
           <div
-            className={`pointer-events-none absolute inset-x-0 bottom-2 transition-opacity duration-700 ${
+            className={`pointer-events-none absolute inset-x-0 bottom-6 transition-opacity duration-700 ${
               curNote ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -1344,7 +1344,7 @@ export default function GestureSynth() {
           </div>
 
           {!running && (
-            <div className="absolute inset-x-0 top-0 flex flex-col items-center gap-3">
+            <div className="absolute inset-x-0 top-4 flex flex-col items-center gap-3">
               <p className="max-w-xs text-xs text-white/65">
                 {status || "Consenti l'accesso alla fotocamera per iniziare a suonare."}
               </p>
