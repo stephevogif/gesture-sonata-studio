@@ -820,7 +820,39 @@ export class GestureSynthEngine {
     if (v.noiseGain) v.noiseGain.gain.setTargetAtTime(0.02 + amount * 0.08, now, 0.1);
   }
 
-  noteOff(id: string) {
+  /** play a chord (or a single note) built on a scale degree */
+  noteOnChord(
+    id: string,
+    baseMidi: number,
+    degree: number,
+    amount: number,
+    bright: number,
+    inst: InstrumentId,
+  ) {
+    const offsets = CHORDS.find((c) => c.id === this.chordMode)?.degrees ?? [0];
+    const rootSemi = degreeToSemitones(this.scale, degree);
+    offsets.forEach((off, k) => {
+      const semi = degreeToSemitones(this.scale, degree + off) - rootSemi;
+      const vid = k === 0 ? id : `${id}~${k}`;
+      this.noteOn(vid, midiToFreq(baseMidi + semi), amount * (k === 0 ? 1 : 0.55), bright, inst);
+    });
+    // spegni eventuali voci d'accordo in eccesso (cambio di modalità)
+    for (const key of [...this.voices.keys()]) {
+      if (!key.startsWith(`${id}~`)) continue;
+      const k = Number(key.slice(id.length + 1));
+      if (!Number.isNaN(k) && k >= offsets.length) this.noteOff(key, true);
+    }
+  }
+
+  noteOff(id: string, force = false) {
+    if (this.hold && !force) return;
+    for (const key of [...this.voices.keys()]) {
+      if (key.startsWith(`${id}~`)) this.releaseVoice(key);
+    }
+    this.releaseVoice(id);
+  }
+
+  private releaseVoice(id: string) {
     const v = this.voices.get(id);
     if (!v || !this.ctx) return;
     const now = this.ctx.currentTime;
@@ -838,13 +870,79 @@ export class GestureSynthEngine {
 
   allOff() {
     this.arpTargets.clear();
-    [...this.voices.keys()].forEach((k) => this.noteOff(k));
+    [...this.voices.keys()].forEach((k) => this.releaseVoice(k));
+  }
+
+  setChord(mode: ChordId) {
+    this.chordMode = mode;
+  }
+
+  /** latch: keep the notes ringing until released */
+  setHold(on: boolean) {
+    this.hold = on;
+    if (!on) this.allOff();
   }
 
   setInstrument(i: InstrumentId) {
     this.allOff();
     this.instrument = i;
   }
+
+  /** ping-pong delay controls */
+  setDelay(opts: {
+    mix?: number;
+    feedback?: number;
+    sync?: boolean;
+    division?: DivisionId;
+    time?: number;
+  }) {
+    if (opts.mix !== undefined) this.delayMix = Math.max(0, Math.min(1, opts.mix));
+    if (opts.feedback !== undefined)
+      this.delayFeedback = Math.max(0, Math.min(0.85, opts.feedback));
+    if (opts.sync !== undefined) this.delaySync = opts.sync;
+    if (opts.division) this.delayDivision = opts.division;
+    if (opts.time !== undefined) this.delayTime = opts.time;
+    this.applyDelay();
+  }
+
+  private applyDelay() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.delaySend?.gain.setTargetAtTime(this.delayMix, now, 0.05);
+    this.delayFb?.gain.setTargetAtTime(this.delayFeedback, now, 0.05);
+    const t = this.effectiveDelayTime();
+    this.delayL?.delayTime.setTargetAtTime(t, now, 0.08);
+    this.delayR?.delayTime.setTargetAtTime(t, now, 0.08);
+  }
+
+  /** global tempo in BPM; arp and delay follow it when synced */
+  setTempo(bpm: number) {
+    this.bpm = Math.max(40, Math.min(220, bpm));
+    this.applyDelay();
+    this.syncArpTimer();
+  }
+
+  /**
+   * gesture modulation of the master cutoff.
+   * value 0..1, amount 0..1 (0 = no modulation)
+   */
+  setFilterMod(value: number, amount = this.filterModAmount) {
+    this.filterMod = Math.max(0, Math.min(1, value));
+    this.filterModAmount = Math.max(0, Math.min(1, amount));
+    this.applyEq();
+  }
+
+  private applyEq() {
+    if (!this.eq || !this.ctx) return;
+    const factor =
+      this.filterModAmount > 0
+        ? 1 + this.filterModAmount * (this.filterMod * 5 - 1.5)
+        : 1;
+    const freq = Math.max(60, Math.min(18000, this.eqFreq * Math.max(0.15, factor)));
+    this.eq.type = this.eqType;
+    this.eq.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.06);
+  }
+
 
   /** 0..1 amount of the delay/reverb send */
   setReverb(amount: number) {
