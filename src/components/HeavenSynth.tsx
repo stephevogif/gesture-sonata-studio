@@ -641,7 +641,7 @@ export default function HeavenSynth() {
 
         {/* pannello attivo */}
         {panel === "sound" && (
-          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Suono</h2>
             <div className="flex flex-wrap gap-1.5">
               {INSTRUMENTS.map((it) => (
@@ -658,7 +658,7 @@ export default function HeavenSynth() {
         )}
 
         {panel === "fx" && (
-          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Effetti</h2>
             {(
               [
@@ -690,7 +690,7 @@ export default function HeavenSynth() {
         )}
 
         {panel === "scale" && (
-          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <h2 className="text-sm font-bold">Tonalità e scala</h2>
             <div className="flex flex-wrap gap-1.5">
               {KEYS.map((n, i) => (
@@ -714,7 +714,7 @@ export default function HeavenSynth() {
 
 
         {panel === "loop" && (
-          <section className="mt-3 space-y-3 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold">Loop pedal</h2>
               <span className="text-[11px] font-semibold text-slate-500">
@@ -833,7 +833,7 @@ export default function HeavenSynth() {
         )}
 
         {panel === "help" && (
-          <section className="mt-3 space-y-2 rounded-2xl border border-slate-300 bg-white p-4">
+          <section className="heaven-glass mt-4 space-y-2 p-4 text-white">
             <h2 className="text-sm font-bold">Guida rapida</h2>
             <ol className="space-y-1.5 text-[12px] text-slate-700">
               {STEPS.map((s, i) => (
