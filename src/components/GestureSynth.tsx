@@ -1413,8 +1413,85 @@ export default function GestureSynth() {
               className="mt-3 w-full accent-[var(--primary)]"
             />
           </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Delay mix: {delayMix}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={delayMix}
+              onChange={(e) => setDelayMix(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Delay feedback: {delayFeedback}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={85}
+              step={1}
+              value={delayFeedback}
+              onChange={(e) => setDelayFeedback(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Tempo delay
+            </label>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => setDelaySync(true)}
+                aria-pressed={delaySync}
+                className={delaySync ? "btn-hero" : "btn-ghost"}
+              >
+                Sync
+              </button>
+              <button
+                onClick={() => setDelaySync(false)}
+                aria-pressed={!delaySync}
+                className={!delaySync ? "btn-hero" : "btn-ghost"}
+              >
+                Libero
+              </button>
+            </div>
+            {delaySync && (
+              <select
+                className={`mt-2 ${selectClass}`}
+                value={delayDivision}
+                onChange={(e) => setDelayDivision(e.target.value as DivisionId)}
+              >
+                {DIVISIONS.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Modulazione gesto → filtro: {gestureMod}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={gestureMod}
+              onChange={(e) => setGestureMod(Number(e.target.value))}
+              className="mt-3 w-full accent-[var(--primary)]"
+            />
+          </div>
         </div>
       )}
+
 
       {panel === "calib" && (
         <div className="mt-3 celestial-panel rounded-sm p-4">
