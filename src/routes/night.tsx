@@ -1,5 +1,6 @@
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
+import SkyArrival from "@/components/SkyArrival";
 
 const GestureSynth = lazy(() => import("@/components/GestureSynth"));
 
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/night")({
 function NightPage() {
   return (
     <main className="min-h-screen">
+      <SkyArrival />
       <ClientOnly fallback={<div className="min-h-screen" />}>
         <Suspense fallback={<div className="min-h-screen" />}>
           <GestureSynth />

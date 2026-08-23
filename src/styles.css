@@ -1524,7 +1524,7 @@
 @utility sky-warp-heaven {
   background:
     radial-gradient(circle at 50% 54%, rgba(255, 214, 150, 0.6), transparent 62%),
-    linear-gradient(180deg, #1a2murky, #f7ddb8 100%);
+    linear-gradient(180deg, #7fb3e8, #f7ddb8 100%);
 }
 
 @keyframes sky-warp-in {

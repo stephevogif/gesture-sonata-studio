@@ -1,5 +1,6 @@
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
+import SkyArrival from "@/components/SkyArrival";
 
 const HeavenSynth = lazy(() => import("@/components/HeavenSynth"));
 
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/studio")({
 function StudioPage() {
   return (
     <main className="min-h-screen">
+      <SkyArrival />
       <ClientOnly fallback={<div className="min-h-screen" />}>
         <Suspense fallback={<div className="min-h-screen" />}>
           <HeavenSynth />
