@@ -1250,13 +1250,9 @@ export default function GestureSynth() {
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-28 pt-5">
         {/* header */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-          <button
-            onClick={() => setPanel((p) => (p === "calib" ? null : "calib"))}
-            aria-label="Taratura"
-            className="night-orb-ghost"
-          >
-            <Crosshair className="h-4 w-4" />
-          </button>
+          <Link to="/" aria-label="Torna alla home" className="night-orb-ghost">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
           <div className="min-w-0 text-center">
             <p className="text-[9px] font-medium uppercase tracking-[0.5em] text-white/65">
               Steph Evo&apos;s
@@ -1265,14 +1261,24 @@ export default function GestureSynth() {
               Sky Synth
             </p>
           </div>
-          <button
-            onClick={() => setPanel((p) => (p === "save" ? null : "save"))}
-            aria-label="Progetti"
-            className="night-orb-ghost"
-          >
-            <Save className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPanel((p) => (p === "save" ? null : "save"))}
+              aria-label="Progetti"
+              className="night-orb-ghost"
+            >
+              <Save className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
+              aria-label="Guida Night Sky"
+              className="night-orb-ghost"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </div>
         </header>
+
 
         <h1 className="night-title mt-4 text-center text-[2.4rem] leading-none tracking-[0.14em] sm:text-6xl">
           NIGHT SKY
