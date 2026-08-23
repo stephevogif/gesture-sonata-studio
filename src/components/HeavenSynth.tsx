@@ -13,6 +13,8 @@ import {
   Radio,
   Repeat,
   Settings2,
+  Sparkles,
+
   Square,
   Trash2,
 } from "lucide-react";
@@ -53,14 +55,23 @@ import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import TutorialArt from "@/components/TutorialArt";
 
-type PlayMode = "chords" | "notes" | "theremin";
+type PlayMode = "heavens" | "chords" | "notes" | "theremin";
 type PanelId = null | "sound" | "scale" | "loop" | "help";
 
 type Hud = {
   left: { degree: number | null; chord: string; gesture: string } | null;
   right: { voicing: VoicingId; volume: number; filter: number } | null;
+  heavens: {
+    leftCount: number;
+    rightCount: number;
+    total: number;
+    degree: number | null;
+    label: string;
+    notes: string;
+  } | null;
   fps: number;
 };
+
 
 const ONBOARD_KEY = "sky-studio-onboarded";
 
@@ -124,6 +135,7 @@ export default function HeavenSynth() {
   });
 
   const degreeDeb = useRef(new Debouncer<number | null>(120));
+  const heavensDeb = useRef(new Debouncer<number | null>(150));
   const voicingDeb = useRef(new Debouncer<number>(120));
   const tonalitySw = useRef(new TonalitySwitch(0.3));
   const tiltSm = useRef(new Smoother(0.12));
@@ -131,7 +143,7 @@ export default function HeavenSynth() {
   const pitchSm = useRef(new Smoother(0.2));
 
   // ————— impostazioni —————
-  const [playMode, setPlayMode] = useState<PlayMode>("chords");
+  const [playMode, setPlayMode] = useState<PlayMode>("heavens");
   const [rootPc, setRootPc] = useState(9);
   const [mode, setMode] = useState<ModeId>("major");
   const [tonalityLock, setTonalityLock] = useState<Tonality>("auto");
@@ -139,7 +151,8 @@ export default function HeavenSynth() {
   const [showDebug, setShowDebug] = useState(true);
   const [quantize, setQuantize] = useState(true);
   const [panel, setPanel] = useState<PanelId>(null);
-  const [hud, setHud] = useState<Hud>({ left: null, right: null, fps: 0 });
+  const [hud, setHud] = useState<Hud>({ left: null, right: null, heavens: null, fps: 0 });
+
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
 
@@ -391,10 +404,10 @@ export default function HeavenSynth() {
 
       // ————— espressione (Lato B) —————
       const volume = right ? volSm.current.push(heightToGain(right.height)) : volSm.current.push(0);
-      const tiltR = right ? tiltSm.current.push(right.tilt) : tiltSm.current.value;
-      const cutoff = tiltToCutoff(tiltR);
+      const tiltR = pm === "heavens" ? 0 : right ? tiltSm.current.push(right.tilt) : tiltSm.current.value;
+      const cutoff = pm === "heavens" ? 7000 : tiltToCutoff(tiltR);
       engine.setEq("lowpass", cutoff);
-      const bright = Math.max(0, Math.min(1, 0.3 + tiltR * 0.5 + 0.3));
+      const bright = pm === "heavens" ? 0.6 : Math.max(0, Math.min(1, 0.3 + tiltR * 0.5 + 0.3));
 
       const voicingIdx = right
         ? (voicingDeb.current.push(Math.max(1, Math.min(5, right.count))) ?? 1) - 1
@@ -402,8 +415,41 @@ export default function HeavenSynth() {
       const voicing = (VOICING_BY_FINGERS[voicingIdx] ?? "triad") as VoicingId;
 
       let chord: Chord | null = null;
+      let heavensHud: Hud["heavens"] = null;
 
-      if (pm === "theremin") {
+      if (pm === "heavens") {
+        // 7 HEAVENS: dita totali (sinistra + destra) = grado dell'accordo diatonico
+        const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
+        const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
+        const total = lc + rc;
+        const stable = heavensDeb.current.push(total >= 1 && total <= 7 ? total : null);
+        let deg: number | null = null;
+        if (hands.length && stable) {
+          deg = stable - 1;
+          chord = buildChord({
+            rootPc: root,
+            mode: md,
+            degree: deg,
+            tonality: "auto",
+            voicing: "triad",
+            previous: prevNotesRef.current,
+          });
+          applyNotes(chord.notes, 0.6, bright);
+          prevNotesRef.current = chord.notes;
+          currentRef.current.chord = chord;
+        } else {
+          releaseAll();
+        }
+        heavensHud = {
+          leftCount: lc,
+          rightCount: rc,
+          total,
+          degree: deg,
+          label: chord?.label ?? "—",
+          notes: chord ? chord.notes.map((n) => midiName(n)).join(" · ") : "—",
+        };
+      } else if (pm === "theremin") {
+
         if (left) {
           const steps = modeSteps(md);
           const raw = 48 + left.height * 30;
@@ -483,7 +529,9 @@ export default function HeavenSynth() {
               }
             : null,
           right: right ? { voicing, volume, filter: cutoff } : null,
+          heavens: heavensHud,
           fps,
+
         });
       }
     },
@@ -508,7 +556,7 @@ export default function HeavenSynth() {
     releaseAll();
     engineRef.current?.allOff();
     looperRef.current?.pause();
-    setHud({ left: null, right: null, fps: 0 });
+    setHud({ left: null, right: null, heavens: null, fps: 0 });
   }, [releaseAll, stopCam]);
 
   useEffect(() => () => stop(), [stop]);
@@ -537,7 +585,7 @@ export default function HeavenSynth() {
     return () => window.removeEventListener("keydown", onKey);
   }, [getLooper]);
 
-  const activeDegree = hud.left?.degree ?? null;
+  const activeDegree = playMode === "heavens" ? (hud.heavens?.degree ?? null) : (hud.left?.degree ?? null);
 
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
@@ -572,9 +620,10 @@ export default function HeavenSynth() {
         </header>
 
         {/* modalità */}
-        <div className="mt-3 grid grid-cols-3 gap-1 rounded-full border border-slate-300 bg-white p-1">
+        <div className="mt-3 grid grid-cols-4 gap-1 rounded-full border border-slate-300 bg-white p-1">
           {(
             [
+              ["heavens", "7 Heavens", Sparkles],
               ["chords", "Accordi", Layers],
               ["notes", "Note", Music2],
               ["theremin", "Theremin", Radio],
@@ -584,17 +633,51 @@ export default function HeavenSynth() {
               key={id}
               onClick={() => {
                 releaseAll();
+                heavensDeb.current.reset();
                 setPlayMode(id);
               }}
-              className={`flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-[12px] font-semibold transition ${
+              className={`flex items-center justify-center gap-1 rounded-full px-1.5 py-2 text-[11px] font-semibold transition ${
                 playMode === id ? "bg-sky-700 text-white" : "text-slate-600"
               }`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4 shrink-0" />
               {label}
             </button>
           ))}
         </div>
+
+        {playMode === "heavens" && (
+          <div className="mt-3 rounded-2xl border border-sky-200 bg-white p-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <span>
+                Key: <b className="text-slate-900">{KEYS[rootPc]}</b>
+              </span>
+              <span>
+                Scale: <b className="text-slate-900">{MODES.find((m) => m.id === mode)?.name}</b>
+              </span>
+              <span>
+                Left: <b className="text-slate-900">{hud.heavens?.leftCount ?? 0}</b>
+              </span>
+              <span>
+                Right: <b className="text-slate-900">{hud.heavens?.rightCount ?? 0}</b>
+              </span>
+              <span>
+                Total: <b className="text-slate-900">{hud.heavens?.total ?? 0}</b>
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-3">
+              <span className="text-2xl font-bold text-sky-700">
+                {hud.heavens?.degree != null ? ROMAN[hud.heavens.degree] : "—"}
+              </span>
+              <span className="text-xl font-bold text-slate-900">{hud.heavens?.label ?? "—"}</span>
+              <span className="text-[12px] text-slate-500">{hud.heavens?.notes ?? "—"}</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Dita totali (entrambe le mani) = grado dell&apos;accordo, da 1 a 7. Tonalità e scala restano bloccate.
+            </p>
+          </div>
+        )}
+
 
         {/* striscia della scala */}
         <div className="mt-3 flex justify-between gap-1">
