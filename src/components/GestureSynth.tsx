@@ -1110,6 +1110,7 @@ export default function GestureSynth() {
         {panelBtn("scale", "Scala", KeyboardMusic)}
         {panelBtn("arp", "Arp", Repeat)}
         {panelBtn("calib", "Taratura", Crosshair)}
+        {panelBtn("save", "Progetti", Save)}
 
         {running && (
           <button
