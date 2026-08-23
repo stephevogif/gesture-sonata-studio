@@ -507,7 +507,7 @@ export class GestureSynthEngine {
         const modGain = ctx.createGain();
         modGain.gain.value = freq * 3;
         mod.connect(modGain).connect(carrier.frequency);
-        mod.start(now);
+
         oscs.push(mod);
         ratios.push(2);
         filter.type = "lowpass";
@@ -668,7 +668,7 @@ export class GestureSynthEngine {
       const modGain = ctx.createGain();
       modGain.gain.value = freq * 1.5;
       mod.connect(modGain).connect(carrier.frequency);
-      mod.start(now);
+
       oscs.push(mod);
       ratios.push(3);
       addOsc("triangle", 5, 0.25, 2);
@@ -725,6 +725,7 @@ export class GestureSynthEngine {
     }
     gain.connect(this.master!);
     if (!isBass) gain.connect(this.wet!);
+    if (this.delaySend) gain.connect(this.delaySend);
 
     return {
       oscs,
