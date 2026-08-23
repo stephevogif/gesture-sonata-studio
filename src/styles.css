@@ -759,3 +759,159 @@
   background: linear-gradient(135deg, rgba(120, 180, 255, 0.95), rgba(150, 210, 255, 0.9));
   color: #0a1230;
 }
+
+/* ————— Night Sky redesign: il cielo è lo strumento ————— */
+.night-sky-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  opacity: 0.92;
+  -webkit-mask-image: radial-gradient(115% 85% at 50% 48%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(115% 85% at 50% 48%, #000 55%, transparent 100%);
+}
+
+.night-sky-fade {
+  background:
+    radial-gradient(90% 45% at 50% 0%, rgba(6, 11, 30, 0.85), transparent 60%),
+    radial-gradient(90% 40% at 50% 100%, rgba(4, 8, 22, 0.9), transparent 65%);
+}
+
+@utility night-bar {
+  border-radius: 1.6rem;
+  background: rgba(8, 15, 34, 0.72);
+}
+
+@utility night-orb-ghost {
+  display: inline-flex;
+  height: 2.3rem;
+  width: 2.3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 210, 255, 0.22);
+  background: rgba(10, 18, 40, 0.35);
+  backdrop-filter: blur(8px);
+  color: rgba(240, 246, 255, 0.75);
+  transition: all 0.2s ease;
+  &:hover {
+    color: #fff;
+    border-color: rgba(200, 226, 255, 0.45);
+  }
+}
+
+.night-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 210, 255, 0.22);
+  background: rgba(10, 18, 40, 0.42);
+  backdrop-filter: blur(12px);
+  padding: 0.2rem;
+}
+
+@utility night-seg {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(232, 240, 255, 0.7);
+  transition: all 0.25s ease;
+}
+
+@utility night-seg-on {
+  color: #ffffff;
+  background: rgba(120, 170, 240, 0.18);
+  box-shadow: 0 0 18px rgba(140, 190, 255, 0.28), inset 0 0 0 1px rgba(200, 226, 255, 0.4);
+}
+
+@utility night-switch {
+  display: inline-flex;
+  height: 1.05rem;
+  width: 2rem;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 210, 255, 0.3);
+  background: rgba(10, 18, 40, 0.5);
+  padding: 0 2px;
+  transition: all 0.25s ease;
+  & > span {
+    display: block;
+    height: 0.72rem;
+    width: 0.72rem;
+    border-radius: 999px;
+    background: rgba(235, 243, 255, 0.85);
+    transition: transform 0.25s ease;
+  }
+}
+
+@utility night-switch-on {
+  border-color: rgba(255, 226, 168, 0.8);
+  background: rgba(255, 226, 168, 0.22);
+  & > span {
+    transform: translateX(0.9rem);
+    background: #ffe3ab;
+  }
+}
+
+.night-note-glow {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.night-note-glow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 16rem;
+  width: 16rem;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 220, 160, 0.22), transparent 65%);
+}
+
+@utility night-note {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 4.6rem;
+  line-height: 1;
+  color: #ffe3ab;
+  text-shadow: 0 0 32px rgba(255, 205, 130, 0.65), 0 0 70px rgba(255, 190, 110, 0.3);
+}
+
+@utility night-note-oct {
+  position: relative;
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  letter-spacing: 0.3em;
+  color: rgba(255, 240, 210, 0.8);
+}
+
+@utility night-mini {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(180, 210, 255, 0.18);
+  background: rgba(10, 18, 40, 0.45);
+  backdrop-filter: blur(12px);
+  padding: 0.7rem 0.85rem;
+  transition: opacity 0.3s ease;
+}
+
+@utility night-mini-label {
+  display: block;
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(240, 246, 255, 0.7);
+}
