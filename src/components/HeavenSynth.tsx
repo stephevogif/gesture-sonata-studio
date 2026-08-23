@@ -583,7 +583,7 @@ export default function HeavenSynth() {
     return () => window.removeEventListener("keydown", onKey);
   }, [getLooper]);
 
-  const activeDegree = hud.left?.degree ?? null;
+  const activeDegree = playMode === "heavens" ? (hud.heavens?.degree ?? null) : (hud.left?.degree ?? null);
 
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
