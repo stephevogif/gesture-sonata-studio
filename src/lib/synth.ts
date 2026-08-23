@@ -959,6 +959,15 @@ export class GestureSynthEngine {
     this.applyEq();
   }
 
+  /** master filter resonance (Q) */
+  setResonance(q: number) {
+    this.eqQ = Math.max(0.1, Math.min(24, q));
+    if (this.eq && this.ctx) {
+      this.eq.Q.setTargetAtTime(this.eqQ, this.ctx.currentTime, 0.05);
+    }
+  }
+
+
   setScale(steps: number[], rootPc: number) {
     this.scale = steps;
     this.rootPc = rootPc;
