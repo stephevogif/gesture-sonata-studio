@@ -208,78 +208,85 @@ export default function HeavenSynth() {
 
   /* ————— rendering ————— */
 
-  const drawSky = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number, glow: number) => {
-    const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, "#f7fbff");
-    sky.addColorStop(0.55, "#e3eefb");
-    sky.addColorStop(1, "#d3e2f5");
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, h);
-
-    if (cloudsRef.current.length === 0) {
-      cloudsRef.current = Array.from({ length: 16 }, () => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        r: h * (0.1 + Math.random() * 0.3),
-        v: 0.08 + Math.random() * 0.35,
-        a: 0.08 + Math.random() * 0.22,
-      }));
-    }
-
-    const t = performance.now() / 1000;
-
-    // ————— sole: tre cerchi concentrici con respiro sfasato —————
-    if (glow > 0.02) {
-      sunRef.current.p += (0.0004 + glow * 0.0016);
-      if (sunRef.current.p > 1.25) {
-        sunRef.current.p = -0.25;
-        sunRef.current.y = 0.18 + Math.random() * 0.34;
+  const drawSky = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number, glow: number, fade: number, dt: number) => {
+      // gradiente cielo (cache: ricreato solo al cambio dimensione)
+      const cache = skyCache.current;
+      if (cache.w !== w || cache.h !== h || !cache.grad) {
+        const sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, "#1e63c8");
+        sky.addColorStop(0.35, "#4f92e0");
+        sky.addColorStop(0.7, "#a8cef4");
+        sky.addColorStop(1, "#eaf5ff");
+        cache.grad = sky;
+        cache.w = w;
+        cache.h = h;
+        cloudsRef.current = [];
       }
-      const sx = sunRef.current.p * w;
-      const sy = sunRef.current.y * h;
-      const base = Math.min(w, h) * 0.12;
-      const layers = [
-        { mul: 1, alpha: 0.5, phase: 0 },
-        { mul: 1.9, alpha: 0.22, phase: 0.7 },
-        { mul: 3.1, alpha: 0.1, phase: 1.4 },
-      ];
+      ctx.fillStyle = cache.grad!;
+      ctx.fillRect(0, 0, w, h);
+
+      // sprite riusabili (nessun gradiente creato per frame)
+      if (!cloudSprite.current) cloudSprite.current = makeBlobSprite(256, "255,255,255");
+      if (!sunSprite.current) sunSprite.current = makeSunSprite(256);
+
+      if (cloudsRef.current.length === 0) {
+        cloudsRef.current = Array.from({ length: 14 }, () => ({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: h * (0.12 + Math.random() * 0.3),
+          v: 6 + Math.random() * 22,
+          a: 0.3 + Math.random() * 0.45,
+        }));
+      }
+
+      if (fade <= 0.004) return;
+
+      const t = performance.now() / 1000;
+      const sun = sunSprite.current!;
+      const cloud = cloudSprite.current!;
+
+      // ————— sole: tre cerchi concentrici con respiro sfasato —————
+      const s = sunRef.current;
+      s.p += (0.012 + glow * 0.05) * dt;
+      if (s.p > 1.3) {
+        s.p = -0.3;
+        s.y = 0.16 + Math.random() * 0.34;
+      }
+      const sx = s.p * w;
+      const sy = s.y * h;
+      const base = Math.min(w, h) * 0.14;
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      for (const l of layers) {
-        const breath = 1 + Math.sin(t * 1.1 + l.phase) * (0.08 + glow * 0.22);
-        const r = base * l.mul * breath;
-        const a = l.alpha * (0.35 + glow * 0.9) * (0.75 + Math.sin(t * 1.1 + l.phase) * 0.25);
-        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
-        g.addColorStop(0, `rgba(255,247,220,${a})`);
-        g.addColorStop(0.55, `rgba(255,224,160,${a * 0.45})`);
-        g.addColorStop(1, "rgba(255,214,140,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(sx, sy, r, 0, Math.PI * 2);
-        ctx.fill();
+      for (let i = 0; i < 3; i++) {
+        const phase = i * 0.7;
+        const osc = Math.sin(t * 1.1 + phase);
+        const r = base * (1 + i * 0.95) * (1 + osc * (0.06 + glow * 0.18));
+        const a = [0.85, 0.4, 0.2][i]! * fade * (0.55 + glow * 0.7) * (0.8 + osc * 0.2);
+        ctx.globalAlpha = Math.min(1, a);
+        ctx.drawImage(sun, sx - r, sy - r, r * 2, r * 2);
       }
       ctx.restore();
-    }
 
-    for (const c of cloudsRef.current) {
-      c.x += c.v * (1 + glow * 1.6);
-      c.y += Math.sin(t * 0.25 + c.r) * 0.08;
-      if (c.x - c.r > w) {
-        c.x = -c.r;
-        c.y = Math.random() * h;
-        c.r = h * (0.1 + Math.random() * 0.3);
-        c.v = 0.08 + Math.random() * 0.35;
-        c.a = 0.08 + Math.random() * 0.22;
+      // ————— nuvole —————
+      ctx.save();
+      for (const c of cloudsRef.current) {
+        c.x += c.v * (1 + glow * 1.4) * dt;
+        if (c.x - c.r > w) {
+          c.x = -c.r;
+          c.y = Math.random() * h;
+          c.r = h * (0.12 + Math.random() * 0.3);
+          c.v = 6 + Math.random() * 22;
+          c.a = 0.3 + Math.random() * 0.45;
+        }
+        ctx.globalAlpha = Math.min(1, (c.a + glow * 0.25) * fade);
+        ctx.drawImage(cloud, c.x - c.r, c.y - c.r * 0.7, c.r * 2, c.r * 1.4);
       }
-      const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
-      g.addColorStop(0, `rgba(255,255,255,${c.a + glow * 0.2})`);
-      g.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }, []);
+      ctx.restore();
+    },
+    [],
+  );
+
 
 
   const drawHand = useCallback(
