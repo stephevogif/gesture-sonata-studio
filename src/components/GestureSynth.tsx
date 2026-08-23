@@ -1028,6 +1028,55 @@ export default function GestureSynth() {
       }
       ctx.restore();
 
+      // stelle musicali + costellazione della frase appena suonata
+      {
+        const ns = noteStarsRef.current;
+        const LIFE = 5200;
+        while (ns.length && now - ns[0]!.born > LIFE) ns.shift();
+        if (ns.length) {
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          // linee della costellazione
+          ctx.lineWidth = 0.9;
+          for (let i = 1; i < ns.length; i++) {
+            const a = ns[i - 1]!;
+            const b = ns[i]!;
+            const al = Math.max(0, 1 - (now - b.born) / LIFE) * 0.45;
+            if (al < 0.02) continue;
+            ctx.strokeStyle = `rgba(190, 215, 255, ${al})`;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+          for (let i = 0; i < ns.length; i++) {
+            const s = ns[i]!;
+            const age = (now - s.born) / LIFE;
+            const pop = Math.min(1, (now - s.born) / 220);
+            const al = Math.max(0, 1 - age) * (0.35 + 0.65 * pop);
+            const r = (5 + 9 * pop) * (1 + 0.35 * Math.sin(now * 0.004 + s.seed * 9));
+            const col = s.warm ? "255, 226, 168" : "205, 230, 255";
+            const g2 = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 3);
+            g2.addColorStop(0, `rgba(255, 253, 246, ${al})`);
+            g2.addColorStop(0.3, `rgba(${col}, ${al * 0.5})`);
+            g2.addColorStop(1, `rgba(${col}, 0)`);
+            ctx.fillStyle = g2;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, r * 3, 0, Math.PI * 2);
+            ctx.fill();
+            // croce di luce
+            ctx.strokeStyle = `rgba(255, 250, 240, ${al * 0.75})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(s.x - r * 1.8, s.y);
+            ctx.lineTo(s.x + r * 1.8, s.y);
+            ctx.moveTo(s.x, s.y - r * 1.8);
+            ctx.lineTo(s.x, s.y + r * 1.8);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
 
       voiceIdsRef.current.forEach((id) => {
         if (!active.has(id)) {
@@ -1037,6 +1086,16 @@ export default function GestureSynth() {
       });
       voiceIdsRef.current = active;
       setHands(next);
+      if (next.length) {
+        const n = next[0]!.note;
+        if (n !== curNoteRef.current) {
+          curNoteRef.current = n;
+          noteAtRef.current = now;
+        }
+        noteAtRef.current = now;
+      }
+      setCurNote(now - noteAtRef.current < 1800 ? curNoteRef.current : "");
+
 
     }
     rafRef.current = requestAnimationFrame(loop);
