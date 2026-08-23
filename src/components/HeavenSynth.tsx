@@ -133,6 +133,7 @@ export default function HeavenSynth() {
   });
 
   const degreeDeb = useRef(new Debouncer<number | null>(120));
+  const heavensDeb = useRef(new Debouncer<number | null>(150));
   const voicingDeb = useRef(new Debouncer<number>(120));
   const tonalitySw = useRef(new TonalitySwitch(0.3));
   const tiltSm = useRef(new Smoother(0.12));
@@ -140,7 +141,7 @@ export default function HeavenSynth() {
   const pitchSm = useRef(new Smoother(0.2));
 
   // ————— impostazioni —————
-  const [playMode, setPlayMode] = useState<PlayMode>("chords");
+  const [playMode, setPlayMode] = useState<PlayMode>("heavens");
   const [rootPc, setRootPc] = useState(9);
   const [mode, setMode] = useState<ModeId>("major");
   const [tonalityLock, setTonalityLock] = useState<Tonality>("auto");
@@ -148,7 +149,8 @@ export default function HeavenSynth() {
   const [showDebug, setShowDebug] = useState(true);
   const [quantize, setQuantize] = useState(true);
   const [panel, setPanel] = useState<PanelId>(null);
-  const [hud, setHud] = useState<Hud>({ left: null, right: null, fps: 0 });
+  const [hud, setHud] = useState<Hud>({ left: null, right: null, heavens: null, fps: 0 });
+
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
 
