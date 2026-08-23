@@ -847,24 +847,42 @@ export default function HeavenSynth() {
       </div>
 
       {/* barra inferiore */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-300 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-around px-2 py-2">
+      <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
+        <div className="heaven-glass mx-auto flex max-w-md items-center justify-between px-4 py-2">
           {(
             [
-              ["sound", "Suono", Settings2],
-              ["fx", "Effetti", Sliders],
-
-              ["scale", "Scala", Music2],
-              ["loop", "Loop", Repeat],
-              ["help", "Guida", HelpCircle],
+              ["sound", "Sound", Settings2],
+              ["scale", "Scale", Music2],
             ] as const
           ).map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setPanel((p) => (p === id ? null : id))}
-              className={`flex min-w-16 flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold ${
-                panel === id ? "bg-sky-700 text-white" : "text-slate-600"
-              }`}
+              className={`heaven-nav ${panel === id ? "heaven-nav-on" : ""}`}
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+            </button>
+          ))}
+
+          <button
+            onClick={running ? stop : start}
+            aria-label={running ? "Stop" : "Play"}
+            className={`heaven-play ${running ? "heaven-play-on" : ""}`}
+          >
+            {running ? <Square className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+          </button>
+
+          {(
+            [
+              ["loop", "Loop", Repeat],
+              ["fx", "FX", Sliders],
+            ] as const
+          ).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => setPanel((p) => (p === id ? null : id))}
+              className={`heaven-nav ${panel === id ? "heaven-nav-on" : ""}`}
             >
               <Icon className="h-5 w-5" />
               {label}
@@ -872,6 +890,7 @@ export default function HeavenSynth() {
           ))}
         </div>
       </nav>
+
 
       {/* onboarding */}
       {showOnboard && (
