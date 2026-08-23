@@ -714,7 +714,7 @@ export default function GestureSynth() {
       setStatus("Impossibile accedere alla fotocamera o all'audio.");
       setRunning(false);
     }
-  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, reverb, eqType, eqFreq, loop]);
+  }, [instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, reverb, eqType, eqFreq, loop]);
 
   const pickInstrument = (id: InstrumentId) => {
     setInstrument(id);
