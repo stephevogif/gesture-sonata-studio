@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { SKY_WARP_KEY } from "./SkyArrival";
 
 type Phase = "intro" | "home";
 
@@ -23,6 +24,23 @@ function Sparkle({ tone }: { tone: "night" | "heaven" }) {
     </span>
   );
 }
+
+function TapHand({ delay }: { delay: string }) {
+  return (
+    <span className="sky-hand sky-hand-portal" style={{ animationDelay: delay }} aria-hidden>
+      <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7">
+        <path d="M12 3l3 3M12 3L9 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path
+          d="M10 21h4.5a3 3 0 0 0 3-3v-4.2c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3V12c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3V9.2c0-.7-.6-1.3-1.3-1.3S10 8.5 10 9.2v6l-1.4-1.4a1.3 1.3 0 0 0-1.9 1.8L10 21z"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
 
 export default function SkyHome() {
   const navigate = useNavigate();
@@ -54,16 +72,24 @@ export default function SkyHome() {
 
   const enter = (which: "night" | "heaven") => {
     if (leaving) return;
-    if (typeof window !== "undefined") localStorage.setItem(HINT_KEY, "1");
+    if (typeof window !== "undefined") {
+      localStorage.setItem(HINT_KEY, "1");
+      try {
+        sessionStorage.setItem(SKY_WARP_KEY, which);
+      } catch {
+        /* storage non disponibile */
+      }
+    }
     setShowHint(false);
     setLeaving(which);
     window.setTimeout(() => {
       void navigate({ to: which === "night" ? "/night" : "/studio" });
-    }, 520);
+    }, 720);
   };
 
   return (
     <div className={`sky-home ${leaving ? `sky-home-leaving sky-leave-${leaving}` : ""}`}>
+
       {/* background: un unico viaggio verticale notte → alba → nuvole */}
       <div className="sky-home-bg" aria-hidden />
       <div className="sky-home-nebula" aria-hidden />
@@ -98,13 +124,15 @@ export default function SkyHome() {
           <>
             <p className="sky-choose">CHOOSE YOUR SKY</p>
 
-            <div className="mt-6 flex flex-1 flex-col items-center justify-center gap-10 md:flex-row md:gap-8">
+            <div className="sky-portals">
               {/* NIGHT SKY */}
               <button
                 type="button"
                 onClick={() => enter("night")}
                 aria-label="Entra in Night Sky"
-                className="sky-portal sky-portal-night sky-reveal-1"
+                className={`sky-portal sky-portal-night sky-reveal-1 ${
+                  leaving === "night" ? "sky-portal-chosen" : ""
+                } ${leaving === "heaven" ? "sky-portal-dimmed" : ""}`}
               >
                 <span className="sky-aura sky-aura-night" aria-hidden />
                 <span className="sky-orbit sky-orbit-night" aria-hidden />
@@ -121,6 +149,7 @@ export default function SkyHome() {
                   </span>
                   <span className="sky-portal-meta sky-meta-night">TOUCH · FREE · DETECT</span>
                 </span>
+                {showHint && <TapHand delay="0s" />}
               </button>
 
               {/* SEVEN HEAVENS */}
@@ -128,7 +157,9 @@ export default function SkyHome() {
                 type="button"
                 onClick={() => enter("heaven")}
                 aria-label="Entra in Seven Heavens"
-                className="sky-portal sky-portal-heaven sky-reveal-2"
+                className={`sky-portal sky-portal-heaven sky-reveal-2 ${
+                  leaving === "heaven" ? "sky-portal-chosen" : ""
+                } ${leaving === "night" ? "sky-portal-dimmed" : ""}`}
               >
                 <span className="sky-aura sky-aura-heaven" aria-hidden />
                 <span className="sky-orbit sky-orbit-heaven" aria-hidden />
@@ -147,34 +178,20 @@ export default function SkyHome() {
                     I · II · III · IV · V · VI · VII
                   </span>
                 </span>
+                {showHint && <TapHand delay="2.6s" />}
               </button>
             </div>
 
             <div className="sky-hint-wrap sky-reveal-3">
-              {showHint && (
-                <span className="sky-hand" aria-hidden>
-                  <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7">
-                    <path
-                      d="M12 3l3 3M12 3L9 6"
-                      stroke="currentColor"
-                      strokeWidth="1.3"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M10 21h4.5a3 3 0 0 0 3-3v-4.2c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3V12c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3V9.2c0-.7-.6-1.3-1.3-1.3S10 8.5 10 9.2v6l-1.4-1.4a1.3 1.3 0 0 0-1.9 1.8L10 21z"
-                      stroke="currentColor"
-                      strokeWidth="1.2"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              )}
               <p className="sky-tap">TAP A SKY TO ENTER</p>
               <p className="sky-foot">TWO SKIES. ONE SOUND.</p>
             </div>
           </>
         )}
       </div>
+
+      {leaving && <div className={`sky-warp sky-warp-${leaving}`} aria-hidden />}
     </div>
   );
 }
+

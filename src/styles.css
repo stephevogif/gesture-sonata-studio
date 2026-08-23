@@ -918,6 +918,8 @@
 
 /* ==================== SKY HOME (choose your sky) ==================== */
 
+@source inline("sky-warp-night sky-warp-heaven sky-arrive-night sky-arrive-heaven sky-leave-night sky-leave-heaven");
+
 @utility sky-home {
   position: relative;
   min-height: 100svh;
@@ -928,7 +930,7 @@
 }
 
 @utility sky-home-leaving {
-  opacity: 0;
+  pointer-events: none;
 }
 
 @utility sky-home-bg {
@@ -1311,11 +1313,11 @@
 @keyframes sky-breathe {
   0%,
   100% {
-    transform: scale(1);
-    opacity: 0.88;
+    transform: scale(0.97) rotate(0deg);
+    opacity: 0.82;
   }
   50% {
-    transform: scale(1.06);
+    transform: scale(1.1) rotate(4deg);
     opacity: 1;
   }
 }
@@ -1412,13 +1414,13 @@
 @utility sky-tap {
   font-size: 0.66rem;
   letter-spacing: 0.36em;
-  color: rgba(255, 248, 235, 0.7);
+  color: rgba(30, 26, 46, 0.72);
 }
 
 @utility sky-foot {
   font-size: 0.6rem;
   letter-spacing: 0.34em;
-  color: rgba(255, 240, 215, 0.45);
+  color: rgba(40, 32, 46, 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1431,5 +1433,148 @@
   .sky-home-clouds,
   .sky-home-stars span {
     animation: none !important;
+  }
+}
+
+
+/* ---- layout portali (mobile / tablet / desktop) ---- */
+
+@utility sky-portals {
+  margin-top: 1.5rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.6rem;
+}
+
+@media (min-width: 768px) {
+  .sky-portals {
+    flex-direction: row;
+    gap: clamp(2rem, 6vw, 5rem);
+  }
+  .sky-portal {
+    width: min(38vw, 360px);
+  }
+}
+
+@media (min-width: 1280px) {
+  .sky-portal {
+    width: 400px;
+  }
+}
+
+@utility sky-portal-chosen {
+  animation: sky-chosen 0.72s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  z-index: 3;
+}
+
+@utility sky-portal-dimmed {
+  animation: sky-dimmed 0.5s ease forwards;
+}
+
+@keyframes sky-chosen {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes sky-dimmed {
+  to {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* ---- mano hint dentro i portali ---- */
+
+@utility sky-hand-portal {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  z-index: 4;
+  margin-left: -0.9rem;
+  animation: sky-tap-hint 5.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(255, 240, 210, 0.55));
+}
+
+/* ---- transizione cinematografica home -> strumento ---- */
+
+@utility sky-warp {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  animation: sky-warp-in 0.72s ease forwards;
+}
+
+@utility sky-warp-night {
+  background:
+    radial-gradient(circle at 50% 46%, rgba(70, 120, 235, 0.55), transparent 62%),
+    linear-gradient(180deg, #04060f, #0a1230 60%, #060a1c);
+}
+
+@utility sky-warp-heaven {
+  background:
+    radial-gradient(circle at 50% 54%, rgba(255, 214, 150, 0.6), transparent 62%),
+    linear-gradient(180deg, #7fb3e8, #f7ddb8 100%);
+}
+
+@keyframes sky-warp-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.14);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@utility sky-arrive {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 1s ease, transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: scale(1);
+}
+
+@utility sky-arrive-night {
+  background:
+    radial-gradient(circle at 50% 46%, rgba(70, 120, 235, 0.55), transparent 62%),
+    linear-gradient(180deg, #04060f, #0a1230 60%, #060a1c);
+}
+
+@utility sky-arrive-heaven {
+  background:
+    radial-gradient(circle at 50% 54%, rgba(255, 214, 150, 0.6), transparent 62%),
+    linear-gradient(180deg, #7fb3e8, #f7ddb8 100%);
+}
+
+@utility sky-arrive-out {
+  opacity: 0;
+  transform: scale(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-hand-portal,
+  .sky-portal-chosen,
+  .sky-portal-dimmed,
+  .sky-warp {
+    animation: none !important;
+  }
+  .sky-arrive {
+    transition: opacity 0.3s ease !important;
   }
 }
