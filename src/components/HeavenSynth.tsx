@@ -34,14 +34,13 @@ import {
   type ModeId,
 } from "@/lib/theory";
 import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gestures";
-import { Looper, STEPS_PER_BAR, emptyTracks, type LoopTrack } from "@/lib/looper";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import TutorialArt from "@/components/TutorialArt";
 import { detectKey } from "@/lib/keyDetect";
 
 
 
-type PanelId = null | "sound" | "fx" | "scale" | "loop" | "help";
+type PanelId = null | "sound" | "fx" | "scale" | "arp" | "help";
 
 type Hud = {
   volume: number;
@@ -67,8 +66,8 @@ const STEPS = [
   { a: "height" as const, t: "Lato A = filtro", d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi." },
   { a: "height" as const, t: "Lato B = volume", d: "Alza o abbassa la mano B per controllare il volume." },
   { a: "settings" as const, t: "Suono ed effetti", d: "Strumento nel pannello Suono; riverbero, delay, risonanza e cutoff nel pannello Effetti." },
-  { a: "loop" as const, t: "Loop pedal", d: "Registra fino a 4 tracce con click di preconteggio: si avviano in automatico." },
-  { a: "keys" as const, t: "Scorciatoie", d: "Spazio = play/pausa, 1–4 traccia, M mute, S solo, Canc svuota, Shift+Canc svuota tutto." },
+  { a: "loop" as const, t: "Arpeggiatore", d: "9 dita accendono l'arp, 8 lo spengono; nel pannello Arp scegli tempo, divisione e pattern." },
+  { a: "keys" as const, t: "Hold", d: "10 dita tengono l'accordo: si libera appena scegli un altro grado (A = arp, H = hold)." },
 ];
 
 
@@ -1107,7 +1106,7 @@ export default function HeavenSynth() {
 
           {(
             [
-              ["loop", "Loop", Repeat],
+              ["arp", "Arp", Repeat],
               ["fx", "FX", Sliders],
             ] as const
           ).map(([id, label, Icon]) => (
