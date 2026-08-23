@@ -465,7 +465,7 @@ export default function HeavenSynth() {
             <ArrowLeft className="h-4 w-4" /> Sky Synth
           </Link>
           <h1 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">
-            Steph Evaux <span className="text-sky-700">Heaven Sent</span>
+            STEPH EVO&apos;S <span className="text-sky-700">HEAVEN SYNTH</span>
           </h1>
           <button
             onClick={running ? stop : start}

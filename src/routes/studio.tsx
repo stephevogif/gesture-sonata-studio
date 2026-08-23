@@ -6,13 +6,13 @@ const HeavenSynth = lazy(() => import("@/components/HeavenSynth"));
 export const Route = createFileRoute("/studio")({
   head: () => ({
     meta: [
-      { title: "Heaven Synth — Steph Evo's Sky Synth" },
+      { title: "STEPH EVO'S HEAVEN SYNTH" },
       {
         name: "description",
         content:
-          "Heaven Synth: suona accordi e gradi di scala con il Lato A e controlla volume, timbro e tipo di accordo con il Lato B.",
+          "STEPH EVO'S HEAVEN SYNTH: suona accordi e gradi di scala con il Lato A e controlla volume, timbro e tipo di accordo con il Lato B.",
       },
-      { property: "og:title", content: "Heaven Synth — Steph Evo's Sky Synth" },
+      { property: "og:title", content: "STEPH EVO'S HEAVEN SYNTH" },
       {
         property: "og:description",
         content: "Modalità accordi: gradi di scala, maggiore/minore e espressione in tempo reale.",
