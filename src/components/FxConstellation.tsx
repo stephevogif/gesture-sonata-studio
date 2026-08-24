@@ -298,10 +298,10 @@ export default function FxConstellation({ coreLabel, nodes, dark = true }: Props
                 fill={`rgba(${node.rgb},1)`}
                 pointerEvents="none"
               />
-              <text x={x} y={y - 22} className="fxc-label" textAnchor="middle" pointerEvents="none">
+              <text x={x} y={Math.max(12, y - 22)} className="fxc-label" textAnchor="middle" pointerEvents="none">
                 {node.label}
               </text>
-              <text x={x} y={y + 30} className="fxc-value" textAnchor="middle" pointerEvents="none">
+              <text x={x} y={Math.min(VIEW - 4, y + 30)} className="fxc-value" textAnchor="middle" pointerEvents="none">
                 {node.main.format(node.main.value)}
               </text>
             </g>
