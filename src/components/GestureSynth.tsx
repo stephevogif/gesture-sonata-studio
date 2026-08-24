@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import TutorialArt from "@/components/TutorialArt";
+import FxConstellation, { type FxNodeSpec } from "@/components/FxConstellation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -94,6 +95,9 @@ type PresetData = {
   eqType: "lowpass" | "highpass";
   eqFreq: number;
   gestureMod: number;
+  chorusMix?: number;
+  chorusRate?: number;
+  chorusDepth?: number;
 };
 
 type Preset = { id: string; name: string; savedAt: number; data: PresetData };
@@ -296,6 +300,9 @@ export default function GestureSynth() {
   const [delayDivision, setDelayDivision] = useState<DivisionId>("1/8");
   const [eqType, setEqType] = useState<"lowpass" | "highpass">("lowpass");
   const [eqFreq, setEqFreq] = useState(1200);
+  const [chorusMix, setChorusMix] = useState(0);
+  const [chorusRate, setChorusRate] = useState(0.5);
+  const [chorusDepth, setChorusDepth] = useState(50);
   const [gestureMod, setGestureMod] = useState(40);
 
 
@@ -416,6 +423,9 @@ export default function GestureSynth() {
     reverb,
     delayMix,
     delayFeedback,
+    chorusMix,
+    chorusRate,
+    chorusDepth,
     delaySync,
     delayDivision,
     eqType,
@@ -481,6 +491,9 @@ export default function GestureSynth() {
     setDelayDivision(d.delayDivision);
     setEqType(d.eqType);
     setEqFreq(d.eqFreq);
+    setChorusMix(d.chorusMix ?? 0);
+    setChorusRate(d.chorusRate ?? 0.5);
+    setChorusDepth(d.chorusDepth ?? 50);
     setGestureMod(d.gestureMod);
     setPresetName(p.name);
     setPresetMsg(`"${p.name}" caricato`);
@@ -617,6 +630,14 @@ export default function GestureSynth() {
 
   useEffect(() => {
     engineRef.current?.setEq(eqType, eqFreq);
+  }, [eqType, eqFreq]);
+
+  useEffect(() => {
+    engineRef.current?.setChorus({
+      mix: chorusMix / 100,
+      rate: chorusRate,
+      depth: chorusDepth / 100,
+    });
   }, [eqType, eqFreq]);
 
 
@@ -1141,6 +1162,7 @@ export default function GestureSynth() {
       engine.bpm = bpm;
       engine.delayMix = delayMix / 100;
       engine.delayFeedback = delayFeedback / 100;
+      engine.setChorus({ mix: chorusMix / 100, rate: chorusRate, depth: chorusDepth / 100 });
       engine.delaySync = delaySync;
       engine.delayDivision = delayDivision;
       engine.chordMode = chord;
@@ -1184,7 +1206,7 @@ export default function GestureSynth() {
     } finally {
       startingRef.current = false;
     }
-  }, [running, instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, arpSync, arpDivision, bpm, chord, hold, delayMix, delayFeedback, delaySync, delayDivision, gestureMod, reverb, eqType, eqFreq, loop]);
+  }, [running, instrument, scale, rootPc, arpLeft, arpRight, arpRate, arpPattern, arpGate, arpOctaves, arpSwing, arpSync, arpDivision, bpm, chord, hold, delayMix, delayFeedback, delaySync, delayDivision, gestureMod, reverb, eqType, eqFreq, chorusMix, chorusRate, chorusDepth, loop]);
 
   const pickInstrument = (id: InstrumentId) => {
     setInstrument(id);
