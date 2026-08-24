@@ -9,7 +9,7 @@
  * so the audio engine stays the only owner of the DSP graph.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { FX_CATALOG, fxDef, type FxParamDef } from "@/core/audio/fxCatalog";
 import { GATE_PRESETS, gateGlyph, type GatePresetId } from "@/core/audio/gatePresets";
@@ -118,28 +118,65 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
     };
   }, []);
 
+  /**
+   * Dragging is coalesced into one update per animation frame: pointermove can
+   * fire far faster than the display, and every update reconciles React plus
+   * the audio graph. `stateRef` keeps the frame callback on the latest mix.
+   */
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const frameRef = useRef(0);
+  const pendingRef = useRef<{ x: number; y: number } | null>(null);
+
+  const applyPending = useCallback(() => {
+    frameRef.current = 0;
+    const drag = dragRef.current;
+    const point = pendingRef.current;
+    pendingRef.current = null;
+    if (!drag || !point) return;
+    const current = stateRef.current;
+    if (drag.kind === "layer") {
+      const dist = Math.hypot(point.x - C, point.y - C);
+      const gain = clamp01((dist - MIN_R) / (MAX_R - MIN_R));
+      const layer = current.instruments.find((l) => l.id === drag.layerId);
+      const next = Number(gain.toFixed(2));
+      if (!layer || layer.gain === next) return;
+      onChange(patchLayer(current, drag.layerId, { gain: next }));
+      return;
+    }
+    const dist = Math.hypot(point.x - drag.ox, point.y - drag.oy);
+    const amount = Number(clamp01((dist - FX_MIN) / (FX_MAX - FX_MIN)).toFixed(2));
+    const fx = fxListOf(current, drag.layerId).find((f) => f.id === drag.fxId);
+    if (!fx || fx.amount === amount) return;
+    onChange(patchFx(current, drag.layerId, drag.fxId, { amount }));
+  }, [onChange]);
+
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag) return;
+      if (!dragRef.current) return;
       e.preventDefault();
-      const { x, y } = toSvg(e.clientX, e.clientY);
-      if (drag.kind === "layer") {
-        const dist = Math.hypot(x - C, y - C);
-        const gain = clamp01((dist - MIN_R) / (MAX_R - MIN_R));
-        onChange(patchLayer(state, drag.layerId, { gain: Number(gain.toFixed(3)) }));
-        return;
-      }
-      const dist = Math.hypot(x - drag.ox, y - drag.oy);
-      const amount = clamp01((dist - FX_MIN) / (FX_MAX - FX_MIN));
-      onChange(patchFx(state, drag.layerId, drag.fxId, { amount: Number(amount.toFixed(3)) }));
+      pendingRef.current = toSvg(e.clientX, e.clientY);
+      if (!frameRef.current) frameRef.current = requestAnimationFrame(applyPending);
     },
-    [onChange, state, toSvg],
+    [applyPending, toSvg],
   );
 
   const endDrag = useCallback(() => {
     dragRef.current = null;
+    pendingRef.current = null;
+    if (frameRef.current) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+    }
   }, []);
+
+  useEffect(
+    () => () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    },
+    [],
+  );
+
 
   const anchor = selectedLayer
     ? geometry.find((g) => g.layer.id === selectedLayer.id)
@@ -213,6 +250,15 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                   dragRef.current = { kind: "layer", layerId: layer.id };
                 }}
               />
+              {/* halo drawn as a plain circle: SVG filters re-rasterise on every
+                  drag frame and stall low-end phones */}
+              <circle
+                cx={x}
+                cy={y}
+                r={20 + layer.gain * 6}
+                fill={`rgba(${rgb},${0.05 + layer.gain * 0.12})`}
+                pointerEvents="none"
+              />
               <circle
                 cx={x}
                 cy={y}
@@ -221,8 +267,8 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                 stroke={`rgba(${rgb},${0.5 + layer.gain * 0.5})`}
                 strokeWidth={on ? 2 : 1}
                 pointerEvents="none"
-                style={{ filter: `drop-shadow(0 0 ${3 + layer.gain * 12}px rgba(${rgb},0.7))` }}
               />
+
               <text
                 x={x}
                 y={Math.max(12, y - 23)}

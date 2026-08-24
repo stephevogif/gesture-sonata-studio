@@ -68,14 +68,24 @@ function crossfade(ctx: AudioContext, s: Shell, amount: number, keepDry = true) 
   s.dry.gain.setTargetAtTime(keepDry ? 1 - a * 0.85 : 1 - a, now, SMOOTH);
 }
 
+/**
+ * Waveshaper curves are expensive to build, so they are cached per 5% step:
+ * dragging the Drive knob reuses a curve instead of allocating one per frame.
+ */
+const SAT_CACHE = new Map<number, Float32Array<ArrayBuffer>>();
+
 function saturation(amount: number): Float32Array<ArrayBuffer> {
+  const step = Math.round(clamp(amount, 0, 1) * 20);
+  const cached = SAT_CACHE.get(step);
+  if (cached) return cached;
   const size = 1024;
   const curve = new Float32Array(new ArrayBuffer(size * 4));
-  const k = clamp(amount, 0, 1) * 120;
+  const k = (step / 20) * 120;
   for (let i = 0; i < size; i++) {
     const x = (i * 2) / size - 1;
     curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x));
   }
+  SAT_CACHE.set(step, curve);
   return curve;
 }
 
@@ -435,6 +445,8 @@ export function createFxUnit(ctx: AudioContext, type: FxTypeId): FxUnit {
  */
 export class FxChain {
   private units = new Map<string, FxUnit>();
+  /** last applied spec per unit: lets `sync` skip untouched AudioParams */
+  private applied = new Map<string, FxSpec>();
   private order: string[] = [];
   private bpm = 100;
 
@@ -447,29 +459,43 @@ export class FxChain {
   }
 
   sync(specs: FxSpec[], bpm = this.bpm) {
+    const tempoChanged = bpm !== this.bpm;
     this.bpm = bpm;
     const ids = specs.map((s) => s.id);
     for (const [id, unit] of [...this.units]) {
       if (!ids.includes(id)) {
         unit.dispose();
         this.units.delete(id);
+        this.applied.delete(id);
       }
     }
     for (const spec of specs) {
       let unit = this.units.get(spec.id);
+      let fresh = false;
       if (unit && unit.type !== spec.type) {
         unit.dispose();
         this.units.delete(spec.id);
+        this.applied.delete(spec.id);
         unit = undefined;
       }
       if (!unit) {
         unit = createFxUnit(this.ctx, spec.type);
         this.units.set(spec.id, unit);
+        fresh = true;
       }
-      unit.setTempo(bpm);
-      if (spec.preset) unit.setPreset(spec.preset);
-      for (const [key, value] of Object.entries(spec.params)) unit.setParam(key, value);
-      unit.setAmount(spec.bypass ? 0 : spec.amount);
+      const prev = this.applied.get(spec.id);
+      if (fresh || tempoChanged) unit.setTempo(bpm);
+      if (spec.preset && (fresh || spec.preset !== prev?.preset)) unit.setPreset(spec.preset);
+      for (const [key, value] of Object.entries(spec.params)) {
+        if (!fresh && prev && prev.params[key] === value) continue;
+        unit.setParam(key, value);
+      }
+      const amount = spec.bypass ? 0 : spec.amount;
+      const prevAmount = prev ? (prev.bypass ? 0 : prev.amount) : null;
+      if (fresh || prevAmount === null || Math.abs(prevAmount - amount) > 0.0005) {
+        unit.setAmount(amount);
+      }
+      this.applied.set(spec.id, { ...spec, params: { ...spec.params } });
     }
     const changed =
       ids.length !== this.order.length || ids.some((id, index) => this.order[index] !== id);
@@ -478,6 +504,7 @@ export class FxChain {
       this.rewire();
     }
   }
+
 
   setTempo(bpm: number) {
     this.bpm = bpm;
@@ -510,6 +537,7 @@ export class FxChain {
   dispose() {
     this.units.forEach((u) => u.dispose());
     this.units.clear();
+    this.applied.clear();
     this.order = [];
     try {
       this.input.disconnect();

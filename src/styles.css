@@ -2039,19 +2039,21 @@
   animation: fw-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
   overflow: hidden;
 }
+/* backdrop blur over a live camera canvas is the most expensive thing on a
+   phone: the panels stay glassy but with a light, opaque-ish blur */
 .fw-light {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.75);
   box-shadow: 0 24px 60px -20px rgba(20, 45, 85, 0.55);
   color: #24314c;
-  backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(8px);
 }
 .fw-dark {
-  background: rgba(12, 22, 46, 0.86);
+  background: rgba(12, 22, 46, 0.94);
   border: 1px solid rgba(160, 195, 255, 0.22);
   box-shadow: 0 24px 60px -20px rgba(0, 8, 26, 0.8);
   color: #e6efff;
-  backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(8px);
 }
 .fw-body {
   overflow-y: auto;
