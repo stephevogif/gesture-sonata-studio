@@ -18,6 +18,7 @@ export type VoiceBuses = {
   dry: AudioNode;
   reverb?: AudioNode | undefined;
   delay?: AudioNode | undefined;
+  chorus?: AudioNode | undefined;
 };
 
 function saturationCurve(amount: number): Float32Array<ArrayBuffer> {
@@ -166,6 +167,7 @@ export class SynthVoice {
     this.gain.connect(buses.dry);
     if (!spec.bass && buses.reverb) this.gain.connect(buses.reverb);
     if (buses.delay) this.gain.connect(buses.delay);
+    if (buses.chorus) this.gain.connect(buses.chorus);
   }
 
   /** headroom: bass patches are allowed to be louder, everything else stays clean */
