@@ -64,7 +64,8 @@ function denormParam(def: FxParamDef, t: number) {
 
 function formatParam(def: FxParamDef, value: number) {
   if (def.toggle) return value > 0.5 ? "ON" : "OFF";
-  if (def.unit === "Hz") return value >= 1000 ? `${(value / 1000).toFixed(1)} kHz` : `${Math.round(value)} Hz`;
+  if (def.unit === "Hz")
+    return value >= 1000 ? `${(value / 1000).toFixed(1)} kHz` : `${Math.round(value)} Hz`;
   if (def.unit === "s") return `${Math.round(value * 1000)} ms`;
   if (def.unit === "×") return `${value.toFixed(2)}×`;
   return value >= 10 ? value.toFixed(0) : value.toFixed(2);
@@ -365,7 +366,9 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
               value={Math.round(selectedLayer.gain * 100)}
               aria-label="Volume dello strumento"
               onChange={(e) =>
-                onChange(patchLayer(state, selectedLayer.id, { gain: Number(e.target.value) / 100 }))
+                onChange(
+                  patchLayer(state, selectedLayer.id, { gain: Number(e.target.value) / 100 }),
+                )
               }
               className="sc-range"
             />

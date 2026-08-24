@@ -15,14 +15,7 @@
 import { clamp } from "@/core/music/pitch";
 import { gatePreset, type GatePresetId } from "./gatePresets";
 
-export type FxTypeId =
-  | "reverb"
-  | "delay"
-  | "chorus"
-  | "filter"
-  | "distortion"
-  | "tremolo"
-  | "gate";
+export type FxTypeId = "reverb" | "delay" | "chorus" | "filter" | "distortion" | "tremolo" | "gate";
 
 export type FxSpec = {
   id: string;

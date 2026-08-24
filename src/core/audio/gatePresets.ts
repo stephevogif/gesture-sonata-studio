@@ -6,14 +6,7 @@
  */
 
 export type GatePresetId =
-  | "pulse"
-  | "eighth"
-  | "sixteenth"
-  | "offbeat"
-  | "trance"
-  | "stutter"
-  | "breath"
-  | "randomStars";
+  "pulse" | "eighth" | "sixteenth" | "offbeat" | "trance" | "stutter" | "breath" | "randomStars";
 
 export type GatePreset = {
   id: GatePresetId;

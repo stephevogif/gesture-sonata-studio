@@ -13,12 +13,7 @@ import {
   Sliders,
   Square,
 } from "lucide-react";
-import {
-  GestureSynthEngine,
-  INSTRUMENTS,
-  INSTRUMENT_SHIFT,
-  type InstrumentId,
-} from "@/lib/synth";
+import { GestureSynthEngine, INSTRUMENTS, INSTRUMENT_SHIFT, type InstrumentId } from "@/lib/synth";
 import {
   buildChord,
   KEYS,
@@ -41,8 +36,6 @@ import SoundConstellation from "@/components/sound/SoundConstellation";
 import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
 import { detectKey } from "@/lib/keyDetect";
 
-
-
 type PanelId = null | "sound" | "scale" | "arp" | "help";
 
 type Hud = {
@@ -59,20 +52,40 @@ type Hud = {
   fps: number;
 };
 
-
-
 const ONBOARD_KEY = "sky-studio-onboarded";
 
 const STEPS = [
-  { a: "camera" as const, t: "Fotocamera e tracciamento", d: "Concedi l'accesso alla fotocamera: vedrai te stesso nel cielo, con le mani illuminate come costellazioni." },
-  { a: "fingers" as const, t: "7 Heavens", d: "Le dita totali delle due mani (1–7) scelgono l'accordo I–VII della scala scelta." },
-  { a: "height" as const, t: "Lato A = filtro", d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi." },
-  { a: "height" as const, t: "Volume", d: "Il volume parte fisso al 100%: mostra 10 dita per passare al controllo con la mano B (altezza) e 10 dita di nuovo per tornare fisso." },
-  { a: "settings" as const, t: "Suono ed effetti", d: "Strumento nel pannello Suono; riverbero, delay, risonanza e cutoff nel pannello Effetti." },
-  { a: "loop" as const, t: "Arpeggiatore", d: "Chiudi e riapri velocemente entrambe le mani per accendere o spegnere l'arpeggiatore (tasto A)." },
-
+  {
+    a: "camera" as const,
+    t: "Fotocamera e tracciamento",
+    d: "Concedi l'accesso alla fotocamera: vedrai te stesso nel cielo, con le mani illuminate come costellazioni.",
+  },
+  {
+    a: "fingers" as const,
+    t: "7 Heavens",
+    d: "Le dita totali delle due mani (1–7) scelgono l'accordo I–VII della scala scelta.",
+  },
+  {
+    a: "height" as const,
+    t: "Lato A = filtro",
+    d: "Alza o abbassa la mano A: apre e chiude il low pass risonante degli accordi.",
+  },
+  {
+    a: "height" as const,
+    t: "Volume",
+    d: "Il volume parte fisso al 100%: mostra 10 dita per passare al controllo con la mano B (altezza) e 10 dita di nuovo per tornare fisso.",
+  },
+  {
+    a: "settings" as const,
+    t: "Suono ed effetti",
+    d: "Strumento nel pannello Suono; riverbero, delay, risonanza e cutoff nel pannello Effetti.",
+  },
+  {
+    a: "loop" as const,
+    t: "Arpeggiatore",
+    d: "Chiudi e riapri velocemente entrambe le mani per accendere o spegnere l'arpeggiatore (tasto A).",
+  },
 ];
-
 
 /** sprite morbido riutilizzabile (evita gradienti creati a ogni frame) */
 function makeBlobSprite(size: number, rgb: string) {
@@ -107,7 +120,11 @@ export default function HeavenSynth() {
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
   const sunRef = useRef({ p: -0.25, y: 0.3 });
-  const skyCache = useRef<{ w: number; h: number; grad: CanvasGradient | null }>({ w: 0, h: 0, grad: null });
+  const skyCache = useRef<{ w: number; h: number; grad: CanvasGradient | null }>({
+    w: 0,
+    h: 0,
+    grad: null,
+  });
   const cloudSprite = useRef<HTMLCanvasElement | null>(null);
   const sunSprite = useRef<HTMLCanvasElement | null>(null);
   const fadeRef = useRef(0);
@@ -116,7 +133,6 @@ export default function HeavenSynth() {
     { x: number; y: number; vx: number; vy: number; life: number; max: number; r: number }[]
   >([]);
   const lastFrameRef = useRef(0);
-
 
   const glowRef = useRef(0);
 
@@ -156,8 +172,6 @@ export default function HeavenSynth() {
     if (songBpm) setBpm(songBpm);
   }, [songId, songRootPc, songScale, songBpm]);
 
-
-
   // ————— filtro gestuale + legato —————
   const [cutMax, setCutMax] = useState(8000);
   const [resonance, setResonance] = useState(6);
@@ -188,8 +202,6 @@ export default function HeavenSynth() {
   const armedRef = useRef(false);
   const lastArpGestureRef = useRef(0);
 
-
-
   const cfg = useRef({ rootPc, mode, instrument, showDebug, cutMax });
   useEffect(() => {
     cfg.current = { rootPc, mode, instrument, showDebug, cutMax };
@@ -206,7 +218,6 @@ export default function HeavenSynth() {
   useEffect(() => {
     engineRef.current?.setLegato(legato / 1000);
   }, [legato]);
-
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -263,7 +274,6 @@ export default function HeavenSynth() {
 
   useEffect(() => () => listenAbortRef.current?.abort(), []);
 
-
   /* ————— audio ————— */
 
   const releaseAll = useCallback(() => {
@@ -281,9 +291,7 @@ export default function HeavenSynth() {
     const inst = cfg.current.instrument;
     const shift = INSTRUMENT_SHIFT[inst] ?? 0;
     const ids = notes.map((_, i) => `ch${i}`);
-    activeIdsRef.current
-      .filter((id) => !ids.includes(id))
-      .forEach((id) => e.noteOff(id, true));
+    activeIdsRef.current.filter((id) => !ids.includes(id)).forEach((id) => e.noteOff(id, true));
     notes.forEach((m, i) => {
       const amp = gain * (i === 0 ? 1 : 0.7);
       e.noteOn(ids[i]!, midiToFreq(m + shift), Math.max(0.02, amp), bright, inst);
@@ -296,7 +304,7 @@ export default function HeavenSynth() {
   useEffect(() => {
     arpOnRef.current = arpOn;
     if (!arpOn) return;
-    const interval = ((60 / Math.max(40, bpm)) / arpDiv) * 1000;
+    const interval = (60 / Math.max(40, bpm) / arpDiv) * 1000;
     let i = 0;
     const id = setInterval(() => {
       const e = engineRef.current;
@@ -334,11 +342,18 @@ export default function HeavenSynth() {
     engineRef.current?.setTempo(bpm);
   }, [bpm]);
 
-
   /* ————— rendering ————— */
 
   const drawSky = useCallback(
-    (ctx: CanvasRenderingContext2D, w: number, h: number, glow: number, fade: number, dt: number, music: number) => {
+    (
+      ctx: CanvasRenderingContext2D,
+      w: number,
+      h: number,
+      glow: number,
+      fade: number,
+      dt: number,
+      music: number,
+    ) => {
       // il canvas è TRASPARENTE: sotto c'è il cielo dipinto (CSS)
       ctx.clearRect(0, 0, w, h);
 
@@ -404,7 +419,6 @@ export default function HeavenSynth() {
           ctx.stroke();
         }
       }
-
 
       // ————— nuvole leggerissime, sempre in viaggio —————
       for (const c of cloudsRef.current) {
@@ -479,7 +493,14 @@ export default function HeavenSynth() {
 
   /* ————— aura luminosa sulle mani mentre suonano ————— */
   const drawHandGlow = useCallback(
-    (ctx: CanvasRenderingContext2D, hand: HandFrame, w: number, h: number, music: number, volume: number) => {
+    (
+      ctx: CanvasRenderingContext2D,
+      hand: HandFrame,
+      w: number,
+      h: number,
+      music: number,
+      volume: number,
+    ) => {
       if (music <= 0.02) return;
       const sprite = sunSprite.current;
       if (!sprite) return;
@@ -515,12 +536,27 @@ export default function HeavenSynth() {
 
       // scia dorata lungo lo scheletro: le dita diventano filamenti di luce
       const links = [
-        [0, 5], [5, 9], [9, 13], [13, 17], [17, 0],
-        [0, 1], [1, 2], [2, 3], [3, 4],
-        [5, 6], [6, 7], [7, 8],
-        [9, 10], [10, 11], [11, 12],
-        [13, 14], [14, 15], [15, 16],
-        [17, 18], [18, 19], [19, 20],
+        [0, 5],
+        [5, 9],
+        [9, 13],
+        [13, 17],
+        [17, 0],
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 4],
+        [5, 6],
+        [6, 7],
+        [7, 8],
+        [9, 10],
+        [10, 11],
+        [11, 12],
+        [13, 14],
+        [14, 15],
+        [15, 16],
+        [17, 18],
+        [18, 19],
+        [19, 20],
       ];
       ctx.globalAlpha = Math.min(0.8, power * 0.7 * breath);
       ctx.strokeStyle = "rgba(255,244,214,1)";
@@ -542,20 +578,33 @@ export default function HeavenSynth() {
     [],
   );
 
-
-
   const drawHand = useCallback(
     (ctx: CanvasRenderingContext2D, hand: HandFrame, w: number, h: number) => {
       const lm = hand.landmarks;
       const px = (n: number) => (1 - lm[n]!.x) * w;
       const py = (n: number) => lm[n]!.y * h;
       const links = [
-        [0, 5], [5, 9], [9, 13], [13, 17], [17, 0],
-        [0, 1], [1, 2], [2, 3], [3, 4],
-        [5, 6], [6, 7], [7, 8],
-        [9, 10], [10, 11], [11, 12],
-        [13, 14], [14, 15], [15, 16],
-        [17, 18], [18, 19], [19, 20],
+        [0, 5],
+        [5, 9],
+        [9, 13],
+        [13, 17],
+        [17, 0],
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 4],
+        [5, 6],
+        [6, 7],
+        [7, 8],
+        [9, 10],
+        [10, 11],
+        [11, 12],
+        [13, 14],
+        [14, 15],
+        [15, 16],
+        [17, 18],
+        [18, 19],
+        [19, 20],
       ];
       ctx.save();
       ctx.lineCap = "round";
@@ -597,8 +646,6 @@ export default function HeavenSynth() {
     },
     [],
   );
-
-
 
   /* ————— loop di tracking ————— */
 
@@ -703,20 +750,23 @@ export default function HeavenSynth() {
         notes: chord ? chord.notes.map((n) => midiName(n)).join(" · ") : "—",
       };
 
-
       currentRef.current.volume = volume;
       currentRef.current.filter = cutoff;
 
       // ————— disegno —————
       const nowMs = performance.now();
-      const dt = lastFrameRef.current ? Math.min(0.05, (nowMs - lastFrameRef.current) / 1000) : 0.016;
+      const dt = lastFrameRef.current
+        ? Math.min(0.05, (nowMs - lastFrameRef.current) / 1000)
+        : 0.016;
       lastFrameRef.current = nowMs;
       const target = hands.length ? Math.max(0.2, volume) : 0;
       const k = 1 - Math.exp(-dt * 4);
       glowRef.current += (target - glowRef.current) * k;
-      fadeRef.current += ((hands.length ? 1 : 0) - fadeRef.current) * (1 - Math.exp(-dt * (hands.length ? 3 : 1.6)));
+      fadeRef.current +=
+        ((hands.length ? 1 : 0) - fadeRef.current) * (1 - Math.exp(-dt * (hands.length ? 3 : 1.6)));
       const sounding = chord ? 1 : 0;
-      musicRef.current += (sounding - musicRef.current) * (1 - Math.exp(-dt * (sounding ? 2.6 : 1.1)));
+      musicRef.current +=
+        (sounding - musicRef.current) * (1 - Math.exp(-dt * (sounding ? 2.6 : 1.1)));
       drawSky(ctx, w, h, glowRef.current, fadeRef.current, dt, musicRef.current);
 
       if (chord) {
@@ -726,9 +776,7 @@ export default function HeavenSynth() {
       for (const hand of hands) drawHandGlow(ctx, hand, w, h, musicRef.current, volume);
       drawParticles(ctx, dt);
 
-
       if (cfg.current.showDebug) for (const hand of hands) drawHand(ctx, hand, w, h);
-
 
       // ————— HUD (throttle) —————
       const now = performance.now();
@@ -736,7 +784,6 @@ export default function HeavenSynth() {
         hudTick.current = now;
         setHud({ volume, filter: cutoff, heavens: heavensHud, fps });
       }
-
     },
     [applyNotes, drawHand, drawHandGlow, drawSky, drawParticles, emitParticles, releaseAll],
   );
@@ -776,7 +823,6 @@ export default function HeavenSynth() {
     setHud({ volume: 0, filter: 8000, heavens: null, fps: 0 });
   }, [releaseAll, stopCam]);
 
-
   useEffect(() => () => stop(), [stop]);
 
   /* ————— scorciatoie ————— */
@@ -791,7 +837,6 @@ export default function HeavenSynth() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-
   const activeDegree = hud.heavens?.degree ?? null;
   const playing = activeDegree != null;
 
@@ -800,7 +845,6 @@ export default function HeavenSynth() {
   useEffect(() => {
     observeSong(activeDegree == null ? null : activeDegree + 1);
   }, [activeDegree, observeSong]);
-
 
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
@@ -811,7 +855,6 @@ export default function HeavenSynth() {
 
   const field =
     "mt-1.5 w-full appearance-none rounded-xl border border-white/60 bg-white/70 px-3 py-2.5 text-[13px] font-semibold tracking-normal text-[#2b3855] shadow-sm outline-none transition focus:border-[rgba(255,222,160,0.95)]";
-
 
   return (
     <div className="heaven-scene relative min-h-screen overflow-hidden text-[#33405a]">
@@ -834,7 +877,6 @@ export default function HeavenSynth() {
       {/* gradiente scuro in basso per far risaltare la nav */}
       <div className="heaven-bottom-shade" />
 
-
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-40 pt-5">
         {/* header */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
@@ -856,7 +898,6 @@ export default function HeavenSynth() {
           >
             <HelpCircle className="h-4 w-4" />
           </button>
-
         </header>
 
         <h1 className="heaven-title mt-5 text-center text-[2.1rem] leading-none sm:text-5xl">
@@ -883,12 +924,9 @@ export default function HeavenSynth() {
         </div>
         {(listening || listenMsg) && (
           <p className="mt-2 text-center text-[11px] font-semibold text-slate-600">
-            {listening
-              ? `Ascolto… ${Math.round(listenProgress * 100)}%`
-              : listenMsg}
+            {listening ? `Ascolto… ${Math.round(listenProgress * 100)}%` : listenMsg}
           </p>
         )}
-
 
         {/* Song Mode */}
         {songMode.song && <SongModeHud state={songMode} rootPc={rootPc} mode={mode} />}
@@ -910,7 +948,9 @@ export default function HeavenSynth() {
               <p className="text-[10px] font-medium uppercase tracking-[0.5em] text-white/90 drop-shadow">
                 Heaven
               </p>
-              <p className="heaven-title mt-1 text-[4.2rem] leading-[0.9]">{ROMAN[activeDegree!]}</p>
+              <p className="heaven-title mt-1 text-[4.2rem] leading-[0.9]">
+                {ROMAN[activeDegree!]}
+              </p>
               <div className="mx-auto mt-3 h-px w-24 bg-white/50" />
               <p className="mt-3 text-2xl font-light uppercase tracking-[0.14em] text-white drop-shadow">
                 {hud.heavens?.label}
@@ -941,7 +981,6 @@ export default function HeavenSynth() {
                   <Play className="h-7 w-7" />
                 </button>
               )}
-
             </div>
           )}
         </div>
@@ -957,7 +996,11 @@ export default function HeavenSynth() {
                 {(hud.filter / 1000).toFixed(1)} kHz
               </p>
               <div className="heaven-meter mt-2">
-                <span style={{ width: `${Math.min(100, (hud.filter / Math.max(1000, cutMax)) * 100)}%` }} />
+                <span
+                  style={{
+                    width: `${Math.min(100, (hud.filter / Math.max(1000, cutMax)) * 100)}%`,
+                  }}
+                />
               </div>
             </div>
             <div className="heaven-glass px-4 py-3 text-right">
@@ -972,9 +1015,7 @@ export default function HeavenSynth() {
           </div>
         )}
 
-
         {/* i pannelli sono floating windows: vedi in fondo al componente */}
-
 
         {panel === "sound" && (
           <FloatingWindow
@@ -1027,74 +1068,14 @@ export default function HeavenSynth() {
         {panel === "scale" && (
           <FloatingWindow title="Tonalità e scala" onClose={() => setPanel(null)}>
             <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
-                Tonica
-                <select
-                  value={rootPc}
-                  onChange={(e) => setRootPc(Number(e.target.value))}
-                  className={field}
-                  aria-label="Tonica"
-                >
-                  {KEYS.map((n, i) => (
-                    <option key={n} value={i}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
-                Scala
-                <select
-                  value={mode}
-                  onChange={(e) => setMode(e.target.value as ModeId)}
-                  className={field}
-                  aria-label="Scala"
-                >
-                  {MODES.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="space-y-2 border-t border-white/20 pt-3">
-              <h3 className="text-xs font-bold">Ascolto automatico</h3>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {[16000, 24000, 32000].map((d) => (
-                  <button
-                    key={d}
-                    disabled={listening}
-                    onClick={() => setListenDuration(d)}
-                    className={chip(listenDuration === d)}
-                  >
-                    {d / 1000}s
-                  </button>
-                ))}
-                <button onClick={toggleListen} className={chip(listening)}>
-                  {listening ? `Ferma (${Math.round(listenProgress * 100)}%)` : "Ascolta"}
-                </button>
-              </div>
-              {listenMsg && !listening && (
-                <p className="text-[11px] text-slate-500">{listenMsg}</p>
-              )}
-            </div>
-            {songMode.song && (
-              <div className="space-y-2 border-t border-white/20 pt-3">
-                <h3 className="text-xs font-bold">Trasposizione della song</h3>
+              <div className="grid grid-cols-2 gap-3">
                 <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
-                  Tonalità
+                  Tonica
                   <select
                     value={rootPc}
-                    onChange={(e) =>
-                      updateSongSession({
-                        transpose:
-                          ((Number(e.target.value) - songMode.song!.keyPc) % 12 + 12) % 12,
-                      })
-                    }
+                    onChange={(e) => setRootPc(Number(e.target.value))}
                     className={field}
-                    aria-label="Tonalità della song"
+                    aria-label="Tonica"
                   >
                     {KEYS.map((n, i) => (
                       <option key={n} value={i}>
@@ -1103,21 +1084,78 @@ export default function HeavenSynth() {
                     ))}
                   </select>
                 </label>
-                <p className="text-[11px] text-slate-500">
-                  I gradi ({songMode.degrees.join(" · ")}) non cambiano: cambia solo la tonalità.
-                </p>
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  Scala
+                  <select
+                    value={mode}
+                    onChange={(e) => setMode(e.target.value as ModeId)}
+                    className={field}
+                    aria-label="Scala"
+                  >
+                    {MODES.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
-            )}
-            <p className="text-[11px] text-slate-500">
-              Tonica e scala restano bloccate: le mani scelgono solo il grado (1–7).
-              {songMode.song ? " In Song Mode le imposta la canzone." : ""}
-            </p>
-
-
+              <div className="space-y-2 border-t border-white/20 pt-3">
+                <h3 className="text-xs font-bold">Ascolto automatico</h3>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[16000, 24000, 32000].map((d) => (
+                    <button
+                      key={d}
+                      disabled={listening}
+                      onClick={() => setListenDuration(d)}
+                      className={chip(listenDuration === d)}
+                    >
+                      {d / 1000}s
+                    </button>
+                  ))}
+                  <button onClick={toggleListen} className={chip(listening)}>
+                    {listening ? `Ferma (${Math.round(listenProgress * 100)}%)` : "Ascolta"}
+                  </button>
+                </div>
+                {listenMsg && !listening && (
+                  <p className="text-[11px] text-slate-500">{listenMsg}</p>
+                )}
+              </div>
+              {songMode.song && (
+                <div className="space-y-2 border-t border-white/20 pt-3">
+                  <h3 className="text-xs font-bold">Trasposizione della song</h3>
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                    Tonalità
+                    <select
+                      value={rootPc}
+                      onChange={(e) =>
+                        updateSongSession({
+                          transpose:
+                            (((Number(e.target.value) - songMode.song!.keyPc) % 12) + 12) % 12,
+                        })
+                      }
+                      className={field}
+                      aria-label="Tonalità della song"
+                    >
+                      {KEYS.map((n, i) => (
+                        <option key={n} value={i}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="text-[11px] text-slate-500">
+                    I gradi ({songMode.degrees.join(" · ")}) non cambiano: cambia solo la tonalità.
+                  </p>
+                </div>
+              )}
+              <p className="text-[11px] text-slate-500">
+                Tonica e scala restano bloccate: le mani scelgono solo il grado (1–7).
+                {songMode.song ? " In Song Mode le imposta la canzone." : ""}
+              </p>
             </div>
           </FloatingWindow>
         )}
-
 
         {panel === "arp" && (
           <FloatingWindow
@@ -1126,98 +1164,103 @@ export default function HeavenSynth() {
             onClose={() => setPanel(null)}
           >
             <div className="space-y-3">
-            <div className="flex flex-wrap gap-1.5">
-              <button onClick={() => setArpOn((v) => !v)} className={chip(arpOn)}>
-                {arpOn ? "Arp ON" : "Arp OFF"}
-              </button>
-            </div>
-            <label className="block text-[11px] font-semibold text-slate-600">
-              Tempo: <span className="text-slate-900">{bpm} BPM</span>
-              <input
-                type="range"
-                min={50}
-                max={200}
-                value={bpm}
-                onChange={(e) => setBpm(Number(e.target.value))}
-                className="mt-1 w-full accent-sky-700"
-                aria-label="Tempo in BPM"
-              />
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
-                Divisione
-                <select
-                  value={arpDiv}
-                  onChange={(e) => setArpDiv(Number(e.target.value))}
-                  className={field}
-                  aria-label="Divisione arpeggio"
-                >
-                  {([
-                    ["1/4", 1],
-                    ["1/8", 2],
-                    ["1/8T", 3],
-                    ["1/16", 4],
-                  ] as const).map(([label, div]) => (
-                    <option key={label} value={div}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex flex-wrap gap-1.5">
+                <button onClick={() => setArpOn((v) => !v)} className={chip(arpOn)}>
+                  {arpOn ? "Arp ON" : "Arp OFF"}
+                </button>
+              </div>
+              <label className="block text-[11px] font-semibold text-slate-600">
+                Tempo: <span className="text-slate-900">{bpm} BPM</span>
+                <input
+                  type="range"
+                  min={50}
+                  max={200}
+                  value={bpm}
+                  onChange={(e) => setBpm(Number(e.target.value))}
+                  className="mt-1 w-full accent-sky-700"
+                  aria-label="Tempo in BPM"
+                />
               </label>
-              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
-                Pattern
-                <select
-                  value={arpMode}
-                  onChange={(e) => setArpMode(e.target.value as typeof arpMode)}
-                  className={field}
-                  aria-label="Pattern arpeggio"
-                >
-                  {([
-                    ["up", "Salita"],
-                    ["down", "Discesa"],
-                    ["updown", "Su e giù"],
-                    ["octaves", "Ottave"],
-                    ["random", "Casuale"],
-                  ] as const).map(([id, label]) => (
-                    <option key={id} value={id}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  Divisione
+                  <select
+                    value={arpDiv}
+                    onChange={(e) => setArpDiv(Number(e.target.value))}
+                    className={field}
+                    aria-label="Divisione arpeggio"
+                  >
+                    {(
+                      [
+                        ["1/4", 1],
+                        ["1/8", 2],
+                        ["1/8T", 3],
+                        ["1/16", 4],
+                      ] as const
+                    ).map(([label, div]) => (
+                      <option key={label} value={div}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  Pattern
+                  <select
+                    value={arpMode}
+                    onChange={(e) => setArpMode(e.target.value as typeof arpMode)}
+                    className={field}
+                    aria-label="Pattern arpeggio"
+                  >
+                    {(
+                      [
+                        ["up", "Salita"],
+                        ["down", "Discesa"],
+                        ["updown", "Su e giù"],
+                        ["octaves", "Ottave"],
+                        ["random", "Casuale"],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <option key={id} value={id}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="block text-[11px] font-semibold text-slate-600">
+                Gate: <span className="text-slate-900">{Math.round(arpGate * 100)}%</span>
+                <input
+                  type="range"
+                  min={10}
+                  max={140}
+                  value={Math.round(arpGate * 100)}
+                  onChange={(e) => setArpGate(Number(e.target.value) / 100)}
+                  className="mt-1 w-full accent-sky-700"
+                  aria-label="Lunghezza nota arpeggio"
+                />
               </label>
-            </div>
-            <label className="block text-[11px] font-semibold text-slate-600">
-              Gate: <span className="text-slate-900">{Math.round(arpGate * 100)}%</span>
-              <input
-                type="range"
-                min={10}
-                max={140}
-                value={Math.round(arpGate * 100)}
-                onChange={(e) => setArpGate(Number(e.target.value) / 100)}
-                className="mt-1 w-full accent-sky-700"
-                aria-label="Lunghezza nota arpeggio"
-              />
-            </label>
-            <p className="text-[11px] text-slate-500">
-              Gesto: chiudi e riapri velocemente entrambe le mani per accendere o spegnere l&apos;arp
-              (tasto A). Nessun numero di dita attiva più l&apos;arpeggiatore.
-            </p>
-
+              <p className="text-[11px] text-slate-500">
+                Gesto: chiudi e riapri velocemente entrambe le mani per accendere o spegnere
+                l&apos;arp (tasto A). Nessun numero di dita attiva più l&apos;arpeggiatore.
+              </p>
             </div>
           </FloatingWindow>
         )}
 
-
         {panel === "help" && (
           <FloatingWindow title="Guida rapida" onClose={() => setPanel(null)}>
             <div className="space-y-2">
-            <ol className="space-y-1.5 text-[12px] text-slate-700">
-              {STEPS.map((s, i) => (
-                <li key={i}>
-                  <b>{i + 1}. {s.t}</b> — {s.d}
-                </li>
-              ))}
-            </ol>
+              <ol className="space-y-1.5 text-[12px] text-slate-700">
+                {STEPS.map((s, i) => (
+                  <li key={i}>
+                    <b>
+                      {i + 1}. {s.t}
+                    </b>{" "}
+                    — {s.d}
+                  </li>
+                ))}
+              </ol>
             </div>
           </FloatingWindow>
         )}
@@ -1268,8 +1311,6 @@ export default function HeavenSynth() {
           </button>
         </div>
       </nav>
-
-
 
       {/* onboarding */}
       {showOnboard && (
