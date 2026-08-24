@@ -1224,9 +1224,9 @@ export default function HeavenSynth() {
         )}
       </div>
 
-      {/* barra inferiore */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
-        <div className="heaven-glass mx-auto flex max-w-md items-center justify-between px-4 py-2">
+      {/* barra inferiore: 5 slot fissi, Play sempre al centro */}
+      <nav className="heaven-navbar">
+        <div className="heaven-glass mx-auto grid max-w-md grid-cols-5 items-center gap-1 px-3 py-2">
           <Link
             to="/songs"
             aria-label="Heaven Songs"
@@ -1236,47 +1236,40 @@ export default function HeavenSynth() {
             Songs
           </Link>
 
-          {(
-            [
-              ["sound", "Sound", Settings2],
-              ["scale", "Scale", Music2],
-            ] as const
-          ).map(([id, label, Icon]) => (
-            <button
-              key={id}
-              onClick={() => setPanel((p) => (p === id ? null : id))}
-              className={`heaven-nav ${panel === id ? "heaven-nav-on" : ""}`}
-            >
-              <Icon className="h-5 w-5" />
-              {label}
-            </button>
-          ))}
+          <button
+            onClick={() => setPanel((p) => (p === "scale" ? null : "scale"))}
+            className={`heaven-nav ${panel === "scale" ? "heaven-nav-on" : ""}`}
+          >
+            <Music2 className="h-5 w-5" />
+            Scale
+          </button>
 
           <button
             onClick={running ? stop : start}
             aria-label={running ? "Stop" : "Play"}
-            className={`heaven-play ${running ? "heaven-play-on" : ""}`}
+            className={`heaven-play mx-auto ${running ? "heaven-play-on" : "heaven-play-breathe"}`}
           >
             {running ? <Square className="h-6 w-6" /> : <Play className="h-6 w-6" />}
           </button>
 
-          {(
-            [
-              ["arp", "Arp", Repeat],
-              ["fx", "FX", Sliders],
-            ] as const
-          ).map(([id, label, Icon]) => (
-            <button
-              key={id}
-              onClick={() => setPanel((p) => (p === id ? null : id))}
-              className={`heaven-nav ${panel === id ? "heaven-nav-on" : ""}`}
-            >
-              <Icon className="h-5 w-5" />
-              {label}
-            </button>
-          ))}
+          <button
+            onClick={() => setPanel((p) => (p === "arp" ? null : "arp"))}
+            className={`heaven-nav ${panel === "arp" ? "heaven-nav-on" : ""}`}
+          >
+            <Repeat className="h-5 w-5" />
+            Arp
+          </button>
+
+          <button
+            onClick={() => setPanel((p) => (p === "sound" ? null : "sound"))}
+            className={`heaven-nav ${panel === "sound" ? "heaven-nav-on" : ""}`}
+          >
+            <Sliders className="h-5 w-5" />
+            Sound
+          </button>
         </div>
       </nav>
+
 
 
       {/* onboarding */}
