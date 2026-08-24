@@ -2,9 +2,10 @@
  * Heaven Songs — data model.
  * Layer: Song Library (independent from the React components).
  *
- * A song is stored as HARMONIC DEGREES (1..7), never as audio: this makes
- * every song transposable for free and playable with the Seven Heavens
- * finger-count gesture (total fingers = degree).
+ * A song is stored as HARMONIC DEGREES (1..7), never as audio and never as
+ * chord names: `key + scale + degree` is the single source of truth, so the
+ * Music Theory Engine can build (and transpose) every chord for free, and the
+ * Seven Heavens gesture (total fingers = degree) stays untouched.
  */
 
 import type { ModeId } from "@/core/music/chords";
@@ -16,16 +17,24 @@ export type SectionName =
   | "Chorus"
   | "Bridge"
   | "Outro"
+  | "Main"
   | (string & {});
 
 export type Difficulty = "easy" | "medium" | "hard";
+
+/**
+ * FULL        — the Heaven Version maps directly onto available diatonic degrees
+ * SIMPLIFIED  — the original has traits we simplified for Seven Heavens
+ * ADVANCED    — the original contains harmony the V1 diatonic system can't fully express
+ */
+export type Compatibility = "full" | "simplified" | "advanced";
 
 export type SongSection = {
   id: string;
   name: SectionName;
   /** degrees expressed exactly as the gesture number: 1..7 */
   degrees: number[];
-  /** how many beats each chord lasts (auto/tempo mode) */
+  /** how many beats each chord lasts (future tempo mode) */
   beatsPerChord?: number;
   /** how many times the section repeats before moving on */
   repetitions?: number;
@@ -35,33 +44,41 @@ export type Song = {
   id: string;
   title: string;
   artist: string;
-  /** pitch class of the original key, 0 = C */
+  /** pitch class of the Heaven key, 0 = C */
   keyPc: number;
   scale: ModeId;
-  bpm: number;
-  timeSignature: [number, number];
+  bpm?: number | null;
+  timeSignature?: [number, number];
   difficulty: Difficulty;
   genre: string;
   year?: number;
   artworkRef?: string;
-  /** semitone capo/transposition suggestion baked into the song */
-  capo?: number;
-  /** "demo" = original placeholder progression, "user" = created in-app */
-  origin: "demo" | "user";
+  compatibility: Compatibility;
+  /** V1 arrangements are always "heaven" (simplified diatonic reading) */
+  arrangementType: "heaven";
+  /** reserved for a future extension: borrowed chords, 7ths, sus, power chords */
+  extensions?: Record<string, unknown>;
+  /** "heaven" = curated Heaven Version, "user" = created in-app */
+  origin: "heaven" | "user";
   sections: SongSection[];
 };
+
+export type LoopMode = "off" | "section" | "song";
+
+/** future UI surfaces; V1 ships LEARN */
+export type SongPlayMode = "learn" | "practice" | "perform";
 
 /** what Seven Heavens needs to enter Song Mode */
 export type SongSession = {
   songId: string;
-  /** semitones applied on top of the original key */
+  /** semitones applied on top of the Heaven key */
   transpose: number;
-  /** index of the section to start from */
+  /** index of the section to play */
   sectionIndex: number;
-  /** loop the current section forever (practice mode) */
-  loopSection: boolean;
-  /** manual follow (default) or tempo-driven advance */
-  advance: "manual" | "auto";
+  loopMode: LoopMode;
+  /** a correct gesture moves to the next chord */
+  autoAdvance: boolean;
+  playMode: SongPlayMode;
 };
 
 export function songChordCount(song: Song): number {
@@ -72,4 +89,8 @@ export function uniqueDegrees(song: Song): number[] {
   const set = new Set<number>();
   song.sections.forEach((s) => s.degrees.forEach((d) => set.add(d)));
   return [...set].sort((a, b) => a - b);
+}
+
+export function isHeavenVersion(song: Song): boolean {
+  return song.compatibility !== "full";
 }

@@ -1831,3 +1831,90 @@
     transform: scale(1);
   }
 }
+
+/* Heaven Songs — constellation timeline + play action */
+.heaven-song-constellation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem 0;
+}
+.heaven-song-node-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+.heaven-song-link {
+  display: inline-block;
+  height: 1px;
+  width: 1.15rem;
+  background: linear-gradient(90deg, rgba(255, 226, 165, 0.15), rgba(255, 226, 165, 0.55), rgba(255, 226, 165, 0.15));
+}
+.heaven-song-node {
+  position: relative;
+  display: inline-flex;
+  height: 2.1rem;
+  width: 2.1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 240ms ease;
+}
+.heaven-song-star {
+  position: absolute;
+  top: -0.5rem;
+  font-size: 8px;
+  color: rgba(255, 226, 165, 0.65);
+}
+.heaven-song-node-now {
+  border-color: rgba(255, 226, 165, 0.95);
+  background: rgba(255, 226, 165, 0.3);
+  color: #fff6e0;
+  box-shadow: 0 0 26px rgba(255, 214, 140, 0.55);
+  transform: scale(1.16);
+}
+.heaven-song-node-next {
+  border-color: rgba(255, 226, 165, 0.6);
+  animation: heaven-song-breathe 2.6s ease-in-out infinite;
+}
+.heaven-song-node-past {
+  opacity: 0.42;
+}
+.heaven-song-next {
+  animation: heaven-song-breathe 2.6s ease-in-out infinite;
+}
+@keyframes heaven-song-breathe {
+  0%,
+  100% {
+    opacity: 0.65;
+    filter: drop-shadow(0 0 0 rgba(255, 226, 165, 0));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px rgba(255, 226, 165, 0.55));
+  }
+}
+.heaven-song-play {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 226, 165, 0.6);
+  background: rgba(255, 226, 165, 0.18);
+  padding: 0.4rem 0.75rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fff6e0;
+  transition: all 200ms ease;
+}
+.heaven-song-play:hover {
+  background: rgba(255, 226, 165, 0.3);
+  box-shadow: 0 0 22px rgba(255, 214, 140, 0.4);
+}

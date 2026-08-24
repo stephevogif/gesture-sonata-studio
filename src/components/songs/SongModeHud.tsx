@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Repeat, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Repeat, Sparkles, X, Zap } from "lucide-react";
 import { buildChord, MODES } from "@/core/music/chords";
 import type { ModeId } from "@/core/music/chords";
+import { compatibilityLabel } from "@/core/songs/catalog";
+import type { LoopMode } from "@/core/songs/types";
 import type { SongModeState } from "@/hooks/useSongMode";
 
 function chordLabel(rootPc: number, mode: ModeId, degree: number) {
@@ -13,6 +15,13 @@ function chordLabel(rootPc: number, mode: ModeId, degree: number) {
     voicing: "triad",
   }).label;
 }
+
+const LOOP_ORDER: LoopMode[] = ["section", "song", "off"];
+const LOOP_LABEL: Record<LoopMode, string> = {
+  section: "Loop section",
+  song: "Loop song",
+  off: "Loop off",
+};
 
 export default function SongModeHud({
   state,
@@ -26,6 +35,10 @@ export default function SongModeHud({
   const { song, degrees, stepIndex, current, next, sectionName, matched } = state;
   if (!song || current == null) return null;
 
+  const heaven = compatibilityLabel(song.compatibility);
+  const cycleLoop = () =>
+    state.setLoopMode(LOOP_ORDER[(LOOP_ORDER.indexOf(state.loopMode) + 1) % LOOP_ORDER.length]!);
+
   return (
     <section className="heaven-song-hud mt-4">
       <div className="flex items-start justify-between gap-3">
@@ -33,16 +46,28 @@ export default function SongModeHud({
           <p className="truncate text-[12px] font-semibold tracking-tight text-white drop-shadow">
             {song.title}
           </p>
-          <p className="mt-0.5 text-[9px] uppercase tracking-[0.3em] text-white/65">
+          <p className="mt-0.5 truncate text-[9px] uppercase tracking-[0.3em] text-white/65">
             {song.artist} · {MODES.find((m) => m.id === mode)?.name}
           </p>
+          {heaven && (
+            <p className="mt-1 inline-flex items-center gap-1 text-[8px] uppercase tracking-[0.26em] text-[#ffe9bd]/80">
+              <Sparkles className="h-2.5 w-2.5" /> {heaven}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => state.setLoop(!state.loopSection)}
-            aria-pressed={state.loopSection}
-            aria-label="Loop della sezione"
-            className={`heaven-orb-btn ${state.loopSection ? "heaven-nav-on" : ""}`}
+            onClick={() => state.setAutoAdvance(!state.autoAdvance)}
+            aria-pressed={state.autoAdvance}
+            aria-label="Auto advance"
+            className={`heaven-orb-btn ${state.autoAdvance ? "heaven-nav-on" : ""}`}
+          >
+            <Zap className="h-4 w-4" />
+          </button>
+          <button
+            onClick={cycleLoop}
+            aria-label={LOOP_LABEL[state.loopMode]}
+            className={`heaven-orb-btn ${state.loopMode !== "off" ? "heaven-nav-on" : ""}`}
           >
             <Repeat className="h-4 w-4" />
           </button>
@@ -53,9 +78,11 @@ export default function SongModeHud({
       </div>
 
       {sectionName && (
-        <p key={sectionName} className="animate-fade-in mt-3 text-center text-[10px] uppercase tracking-[0.46em] text-[#ffe9bd]">
-          {sectionName}
-          {state.loopSection ? " · loop" : ""}
+        <p
+          key={sectionName}
+          className="animate-fade-in mt-3 text-center text-[10px] uppercase tracking-[0.46em] text-[#ffe9bd]"
+        >
+          {sectionName} · {LOOP_LABEL[state.loopMode]}
         </p>
       )}
 
@@ -63,7 +90,7 @@ export default function SongModeHud({
         <div>
           <p className="text-[9px] uppercase tracking-[0.4em] text-white/70">Now</p>
           <p
-            className={`heaven-title leading-[0.85] text-[4rem] transition-transform ${matched ? "heaven-song-hit" : ""}`}
+            className={`heaven-title text-[4rem] leading-[0.85] transition-transform ${matched ? "heaven-song-hit" : ""}`}
           >
             {current}
           </p>
@@ -72,9 +99,9 @@ export default function SongModeHud({
           </p>
         </div>
         {next != null && (
-          <div className="text-right opacity-75">
+          <div className="text-right opacity-80">
             <p className="text-[9px] uppercase tracking-[0.4em] text-white/70">Next</p>
-            <p className="heaven-title text-[2rem] leading-none">{next}</p>
+            <p className="heaven-title heaven-song-next text-[2rem] leading-none">{next}</p>
             <p className="mt-0.5 text-[10px] uppercase tracking-[0.22em] text-white/75">
               {chordLabel(rootPc, mode, next)}
             </p>
@@ -82,15 +109,39 @@ export default function SongModeHud({
         )}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+      {/* constellation timeline */}
+      <div className="heaven-song-constellation mt-4">
         {degrees.map((d, i) => (
-          <span
-            key={`${d}-${i}`}
-            className={`heaven-song-step ${i === stepIndex ? "heaven-song-step-on" : ""}`}
-          >
-            {d}
+          <span key={`${d}-${i}`} className="heaven-song-node-wrap">
+            {i > 0 && <span aria-hidden className="heaven-song-link" />}
+            <span
+              className={`heaven-song-node ${
+                i === stepIndex
+                  ? "heaven-song-node-now"
+                  : i === (stepIndex + 1) % Math.max(1, degrees.length)
+                    ? "heaven-song-node-next"
+                    : "heaven-song-node-past"
+              }`}
+            >
+              <span aria-hidden className="heaven-song-star">
+                ✦
+              </span>
+              {d}
+            </span>
           </span>
         ))}
+      </div>
+
+      <div className="mt-3 flex items-center justify-center gap-2">
+        <button onClick={() => state.step(-1)} aria-label="Accordo precedente" className="heaven-orb-btn">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <span className="text-[9px] uppercase tracking-[0.3em] text-white/60">
+          {stepIndex + 1}/{degrees.length}
+        </span>
+        <button onClick={() => state.step(1)} aria-label="Accordo successivo" className="heaven-orb-btn">
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">

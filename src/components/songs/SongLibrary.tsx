@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Search } from "lucide-react";
 import { allSongs, FILTERS, searchSongs, type FilterId } from "@/core/songs/catalog";
+import { getFavorites, markPlayed, subscribeLibrary, toggleFavorite } from "@/core/songs/library";
 import { startSongSession } from "@/core/songs/session";
 import type { Song } from "@/core/songs/types";
 import SongCard from "./SongCard";
@@ -10,13 +11,26 @@ export default function SongLibrary() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<FilterId[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const songs = useMemo(() => allSongs(), []);
-  const results = useMemo(() => searchSongs(query, filters, songs), [query, filters, songs]);
+
+  useEffect(() => {
+    setFavorites(getFavorites());
+    return subscribeLibrary(() => setFavorites(getFavorites()));
+  }, []);
+
+  const results = useMemo(
+    () => searchSongs(query, filters, songs),
+    [query, filters, songs, favorites],
+  );
 
   const toggle = (id: FilterId) =>
-    setFilters((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
+    setFilters((f) =>
+      id === "all" ? [] : f.includes(id) ? f.filter((x) => x !== id) : [...f, id],
+    );
 
   const play = (song: Song) => {
+    markPlayed(song.id);
     startSongSession(song.id, 0);
     void navigate({ to: "/studio" });
   };
@@ -54,21 +68,24 @@ export default function SongLibrary() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search songs..."
             aria-label="Search songs"
-            className="w-full bg-transparent text-[13px] text-white placeholder:text-white/50 outline-none"
+            className="w-full bg-transparent text-[13px] text-white outline-none placeholder:text-white/50"
           />
         </label>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => toggle(f.id)}
-              aria-pressed={filters.includes(f.id)}
-              className={`heaven-song-filter ${filters.includes(f.id) ? "heaven-song-filter-on" : ""}`}
-            >
-              {f.label}
-            </button>
-          ))}
+          {FILTERS.map((f) => {
+            const on = f.id === "all" ? filters.length === 0 : filters.includes(f.id);
+            return (
+              <button
+                key={f.id}
+                onClick={() => toggle(f.id)}
+                aria-pressed={on}
+                className={`heaven-song-filter ${on ? "heaven-song-filter-on" : ""}`}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
 
         <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-white/55">
@@ -77,18 +94,22 @@ export default function SongLibrary() {
 
         <div className="mt-3 space-y-3">
           {results.map((song) => (
-            <SongCard key={song.id} song={song} onPlay={play} />
+            <SongCard
+              key={song.id}
+              song={song}
+              favorite={favorites.includes(song.id)}
+              onPlay={play}
+              onToggleFavorite={(s) => setFavorites(toggleFavorite(s.id))}
+            />
           ))}
           {!results.length && (
-            <p className="py-10 text-center text-[12px] text-white/70">
-              Nessuna canzone trovata.
-            </p>
+            <p className="py-10 text-center text-[12px] text-white/70">Nessuna canzone trovata.</p>
           )}
         </div>
 
         <p className="mt-8 text-center text-[10px] leading-relaxed text-white/45">
-          Le progressioni demo sono originali di Heaven Synth (placeholder), non trascrizioni di
-          brani commerciali.
+          Le progressioni sono Heaven Versions: arrangiamenti semplificati per il sistema 1–7, non
+          trascrizioni ufficiali delle registrazioni originali.
         </p>
       </div>
     </div>
