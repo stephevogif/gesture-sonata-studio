@@ -15,14 +15,37 @@ import type { ChordId, DivisionId } from "@/core/music/patterns";
 import { chordOffsets, divisionSeconds } from "@/core/music/patterns";
 import { Arpeggiator, type ArpEvent } from "./arpeggiator";
 import { MasterRack } from "./effects";
+import { InstrumentChannel } from "./channel";
+import { FxChain, type FxSpec } from "./fx";
 import { INSTRUMENT_SHIFT, presetOf, type InstrumentId } from "./presets";
-import { SynthVoice } from "./voice";
+import { SynthVoice, type VoiceBuses } from "./voice";
+
+/** one layered instrument: gain + its own insert FX chain */
+export type MixLayerSpec = {
+  id: string;
+  instrument: InstrumentId;
+  gain: number;
+  effects: FxSpec[];
+};
+
+/** full Sound Constellation mix, max 4 instruments */
+export type MixSpec = {
+  instruments: MixLayerSpec[];
+  master: { effects: FxSpec[] };
+};
+
+/** `voiceKey@channelId` → voiceKey */
+const baseKey = (key: string) => key.split("@")[0]!;
 
 export class HeavenAudioEngine {
   private ctx: AudioContext | null = null;
   private rack: MasterRack | null = null;
   private voices = new Map<string, SynthVoice>();
   private readonly arp: Arpeggiator;
+  /** Sound Constellation layers; empty = classic single-instrument routing */
+  private channels = new Map<string, InstrumentChannel>();
+  private masterChain: FxChain | null = null;
+  private mix: MixSpec | null = null;
 
   instrument: InstrumentId = "violin";
 
@@ -66,6 +89,8 @@ export class HeavenAudioEngine {
     const ctx = new AudioContext();
     this.ctx = ctx;
     this.rack = new MasterRack(ctx);
+    this.masterChain = new FxChain(ctx, this.rack.master, this.rack.postMaster);
+    if (this.mix) this.applyMix(this.mix);
     this.applyReverb();
     this.applyEq();
     this.applyDelay();
@@ -77,9 +102,57 @@ export class HeavenAudioEngine {
   async dispose() {
     this.allOff();
     this.arp.stop();
+    this.channels.forEach((c) => c.dispose());
+    this.channels.clear();
+    this.masterChain?.dispose();
+    this.masterChain = null;
     await this.ctx?.close();
     this.ctx = null;
     this.rack = null;
+  }
+
+  /* ————— Sound Constellation: layers + routing ————— */
+
+  /**
+   * Applies a declarative mix: creates/removes instrument channels and
+   * reconciles instrument + master FX chains. Cheap to call on every drag frame:
+   * the graph is only rebuilt when the structure changes.
+   */
+  applyMix(mix: MixSpec) {
+    this.mix = mix;
+    const ctx = this.ctx;
+    const rack = this.rack;
+    if (!ctx || !rack) return;
+
+    const wanted = mix.instruments.slice(0, 4);
+    const ids = wanted.map((l) => l.id);
+    for (const [id, channel] of [...this.channels]) {
+      if (ids.includes(id)) continue;
+      this.releaseChannelVoices(id);
+      channel.dispose();
+      this.channels.delete(id);
+    }
+    for (const layer of wanted) {
+      let channel = this.channels.get(layer.id);
+      if (channel && channel.instrument !== layer.instrument) {
+        this.releaseChannelVoices(layer.id);
+        channel.instrument = layer.instrument;
+      }
+      if (!channel) {
+        channel = new InstrumentChannel(ctx, layer.instrument, rack.master, layer.gain);
+        this.channels.set(layer.id, channel);
+      }
+      channel.setGain(layer.gain);
+      channel.syncFx(layer.effects, this.bpm);
+    }
+    this.masterChain?.sync(mix.master.effects, this.bpm);
+  }
+
+  /** drops every voice belonging to one channel */
+  private releaseChannelVoices(channelId: string) {
+    for (const key of [...this.voices.keys()]) {
+      if (key.endsWith(`@${channelId}`)) this.releaseVoice(key);
+    }
   }
 
   getAnalyser(): AnalyserNode | null {
@@ -88,7 +161,12 @@ export class HeavenAudioEngine {
 
   /* ————— voices ————— */
 
-  private voiceFor(id: string, frequency: number, instrument: InstrumentId): SynthVoice | null {
+  private voiceFor(
+    id: string,
+    frequency: number,
+    instrument: InstrumentId,
+    buses?: VoiceBuses,
+  ): SynthVoice | null {
     if (!this.ctx || !this.rack) return null;
     let voice = this.voices.get(id);
     if (voice && voice.instrument !== instrument) {
@@ -98,12 +176,17 @@ export class HeavenAudioEngine {
     }
     if (!voice) {
       const spec = presetOf(instrument);
-      voice = new SynthVoice(this.ctx, spec, frequency, {
-        dry: this.rack.master,
-        reverb: this.rack.reverbSend,
-        delay: this.rack.delaySend,
-        chorus: this.rack.chorusSend,
-      });
+      voice = new SynthVoice(
+        this.ctx,
+        spec,
+        frequency,
+        buses ?? {
+          dry: this.rack.master,
+          reverb: this.rack.reverbSend,
+          delay: this.rack.delaySend,
+          chorus: this.rack.chorusSend,
+        },
+      );
       this.voices.set(id, voice);
     }
     return voice;
@@ -111,6 +194,15 @@ export class HeavenAudioEngine {
 
   /** sustained note — amount 0..1 loudness, bright 0..1 timbre */
   noteOn(id: string, freq: number, amount: number, bright = 0.5, inst?: InstrumentId) {
+    if (this.channels.size) {
+      for (const [cid, channel] of this.channels) {
+        const voice = this.voiceFor(`${id}@${cid}`, freq, channel.instrument, {
+          dry: channel.input,
+        });
+        voice?.hold(freq, amount, bright, this.legato ?? undefined);
+      }
+      return;
+    }
     const voice = this.voiceFor(id, freq, inst ?? this.instrument);
     voice?.hold(freq, amount, bright, this.legato ?? undefined);
   }
@@ -124,6 +216,15 @@ export class HeavenAudioEngine {
     inst: InstrumentId,
     gate: number,
   ) {
+    if (this.channels.size) {
+      for (const [cid, channel] of this.channels) {
+        const voice = this.voiceFor(`${id}@${cid}`, freq, channel.instrument, {
+          dry: channel.input,
+        });
+        voice?.strike(freq, amount, bright, gate);
+      }
+      return;
+    }
     const voice = this.voiceFor(id, freq, inst);
     voice?.strike(freq, amount, bright, gate);
   }
@@ -152,8 +253,9 @@ export class HeavenAudioEngine {
     });
     // drop extra chord voices left over from a wider shape
     for (const key of [...this.voices.keys()]) {
-      if (!key.startsWith(`${id}~`)) continue;
-      const index = Number(key.slice(id.length + 1));
+      const base = baseKey(key);
+      if (!base.startsWith(`${id}~`)) continue;
+      const index = Number(base.slice(id.length + 1));
       if (!Number.isNaN(index) && index >= offsets.length) this.releaseVoice(key);
     }
   }
@@ -161,7 +263,8 @@ export class HeavenAudioEngine {
   noteOff(id: string, force = false) {
     if (this.hold && !force) return;
     for (const key of [...this.voices.keys()]) {
-      if (key.startsWith(`${id}~`)) this.releaseVoice(key);
+      const base = baseKey(key);
+      if (base === id || base.startsWith(`${id}~`)) this.releaseVoice(key);
     }
     this.releaseVoice(id);
   }
@@ -205,6 +308,8 @@ export class HeavenAudioEngine {
     this.bpm = clamp(bpm, 40, 220);
     this.applyDelay();
     this.arp.setTempo(this.bpm);
+    this.channels.forEach((c) => c.setTempo(this.bpm));
+    this.masterChain?.setTempo(this.bpm);
   }
 
   /** midi note a degree maps to for the given instrument */

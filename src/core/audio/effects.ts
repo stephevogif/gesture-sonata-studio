@@ -38,6 +38,9 @@ export class MasterRack {
   readonly delaySend: GainNode;
   readonly chorusSend: GainNode;
   readonly analyser: AnalyserNode;
+  /** master FX are inserted between `master` and `postMaster` */
+  readonly postMaster: GainNode;
+  private readonly limiter: DynamicsCompressorNode;
   private readonly eq: BiquadFilterNode;
   private readonly delayL: DelayNode;
   private readonly delayR: DelayNode;
@@ -50,6 +53,15 @@ export class MasterRack {
   constructor(private readonly ctx: AudioContext) {
     this.master = ctx.createGain();
     this.master.gain.value = 0.9;
+
+    this.postMaster = ctx.createGain();
+
+    this.limiter = ctx.createDynamicsCompressor();
+    this.limiter.threshold.value = -6;
+    this.limiter.knee.value = 6;
+    this.limiter.ratio.value = 8;
+    this.limiter.attack.value = 0.004;
+    this.limiter.release.value = 0.18;
 
     this.analyser = ctx.createAnalyser();
     this.analyser.fftSize = 1024;
@@ -127,7 +139,12 @@ export class MasterRack {
     this.chorusSend.connect(chorusL).connect(cPanL).connect(this.master);
     this.chorusSend.connect(chorusR).connect(cPanR).connect(this.master);
 
-    this.master.connect(this.eq).connect(this.analyser).connect(ctx.destination);
+    this.master.connect(this.postMaster);
+    this.postMaster
+      .connect(this.eq)
+      .connect(this.limiter)
+      .connect(this.analyser)
+      .connect(ctx.destination);
   }
 
   setChorus({ mix, depth, rate }: ChorusSettings) {
