@@ -37,6 +37,9 @@ export type MixSpec = {
 /** `voiceKey@channelId` → voiceKey */
 const baseKey = (key: string) => key.split("@")[0]!;
 
+/** voices kept alive per active instrument channel */
+const MAX_VOICES_PER_CHANNEL = 8;
+
 export class HeavenAudioEngine {
   private ctx: AudioContext | null = null;
   private rack: MasterRack | null = null;
