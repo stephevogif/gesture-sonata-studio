@@ -1,40 +1,75 @@
-import { MODES } from "@/core/music/chords";
-import { difficultyLabel, keyLabel } from "@/core/songs/catalog";
+import { Heart, Play } from "lucide-react";
+import {
+  compatibilityLabel,
+  difficultyLabel,
+  keyLabel,
+  scaleLabel,
+} from "@/core/songs/catalog";
 import type { Song } from "@/core/songs/types";
 
-export default function SongCard({ song, onPlay }: { song: Song; onPlay: (song: Song) => void }) {
-  const scale = MODES.find((m) => m.id === song.scale)?.name ?? song.scale;
-  const preview = song.sections[0]?.degrees.slice(0, 8) ?? [];
+export default function SongCard({
+  song,
+  favorite,
+  onPlay,
+  onToggleFavorite,
+}: {
+  song: Song;
+  favorite: boolean;
+  onPlay: (song: Song) => void;
+  onToggleFavorite: (song: Song) => void;
+}) {
+  const heaven = compatibilityLabel(song.compatibility);
+  const main = song.sections[0]?.degrees ?? [];
 
   return (
-    <button onClick={() => onPlay(song)} className="heaven-song-card text-left">
+    <article className="heaven-song-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold tracking-tight text-white drop-shadow">
+          <h2 className="truncate text-[14px] font-semibold tracking-tight text-white drop-shadow">
             {song.title}
-          </p>
-          <p className="mt-0.5 truncate text-[11px] uppercase tracking-[0.22em] text-white/70">
+          </h2>
+          <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.28em] text-white/70">
             {song.artist}
           </p>
         </div>
-        <span className="heaven-song-badge">{difficultyLabel(song.difficulty)}</span>
+        <button
+          onClick={() => onToggleFavorite(song)}
+          aria-pressed={favorite}
+          aria-label={favorite ? `Rimuovi ${song.title} dai preferiti` : `Aggiungi ${song.title} ai preferiti`}
+          className={`heaven-orb-btn ${favorite ? "heaven-nav-on" : ""}`}
+        >
+          <Heart className="h-4 w-4" />
+        </button>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] uppercase tracking-[0.2em] text-[#ffe9bd]">
+      <p className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[9px] uppercase tracking-[0.24em] text-white/60">
+        <span>{song.genre}</span>
+        <span aria-hidden>·</span>
         <span>
-          {keyLabel(song)} · {scale}
+          {keyLabel(song)} {scaleLabel(song)}
         </span>
-        <span className="text-white/55">{song.bpm} BPM</span>
-        <span className="text-white/55">{song.genre}</span>
+        <span aria-hidden>·</span>
+        <span>{difficultyLabel(song.difficulty)}</span>
+      </p>
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className="flex items-center gap-1.5 text-[13px] tracking-[0.18em] text-[#ffe9bd]">
+          {main.map((d, i) => (
+            <span key={i} className="flex items-center gap-1.5">
+              {i > 0 && <span aria-hidden className="h-px w-3 bg-white/25" />}
+              {d}
+            </span>
+          ))}
+        </p>
+        <button onClick={() => onPlay(song)} className="heaven-song-play">
+          <Play className="h-3.5 w-3.5" />
+          Play with hands
+        </button>
       </div>
 
-      <div className="mt-3 flex items-center gap-1.5">
-        {preview.map((d, i) => (
-          <span key={`${d}-${i}`} className="heaven-song-degree">
-            {d}
-          </span>
-        ))}
-      </div>
-    </button>
+      {heaven && (
+        <p className="mt-2 text-[8px] uppercase tracking-[0.26em] text-[#ffe9bd]/70">{heaven}</p>
+      )}
+    </article>
   );
 }
