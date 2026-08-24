@@ -250,6 +250,15 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                   dragRef.current = { kind: "layer", layerId: layer.id };
                 }}
               />
+              {/* halo drawn as a plain circle: SVG filters re-rasterise on every
+                  drag frame and stall low-end phones */}
+              <circle
+                cx={x}
+                cy={y}
+                r={20 + layer.gain * 6}
+                fill={`rgba(${rgb},${0.05 + layer.gain * 0.12})`}
+                pointerEvents="none"
+              />
               <circle
                 cx={x}
                 cy={y}
@@ -258,8 +267,8 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                 stroke={`rgba(${rgb},${0.5 + layer.gain * 0.5})`}
                 strokeWidth={on ? 2 : 1}
                 pointerEvents="none"
-                style={{ filter: `drop-shadow(0 0 ${3 + layer.gain * 12}px rgba(${rgb},0.7))` }}
               />
+
               <text
                 x={x}
                 y={Math.max(12, y - 23)}
