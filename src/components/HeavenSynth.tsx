@@ -5,6 +5,7 @@ import {
   Eye,
   EyeOff,
   HelpCircle,
+  ListMusic,
   Mic,
   Music2,
   Play,
@@ -32,6 +33,9 @@ import {
 } from "@/lib/theory";
 import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gestures";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
+import { useSongMode } from "@/hooks/useSongMode";
+import SongModeHud from "@/components/songs/SongModeHud";
+import { updateSongSession } from "@/core/songs/session";
 import TutorialArt from "@/components/TutorialArt";
 import FxConstellation, { type FxNodeSpec } from "@/components/FxConstellation";
 import { detectKey } from "@/lib/keyDetect";
@@ -134,6 +138,22 @@ export default function HeavenSynth() {
   const [showDebug, setShowDebug] = useState(true);
   const [panel, setPanel] = useState<PanelId>(null);
   const [hud, setHud] = useState<Hud>({ volume: 0, filter: 8000, heavens: null, fps: 0 });
+
+  // ————— SONG MODE (Heaven Songs) —————
+  const songMode = useSongMode();
+  const songId = songMode.song?.id ?? null;
+  const songRootPc = songMode.rootPc;
+  const songScale = songMode.song?.scale ?? null;
+  const songBpm = songMode.song?.bpm ?? null;
+  /** la song imposta automaticamente tonica, scala e tempo: nessun setup manuale */
+  useEffect(() => {
+    if (!songId || songRootPc == null || !songScale) return;
+    setRootPc(songRootPc);
+    setMode(songScale);
+    if (songBpm) setBpm(songBpm);
+  }, [songId, songRootPc, songScale, songBpm]);
+
+
 
   // ————— effetti (come Sky Synth) —————
   const [reverb, setReverb] = useState(45);
@@ -792,6 +812,13 @@ export default function HeavenSynth() {
   const activeDegree = hud.heavens?.degree ?? null;
   const playing = activeDegree != null;
 
+  /* Song Mode: confronta il grado atteso con quello riconosciuto (manual follow) */
+  const observeSong = songMode.observe;
+  useEffect(() => {
+    observeSong(activeDegree == null ? null : activeDegree + 1);
+  }, [activeDegree, observeSong]);
+
+
   const fxNodes: FxNodeSpec[] = useMemo(
     () => [
       {
@@ -1000,6 +1027,9 @@ export default function HeavenSynth() {
         )}
 
 
+        {/* Song Mode */}
+        {songMode.song && <SongModeHud state={songMode} rootPc={rootPc} mode={mode} />}
+
         {/* i sette cieli */}
         <div className="relative mt-7 flex items-center justify-between px-1">
           <div className="heaven-thread pointer-events-none absolute inset-x-2 top-1/2" />
@@ -1202,9 +1232,39 @@ export default function HeavenSynth() {
                 <p className="text-[11px] text-slate-500">{listenMsg}</p>
               )}
             </div>
+            {songMode.song && (
+              <div className="space-y-2 border-t border-white/20 pt-3">
+                <h3 className="text-xs font-bold">Trasposizione della song</h3>
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  Tonalità
+                  <select
+                    value={rootPc}
+                    onChange={(e) =>
+                      updateSongSession({
+                        transpose:
+                          ((Number(e.target.value) - songMode.song!.keyPc) % 12 + 12) % 12,
+                      })
+                    }
+                    className={field}
+                    aria-label="Tonalità della song"
+                  >
+                    {KEYS.map((n, i) => (
+                      <option key={n} value={i}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  I gradi ({songMode.degrees.join(" · ")}) non cambiano: cambia solo la tonalità.
+                </p>
+              </div>
+            )}
             <p className="text-[11px] text-slate-500">
               Tonica e scala restano bloccate: le mani scelgono solo il grado (1–7).
+              {songMode.song ? " In Song Mode le imposta la canzone." : ""}
             </p>
+
 
           </section>
         )}
@@ -1316,6 +1376,15 @@ export default function HeavenSynth() {
       {/* barra inferiore */}
       <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
         <div className="heaven-glass mx-auto flex max-w-md items-center justify-between px-4 py-2">
+          <Link
+            to="/songs"
+            aria-label="Heaven Songs"
+            className={`heaven-nav ${songMode.song ? "heaven-nav-on" : ""}`}
+          >
+            <ListMusic className="h-5 w-5" />
+            Songs
+          </Link>
+
           {(
             [
               ["sound", "Sound", Settings2],

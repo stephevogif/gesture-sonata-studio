@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NightRouteImport } from './routes/night'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SongsRouteImport } from './routes/songs'
 import { Route as StudioRouteImport } from './routes/studio'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SongsRoute = SongsRouteImport.update({
+  id: '/songs',
+  path: '/songs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/night': typeof NightRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/songs': typeof SongsRoute
   '/studio': typeof StudioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/night': typeof NightRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/songs': typeof SongsRoute
   '/studio': typeof StudioRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/night': typeof NightRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/songs': typeof SongsRoute
   '/studio': typeof StudioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/night' | '/sitemap.xml' | '/studio'
+  fullPaths: '/' | '/night' | '/sitemap.xml' | '/songs' | '/studio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/night' | '/sitemap.xml' | '/studio'
-  id: '__root__' | '/' | '/night' | '/sitemap.xml' | '/studio'
+  to: '/' | '/night' | '/sitemap.xml' | '/songs' | '/studio'
+  id: '__root__' | '/' | '/night' | '/sitemap.xml' | '/songs' | '/studio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   NightRoute: typeof NightRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SongsRoute: typeof SongsRoute
   StudioRoute: typeof StudioRoute
 }
 
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/songs': {
+      id: '/songs'
+      path: '/songs'
+      fullPath: '/songs'
+      preLoaderRoute: typeof SongsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/studio': {
       id: '/studio'
       path: '/studio'
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   NightRoute: NightRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SongsRoute: SongsRoute,
   StudioRoute: StudioRoute,
 }
 export const routeTree = rootRouteImport
