@@ -33,6 +33,7 @@ import {
 import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gestures";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import TutorialArt from "@/components/TutorialArt";
+import FxConstellation, { type FxNodeSpec } from "@/components/FxConstellation";
 import { detectKey } from "@/lib/keyDetect";
 
 
@@ -140,6 +141,12 @@ export default function HeavenSynth() {
   const [delayFeedback, setDelayFeedback] = useState(32);
   const [cutMax, setCutMax] = useState(8000);
   const [resonance, setResonance] = useState(6);
+  const [delayTime, setDelayTime] = useState(0.32);
+  const [chorusMix, setChorusMix] = useState(0);
+  const [chorusRate, setChorusRate] = useState(0.5);
+  const [chorusDepth, setChorusDepth] = useState(50);
+  /** legato: tempo di scivolamento fra un accordo e l'altro, in ms */
+  const [legato, setLegatoMs] = useState(90);
 
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -177,11 +184,26 @@ export default function HeavenSynth() {
     engineRef.current?.setReverb(reverb / 100);
   }, [reverb]);
   useEffect(() => {
-    engineRef.current?.setDelay({ mix: delayMix / 100, feedback: delayFeedback / 100 });
-  }, [delayMix, delayFeedback]);
+    engineRef.current?.setDelay({
+      mix: delayMix / 100,
+      feedback: delayFeedback / 100,
+      sync: false,
+      time: delayTime,
+    });
+  }, [delayMix, delayFeedback, delayTime]);
   useEffect(() => {
     engineRef.current?.setResonance(resonance);
   }, [resonance]);
+  useEffect(() => {
+    engineRef.current?.setChorus({
+      mix: chorusMix / 100,
+      rate: chorusRate,
+      depth: chorusDepth / 100,
+    });
+  }, [chorusMix, chorusRate, chorusDepth]);
+  useEffect(() => {
+    engineRef.current?.setLegato(legato / 1000);
+  }, [legato]);
 
 
   useEffect(() => {
@@ -735,11 +757,13 @@ export default function HeavenSynth() {
     engine.setChord("off");
     engine.setInstrument(cfg.current.instrument);
     engine.setReverb(reverb / 100);
-    engine.setDelay({ mix: delayMix / 100, feedback: delayFeedback / 100 });
+    engine.setDelay({ mix: delayMix / 100, feedback: delayFeedback / 100, sync: false, time: delayTime });
     engine.setResonance(resonance);
+    engine.setChorus({ mix: chorusMix / 100, rate: chorusRate, depth: chorusDepth / 100 });
+    engine.setLegato(legato / 1000);
     engine.setTempo(bpm);
     await camReady;
-  }, [bpm, delayFeedback, delayMix, resonance, reverb, startCam]);
+  }, [bpm, delayFeedback, delayMix, delayTime, chorusMix, chorusRate, chorusDepth, legato, resonance, reverb, startCam]);
 
   const stop = useCallback(() => {
     stopCam();
