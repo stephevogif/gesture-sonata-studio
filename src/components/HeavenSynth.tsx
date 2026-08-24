@@ -159,6 +159,9 @@ export default function HeavenSynth() {
   const instrument: InstrumentId = mix.instruments[0]?.instrument ?? "pads";
   const [showDebug, setShowDebug] = useState(true);
   const [panel, setPanel] = useState<PanelId>(null);
+  /** eco mode: while a floating window is open the canvas drops its extras */
+  const panelOpenRef = useRef(false);
+  panelOpenRef.current = panel !== null;
   const [hud, setHud] = useState<Hud>({ volume: 0, filter: 8000, heavens: null, fps: 0 });
 
   // ————— SONG MODE (Heaven Songs) —————
