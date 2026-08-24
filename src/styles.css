@@ -2039,22 +2039,24 @@
   animation: fw-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
   overflow: hidden;
 }
-/* backdrop blur over a live camera canvas is the most expensive thing on a
-   phone: the panels stay glassy but with a light, opaque-ish blur */
-.fw-light {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 24px 60px -20px rgba(20, 45, 85, 0.55);
-  color: #24314c;
-  backdrop-filter: blur(8px);
-}
+/* tutte le finestre usano lo stesso gradient blu notte di Seven Heavens:
+   backdrop blur su una canvas viva è costoso, quindi resta leggero */
+.fw-light,
 .fw-dark {
-  background: rgba(12, 22, 46, 0.94);
+  background: linear-gradient(
+    180deg,
+    rgba(16, 30, 62, 0.95) 0%,
+    rgba(10, 20, 44, 0.96) 55%,
+    rgba(6, 13, 32, 0.97) 100%
+  );
   border: 1px solid rgba(160, 195, 255, 0.22);
-  box-shadow: 0 24px 60px -20px rgba(0, 8, 26, 0.8);
+  box-shadow:
+    0 24px 60px -20px rgba(0, 8, 26, 0.85),
+    inset 0 1px 0 rgba(190, 215, 255, 0.12);
   color: #e6efff;
   backdrop-filter: blur(8px);
 }
+
 .fw-body {
   overflow-y: auto;
   padding: 0.75rem 1rem 1.1rem;
