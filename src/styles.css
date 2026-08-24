@@ -2039,22 +2039,24 @@
   animation: fw-rise 260ms cubic-bezier(0.22, 1, 0.36, 1);
   overflow: hidden;
 }
-/* backdrop blur over a live camera canvas is the most expensive thing on a
-   phone: the panels stay glassy but with a light, opaque-ish blur */
-.fw-light {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 24px 60px -20px rgba(20, 45, 85, 0.55);
-  color: #24314c;
-  backdrop-filter: blur(8px);
-}
+/* tutte le finestre usano lo stesso gradient blu notte di Seven Heavens:
+   backdrop blur su una canvas viva è costoso, quindi resta leggero */
+.fw-light,
 .fw-dark {
-  background: rgba(12, 22, 46, 0.94);
+  background: linear-gradient(
+    180deg,
+    rgba(16, 30, 62, 0.95) 0%,
+    rgba(10, 20, 44, 0.96) 55%,
+    rgba(6, 13, 32, 0.97) 100%
+  );
   border: 1px solid rgba(160, 195, 255, 0.22);
-  box-shadow: 0 24px 60px -20px rgba(0, 8, 26, 0.8);
+  box-shadow:
+    0 24px 60px -20px rgba(0, 8, 26, 0.85),
+    inset 0 1px 0 rgba(190, 215, 255, 0.12);
   color: #e6efff;
   backdrop-filter: blur(8px);
 }
+
 .fw-body {
   overflow-y: auto;
   padding: 0.75rem 1rem 1.1rem;
@@ -2129,12 +2131,13 @@
 }
 .sc-light .sc-sun-label,
 .sc-light .sc-label {
-  fill: #22304c;
+  fill: #eaf1ff;
 }
 .sc-light .sc-value,
 .sc-light .sc-fx-label {
-  fill: rgba(40, 55, 85, 0.8);
+  fill: rgba(215, 228, 255, 0.78);
 }
+
 .sc-dark .sc-sun-label,
 .sc-dark .sc-label {
   fill: #eaf1ff;
@@ -2167,7 +2170,7 @@
   appearance: none;
   border-radius: 0.75rem;
   border: 1px solid rgba(140, 170, 220, 0.45);
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.08);
   padding: 0.5rem 0.7rem;
   font-size: 13px;
   font-weight: 600;
@@ -2247,4 +2250,104 @@
 .heaven-navbar .heaven-nav {
   min-width: 0;
   font-size: 10px;
+}
+
+/* ————— SOUND CONSTELLATION: tasti +, ✕ rossa, editor ————— */
+.sc-stage {
+  position: relative;
+}
+.sc-fabs {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.sc-fab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 214, 140, 0.6);
+  background: rgba(255, 226, 165, 0.12);
+  color: inherit;
+  padding: 0.3rem 0.6rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  box-shadow: 0 0 16px -4px rgba(255, 214, 140, 0.5);
+}
+.sc-fab:disabled {
+  opacity: 0.35;
+  box-shadow: none;
+}
+.sc-kill {
+  cursor: pointer;
+}
+.sc-kill-bg {
+  fill: rgba(220, 60, 60, 0.92);
+  stroke: rgba(255, 190, 190, 0.9);
+  stroke-width: 1;
+}
+.sc-kill-x {
+  fill: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.sc-pop,
+.sc-editor {
+  border-radius: 1rem;
+  border: 1px solid rgba(160, 195, 255, 0.24);
+  background: linear-gradient(180deg, rgba(20, 36, 72, 0.96), rgba(9, 18, 40, 0.97));
+  box-shadow: 0 18px 40px -18px rgba(0, 8, 26, 0.9);
+  padding: 0.6rem 0.7rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.sc-pop {
+  position: absolute;
+  right: 0;
+  top: 4.6rem;
+  z-index: 2;
+  width: min(16rem, 92%);
+  max-height: 15rem;
+  overflow-y: auto;
+}
+.sc-editor {
+  margin-top: 0.6rem;
+}
+.sc-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  opacity: 0.9;
+}
+.sc-pop-x {
+  display: grid;
+  place-items: center;
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  opacity: 0.7;
+}
+.sc-pop-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.sc-danger {
+  align-self: flex-start;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 120, 120, 0.7);
+  background: rgba(200, 50, 50, 0.18);
+  padding: 0.3rem 0.7rem;
+  font-size: 11px;
+  font-weight: 700;
 }
