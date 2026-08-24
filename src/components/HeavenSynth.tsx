@@ -974,71 +974,8 @@ export default function HeavenSynth() {
         )}
 
 
-        {/* pannello attivo */}
-        {panel === "sound" && (
-          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
-            <h2 className="text-sm font-bold">Suono</h2>
-            <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
-              Strumento
-              <select
-                value={instrument}
-                onChange={(e) => setInstrument(e.target.value as InstrumentId)}
-                className={field}
-                aria-label="Strumento"
-              >
-                {INSTRUMENTS.map((it) => (
-                  <option key={it.id} value={it.id}>
-                    {it.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
-              Volume
-              <select
-                value={volFollow ? "hand" : "fixed"}
-                onChange={(e) => setVolFollow(e.target.value === "hand")}
-                className={field}
-                aria-label="Modalità volume"
-              >
-                <option value="fixed">Fisso 100%</option>
-                <option value="hand">Controllo con la mano</option>
-              </select>
-            </label>
-            <button onClick={() => setShowDebug((v) => !v)} className={chip(showDebug)}>
-              {showDebug ? <Eye className="mr-1 inline h-3.5 w-3.5" /> : <EyeOff className="mr-1 inline h-3.5 w-3.5" />}
-              Costellazione mani
-            </button>
-            <p className="text-[11px] text-slate-500">
-              Gesto: 10 dita alternano volume fisso al 100% e controllo con la mano.
-            </p>
-          </section>
-        )}
+        {/* i pannelli sono floating windows: vedi in fondo al componente */}
 
-
-        {panel === "fx" && (
-          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
-            <h2 className="text-sm font-bold">FX Constellation</h2>
-            <FxConstellation coreLabel={instrument} nodes={fxNodes} dark={false} />
-            <label className="block text-[11px] font-semibold text-slate-600">
-              Legato fra accordi: <span className="text-slate-900">{legato} ms</span>
-              <input
-                type="range"
-                min={0}
-                max={600}
-                step={10}
-                value={legato}
-                onChange={(e) => setLegatoMs(Number(e.target.value))}
-                className="mt-1 w-full accent-sky-700"
-                aria-label="Velocità legato fra accordi"
-              />
-            </label>
-            <p className="text-[11px] text-slate-500">
-              0 ms = cambio secco, valori alti = accordi che scivolano l&apos;uno nell&apos;altro. Il
-              low pass segue l&apos;altezza del Lato A fino al cutoff impostato.
-            </p>
-          </section>
-        )}
 
         {panel === "scale" && (
           <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
