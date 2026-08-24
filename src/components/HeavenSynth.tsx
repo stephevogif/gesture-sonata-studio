@@ -977,9 +977,57 @@ export default function HeavenSynth() {
         {/* i pannelli sono floating windows: vedi in fondo al componente */}
 
 
+        {panel === "sound" && (
+          <FloatingWindow
+            title="Sound Constellation"
+            subtitle={`${mix.instruments.length} strumenti · trascina per il mix`}
+            onClose={() => setPanel(null)}
+          >
+            <SoundConstellation state={mix} onChange={setMix} />
+            <div className="mt-3 space-y-3 border-t border-white/40 pt-3">
+              <label className="block text-[11px] font-semibold">
+                Legato fra accordi: <b>{legato} ms</b>
+                <input
+                  type="range"
+                  min={0}
+                  max={600}
+                  step={10}
+                  value={legato}
+                  onChange={(e) => setLegatoMs(Number(e.target.value))}
+                  className="sc-range"
+                  aria-label="Velocità legato fra accordi"
+                />
+              </label>
+              <label className="block text-[11px] font-semibold">
+                Volume
+                <select
+                  value={volFollow ? "hand" : "fixed"}
+                  onChange={(e) => setVolFollow(e.target.value === "hand")}
+                  className="sc-field"
+                  aria-label="Modalità volume"
+                >
+                  <option value="fixed">Fisso 100%</option>
+                  <option value="hand">Controllo con la mano</option>
+                </select>
+              </label>
+              <button onClick={() => setShowDebug((v) => !v)} className={chip(showDebug)}>
+                {showDebug ? (
+                  <Eye className="mr-1 inline h-3.5 w-3.5" />
+                ) : (
+                  <EyeOff className="mr-1 inline h-3.5 w-3.5" />
+                )}
+                Costellazione mani
+              </button>
+              <p className="text-[11px] opacity-70">
+                Gesto: 10 dita alternano volume fisso al 100% e controllo con la mano.
+              </p>
+            </div>
+          </FloatingWindow>
+        )}
+
         {panel === "scale" && (
-          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
-            <h2 className="text-sm font-bold">Tonalità e scala</h2>
+          <FloatingWindow title="Tonalità e scala" onClose={() => setPanel(null)}>
+            <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
                 Tonica
@@ -1067,18 +1115,18 @@ export default function HeavenSynth() {
             </p>
 
 
-          </section>
+            </div>
+          </FloatingWindow>
         )}
 
 
         {panel === "arp" && (
-          <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold">Arpeggiatore</h2>
-              <span className="text-[11px] font-semibold text-slate-500">
-                {arpOn ? "Attivo" : "Spento"}
-              </span>
-            </div>
+          <FloatingWindow
+            title="Arpeggiatore"
+            subtitle={arpOn ? "Attivo" : "Spento"}
+            onClose={() => setPanel(null)}
+          >
+            <div className="space-y-3">
             <div className="flex flex-wrap gap-1.5">
               <button onClick={() => setArpOn((v) => !v)} className={chip(arpOn)}>
                 {arpOn ? "Arp ON" : "Arp OFF"}
@@ -1156,13 +1204,14 @@ export default function HeavenSynth() {
               (tasto A). Nessun numero di dita attiva più l&apos;arpeggiatore.
             </p>
 
-          </section>
+            </div>
+          </FloatingWindow>
         )}
 
 
         {panel === "help" && (
-          <section className="heaven-glass mt-4 space-y-2 p-4 text-white">
-            <h2 className="text-sm font-bold">Guida rapida</h2>
+          <FloatingWindow title="Guida rapida" onClose={() => setPanel(null)}>
+            <div className="space-y-2">
             <ol className="space-y-1.5 text-[12px] text-slate-700">
               {STEPS.map((s, i) => (
                 <li key={i}>
@@ -1170,7 +1219,8 @@ export default function HeavenSynth() {
                 </li>
               ))}
             </ol>
-          </section>
+            </div>
+          </FloatingWindow>
         )}
       </div>
 
