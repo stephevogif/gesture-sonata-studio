@@ -1232,9 +1232,39 @@ export default function HeavenSynth() {
                 <p className="text-[11px] text-slate-500">{listenMsg}</p>
               )}
             </div>
+            {songMode.song && (
+              <div className="space-y-2 border-t border-white/20 pt-3">
+                <h3 className="text-xs font-bold">Trasposizione della song</h3>
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  Tonalità
+                  <select
+                    value={rootPc}
+                    onChange={(e) =>
+                      updateSongSession({
+                        transpose:
+                          ((Number(e.target.value) - songMode.song!.keyPc) % 12 + 12) % 12,
+                      })
+                    }
+                    className={field}
+                    aria-label="Tonalità della song"
+                  >
+                    {KEYS.map((n, i) => (
+                      <option key={n} value={i}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  I gradi ({songMode.degrees.join(" · ")}) non cambiano: cambia solo la tonalità.
+                </p>
+              </div>
+            )}
             <p className="text-[11px] text-slate-500">
               Tonica e scala restano bloccate: le mani scelgono solo il grado (1–7).
+              {songMode.song ? " In Song Mode le imposta la canzone." : ""}
             </p>
+
 
           </section>
         )}
