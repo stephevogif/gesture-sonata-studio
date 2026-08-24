@@ -68,14 +68,24 @@ function crossfade(ctx: AudioContext, s: Shell, amount: number, keepDry = true) 
   s.dry.gain.setTargetAtTime(keepDry ? 1 - a * 0.85 : 1 - a, now, SMOOTH);
 }
 
+/**
+ * Waveshaper curves are expensive to build, so they are cached per 5% step:
+ * dragging the Drive knob reuses a curve instead of allocating one per frame.
+ */
+const SAT_CACHE = new Map<number, Float32Array<ArrayBuffer>>();
+
 function saturation(amount: number): Float32Array<ArrayBuffer> {
+  const step = Math.round(clamp(amount, 0, 1) * 20);
+  const cached = SAT_CACHE.get(step);
+  if (cached) return cached;
   const size = 1024;
   const curve = new Float32Array(new ArrayBuffer(size * 4));
-  const k = clamp(amount, 0, 1) * 120;
+  const k = (step / 20) * 120;
   for (let i = 0; i < size; i++) {
     const x = (i * 2) / size - 1;
     curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x));
   }
+  SAT_CACHE.set(step, curve);
   return curve;
 }
 
