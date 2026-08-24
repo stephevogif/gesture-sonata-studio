@@ -11,7 +11,8 @@
  * always computed by the Music Theory Engine.
  */
 
-import type { Compatibility, Difficulty, ModeIdAlias, Song } from "./catalogTypes";
+import type { ModeId } from "@/core/music/chords";
+import type { Compatibility, Difficulty, Song } from "./types";
 
 type Row = {
   id: string;
