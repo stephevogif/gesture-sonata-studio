@@ -812,6 +812,13 @@ export default function HeavenSynth() {
   const activeDegree = hud.heavens?.degree ?? null;
   const playing = activeDegree != null;
 
+  /* Song Mode: confronta il grado atteso con quello riconosciuto (manual follow) */
+  const observeSong = songMode.observe;
+  useEffect(() => {
+    observeSong(activeDegree == null ? null : activeDegree + 1);
+  }, [activeDegree, observeSong]);
+
+
   const fxNodes: FxNodeSpec[] = useMemo(
     () => [
       {
