@@ -443,7 +443,7 @@ export default function HeavenSynth() {
   const emitParticles = useCallback((hand: HandFrame, w: number, h: number, amount: number) => {
     const tips = [4, 8, 12, 16, 20, 0];
     const arr = particlesRef.current;
-    if (arr.length > 420) return;
+    if (arr.length > MAX_PARTICLES) return;
     for (const i of tips) {
       if (Math.random() > amount) continue;
       const lm = hand.landmarks[i]!;
@@ -463,33 +463,54 @@ export default function HeavenSynth() {
     }
   }, []);
 
-  const drawParticles = useCallback((ctx: CanvasRenderingContext2D, dt: number) => {
-    const arr = particlesRef.current;
-    if (!arr.length) return;
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    for (let i = arr.length - 1; i >= 0; i--) {
-      const p = arr[i]!;
-      p.life -= dt * 1.5;
-      if (p.life <= 0) {
-        arr.splice(i, 1);
-        continue;
-      }
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 26 * dt;
-      p.vx *= 1 - dt * 1.2;
-      const a = Math.max(0, p.life) * 0.85;
-      ctx.globalAlpha = a;
-      ctx.fillStyle = "rgba(255,240,205,1)";
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "rgba(255,214,140,0.9)";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
+  /** pre-rendered glow sprite: `shadowBlur` per particle is far too costly */
+  const sparkSprite = useRef<HTMLCanvasElement | null>(null);
+  const getSpark = useCallback(() => {
+    if (sparkSprite.current) return sparkSprite.current;
+    const size = 24;
+    const cv = document.createElement("canvas");
+    cv.width = size;
+    cv.height = size;
+    const c = cv.getContext("2d");
+    if (c) {
+      const g = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      g.addColorStop(0, "rgba(255,248,220,1)");
+      g.addColorStop(0.35, "rgba(255,222,155,0.6)");
+      g.addColorStop(1, "rgba(255,205,130,0)");
+      c.fillStyle = g;
+      c.fillRect(0, 0, size, size);
     }
-    ctx.restore();
+    sparkSprite.current = cv;
+    return cv;
   }, []);
+
+  const drawParticles = useCallback(
+    (ctx: CanvasRenderingContext2D, dt: number) => {
+      const arr = particlesRef.current;
+      if (!arr.length) return;
+      const spark = getSpark();
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = arr.length - 1; i >= 0; i--) {
+        const p = arr[i]!;
+        p.life -= dt * 1.5;
+        if (p.life <= 0) {
+          arr.splice(i, 1);
+          continue;
+        }
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 26 * dt;
+        p.vx *= 1 - dt * 1.2;
+        ctx.globalAlpha = Math.max(0, p.life) * 0.85;
+        const d = p.r * 6;
+        ctx.drawImage(spark, p.x - d / 2, p.y - d / 2, d, d);
+      }
+      ctx.restore();
+    },
+    [getSpark],
+  );
+
 
   /* ————— aura luminosa sulle mani mentre suonano ————— */
   const drawHandGlow = useCallback(
