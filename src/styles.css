@@ -2131,12 +2131,13 @@
 }
 .sc-light .sc-sun-label,
 .sc-light .sc-label {
-  fill: #22304c;
+  fill: #eaf1ff;
 }
 .sc-light .sc-value,
 .sc-light .sc-fx-label {
-  fill: rgba(40, 55, 85, 0.8);
+  fill: rgba(215, 228, 255, 0.78);
 }
+
 .sc-dark .sc-sun-label,
 .sc-dark .sc-label {
   fill: #eaf1ff;
