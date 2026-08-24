@@ -537,6 +537,7 @@ export class FxChain {
   dispose() {
     this.units.forEach((u) => u.dispose());
     this.units.clear();
+    this.applied.clear();
     this.order = [];
     try {
       this.input.disconnect();
