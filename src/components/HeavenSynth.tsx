@@ -37,12 +37,14 @@ import { useSongMode } from "@/hooks/useSongMode";
 import SongModeHud from "@/components/songs/SongModeHud";
 import { updateSongSession } from "@/core/songs/session";
 import TutorialArt from "@/components/TutorialArt";
-import FxConstellation, { type FxNodeSpec } from "@/components/FxConstellation";
+import FloatingWindow from "@/components/ui/FloatingWindow";
+import SoundConstellation from "@/components/sound/SoundConstellation";
+import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
 import { detectKey } from "@/lib/keyDetect";
 
 
 
-type PanelId = null | "sound" | "fx" | "scale" | "arp" | "help";
+type PanelId = null | "sound" | "scale" | "arp" | "help";
 
 type Hud = {
   volume: number;
@@ -134,7 +136,9 @@ export default function HeavenSynth() {
   // ————— impostazioni —————
   const [rootPc, setRootPc] = useState(9);
   const [mode, setMode] = useState<ModeId>("major");
-  const [instrument, setInstrument] = useState<InstrumentId>("pads");
+  /** Sound Constellation: fino a 4 strumenti + FX per strumento e sul master */
+  const [mix, setMix] = useState<MixState>(() => defaultMix("pads"));
+  const instrument: InstrumentId = mix.instruments[0]?.instrument ?? "pads";
   const [showDebug, setShowDebug] = useState(true);
   const [panel, setPanel] = useState<PanelId>(null);
   const [hud, setHud] = useState<Hud>({ volume: 0, filter: 8000, heavens: null, fps: 0 });
@@ -155,16 +159,9 @@ export default function HeavenSynth() {
 
 
 
-  // ————— effetti (come Sky Synth) —————
-  const [reverb, setReverb] = useState(45);
-  const [delayMix, setDelayMix] = useState(24);
-  const [delayFeedback, setDelayFeedback] = useState(32);
+  // ————— filtro gestuale + legato —————
   const [cutMax, setCutMax] = useState(8000);
   const [resonance, setResonance] = useState(6);
-  const [delayTime, setDelayTime] = useState(0.32);
-  const [chorusMix, setChorusMix] = useState(0);
-  const [chorusRate, setChorusRate] = useState(0.5);
-  const [chorusDepth, setChorusDepth] = useState(50);
   /** legato: tempo di scivolamento fra un accordo e l'altro, in ms */
   const [legato, setLegatoMs] = useState(90);
 
@@ -201,26 +198,12 @@ export default function HeavenSynth() {
   }, [rootPc, mode, instrument, showDebug, cutMax]);
 
   useEffect(() => {
-    engineRef.current?.setReverb(reverb / 100);
-  }, [reverb]);
-  useEffect(() => {
-    engineRef.current?.setDelay({
-      mix: delayMix / 100,
-      feedback: delayFeedback / 100,
-      sync: false,
-      time: delayTime,
-    });
-  }, [delayMix, delayFeedback, delayTime]);
-  useEffect(() => {
     engineRef.current?.setResonance(resonance);
   }, [resonance]);
+  /** ogni modifica alla costellazione riconcilia canali e catene FX */
   useEffect(() => {
-    engineRef.current?.setChorus({
-      mix: chorusMix / 100,
-      rate: chorusRate,
-      depth: chorusDepth / 100,
-    });
-  }, [chorusMix, chorusRate, chorusDepth]);
+    engineRef.current?.applyMix(toMixSpec(mix));
+  }, [mix]);
   useEffect(() => {
     engineRef.current?.setLegato(legato / 1000);
   }, [legato]);
@@ -776,14 +759,15 @@ export default function HeavenSynth() {
     await engine.start();
     engine.setChord("off");
     engine.setInstrument(cfg.current.instrument);
-    engine.setReverb(reverb / 100);
-    engine.setDelay({ mix: delayMix / 100, feedback: delayFeedback / 100, sync: false, time: delayTime });
+    engine.setReverb(0);
+    engine.setDelay({ mix: 0, sync: false });
+    engine.setChorus({ mix: 0 });
     engine.setResonance(resonance);
-    engine.setChorus({ mix: chorusMix / 100, rate: chorusRate, depth: chorusDepth / 100 });
     engine.setLegato(legato / 1000);
     engine.setTempo(bpm);
+    engine.applyMix(toMixSpec(mix));
     await camReady;
-  }, [bpm, delayFeedback, delayMix, delayTime, chorusMix, chorusRate, chorusDepth, legato, resonance, reverb, startCam]);
+  }, [bpm, legato, mix, resonance, startCam]);
 
   const stop = useCallback(() => {
     stopCam();
@@ -818,126 +802,6 @@ export default function HeavenSynth() {
     observeSong(activeDegree == null ? null : activeDegree + 1);
   }, [activeDegree, observeSong]);
 
-
-  const fxNodes: FxNodeSpec[] = useMemo(
-    () => [
-      {
-        id: "reverb",
-        label: "REVERB",
-        rgb: "126, 176, 255",
-        angle: -90,
-        main: {
-          id: "amount",
-          label: "REVERB",
-          value: reverb,
-          min: 0,
-          max: 100,
-          format: (v) => `${Math.round(v)}%`,
-          onChange: (v) => setReverb(Math.round(v)),
-        },
-      },
-      {
-        id: "delay",
-        label: "DELAY",
-        rgb: "176, 142, 255",
-        angle: 0,
-        main: {
-          id: "mix",
-          label: "DELAY",
-          value: delayMix,
-          min: 0,
-          max: 100,
-          format: (v) => `${Math.round(v)}%`,
-          onChange: (v) => setDelayMix(Math.round(v)),
-        },
-        params: [
-          {
-            id: "time",
-            label: "TIME",
-            value: delayTime,
-            min: 0.06,
-            max: 1.2,
-            curve: "log",
-            format: (v) => `${Math.round(v * 1000)} ms`,
-            onChange: (v) => setDelayTime(Number(v.toFixed(3))),
-          },
-          {
-            id: "feedback",
-            label: "FEEDBACK",
-            value: delayFeedback,
-            min: 0,
-            max: 85,
-            format: (v) => `${Math.round(v)}%`,
-            onChange: (v) => setDelayFeedback(Math.round(v)),
-          },
-        ],
-      },
-      {
-        id: "filter",
-        label: "FILTER",
-        rgb: "150, 226, 200",
-        angle: 90,
-        main: {
-          id: "cutoff",
-          label: "CUTOFF",
-          value: cutMax,
-          min: 800,
-          max: 14000,
-          curve: "log",
-          format: (v) => `${(v / 1000).toFixed(1)} kHz`,
-          onChange: (v) => setCutMax(Math.round(v / 50) * 50),
-        },
-        params: [
-          {
-            id: "q",
-            label: "RES",
-            value: resonance,
-            min: 0.5,
-            max: 18,
-            format: (v) => v.toFixed(1),
-            onChange: (v) => setResonance(Number(v.toFixed(1))),
-          },
-        ],
-      },
-      {
-        id: "chorus",
-        label: "CHORUS",
-        rgb: "120, 224, 240",
-        angle: 180,
-        main: {
-          id: "mix",
-          label: "CHORUS",
-          value: chorusMix,
-          min: 0,
-          max: 100,
-          format: (v) => `${Math.round(v)}%`,
-          onChange: (v) => setChorusMix(Math.round(v)),
-        },
-        params: [
-          {
-            id: "rate",
-            label: "RATE",
-            value: chorusRate,
-            min: 0.08,
-            max: 5,
-            curve: "log",
-            format: (v) => `${v.toFixed(2)} Hz`,
-            onChange: (v) => setChorusRate(Number(v.toFixed(2))),
-          },
-          {
-            id: "depth",
-            label: "DEPTH",
-            value: chorusDepth,
-            min: 0,
-            max: 100,
-            format: (v) => `${Math.round(v)}%`,
-            onChange: (v) => setChorusDepth(Math.round(v)),
-          },
-        ],
-      },
-    ],
-    [reverb, delayMix, delayTime, delayFeedback, cutMax, resonance, chorusMix, chorusRate, chorusDepth],
-  );
 
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
