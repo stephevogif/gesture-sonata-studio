@@ -20,7 +20,7 @@ type Row = {
   artist: string;
   genre: string;
   keyPc: number;
-  scale: ModeIdAlias;
+  scale: ModeId;
   difficulty: Difficulty;
   compatibility: Compatibility;
   main: number[];
