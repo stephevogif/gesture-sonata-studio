@@ -54,6 +54,9 @@ type Hud = {
 
 const ONBOARD_KEY = "sky-studio-onboarded";
 
+/** particle budget: keeps the canvas smooth on phones */
+const MAX_PARTICLES = 200;
+
 const STEPS = [
   {
     a: "camera" as const,
