@@ -26,15 +26,26 @@ export type EqSettings = {
   q: number;
 };
 
+export type ChorusSettings = {
+  mix: number;
+  depth: number;
+  rate: number;
+};
+
 export class MasterRack {
   readonly master: GainNode;
   readonly reverbSend: GainNode;
   readonly delaySend: GainNode;
+  readonly chorusSend: GainNode;
   readonly analyser: AnalyserNode;
   private readonly eq: BiquadFilterNode;
   private readonly delayL: DelayNode;
   private readonly delayR: DelayNode;
   private readonly delayFeedback: GainNode;
+  private readonly chorusLfoL: OscillatorNode;
+  private readonly chorusLfoR: OscillatorNode;
+  private readonly chorusDepthL: GainNode;
+  private readonly chorusDepthR: GainNode;
 
   constructor(private readonly ctx: AudioContext) {
     this.master = ctx.createGain();
