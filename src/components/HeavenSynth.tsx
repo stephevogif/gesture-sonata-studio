@@ -1027,6 +1027,9 @@ export default function HeavenSynth() {
         )}
 
 
+        {/* Song Mode */}
+        {songMode.song && <SongModeHud state={songMode} rootPc={rootPc} mode={mode} />}
+
         {/* i sette cieli */}
         <div className="relative mt-7 flex items-center justify-between px-1">
           <div className="heaven-thread pointer-events-none absolute inset-x-2 top-1/2" />
