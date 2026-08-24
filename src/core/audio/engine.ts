@@ -193,6 +193,21 @@ export class HeavenAudioEngine {
     return voice;
   }
 
+  /**
+   * Polyphony guard: with 4 layered instruments a wide chord can allocate
+   * dozens of voices. Oldest voices are released first so the CPU load stays
+   * bounded instead of degrading into audio drop-outs.
+   */
+  private trimVoices() {
+    const max = Math.max(8, MAX_VOICES_PER_CHANNEL * Math.max(1, this.channels.size));
+    if (this.voices.size <= max) return;
+    for (const key of this.voices.keys()) {
+      if (this.voices.size <= max) break;
+      this.releaseVoice(key);
+    }
+  }
+
+
   /** sustained note — amount 0..1 loudness, bright 0..1 timbre */
   noteOn(id: string, freq: number, amount: number, bright = 0.5, inst?: InstrumentId) {
     if (this.channels.size) {
