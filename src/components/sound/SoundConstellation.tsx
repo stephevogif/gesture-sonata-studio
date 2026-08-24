@@ -151,7 +151,7 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VIEW} ${VIEW}`}
-        className="w-full touch-none select-none"
+        className="mx-auto w-full max-w-[20rem] touch-none select-none"
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}

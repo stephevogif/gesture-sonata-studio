@@ -10,7 +10,6 @@ import {
   Music2,
   Play,
   Repeat,
-  Settings2,
   Sliders,
   Square,
 } from "lucide-react";
@@ -836,7 +835,7 @@ export default function HeavenSynth() {
       <div className="heaven-bottom-shade" />
 
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-32 pt-5">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-40 pt-5">
         {/* header */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
           <Link to="/" aria-label="Torna alla home" className="heaven-orb-btn">
@@ -980,7 +979,7 @@ export default function HeavenSynth() {
         {panel === "sound" && (
           <FloatingWindow
             title="Sound Constellation"
-            subtitle={`${mix.instruments.length} strumenti · trascina per il mix`}
+            subtitle={`${mix.instruments.length} ${mix.instruments.length === 1 ? "strumento" : "strumenti"} · trascina per il mix`}
             onClose={() => setPanel(null)}
           >
             <SoundConstellation state={mix} onChange={setMix} />
