@@ -188,6 +188,7 @@ export class HeavenAudioEngine {
         },
       );
       this.voices.set(id, voice);
+      this.trimVoices();
     }
     return voice;
   }
