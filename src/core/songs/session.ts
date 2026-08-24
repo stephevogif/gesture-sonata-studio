@@ -53,8 +53,9 @@ export function startSongSession(songId: string, transpose = 0): SongSession {
     songId,
     transpose,
     sectionIndex: 0,
-    loopSection: false,
-    advance: "manual",
+    loopMode: "section",
+    autoAdvance: true,
+    playMode: "learn",
   };
   setSongSession(session);
   return session;
