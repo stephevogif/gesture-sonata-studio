@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import TutorialArt from "@/components/TutorialArt";
 import FxConstellation, { type FxNodeSpec } from "@/components/FxConstellation";
@@ -638,7 +638,7 @@ export default function GestureSynth() {
       rate: chorusRate,
       depth: chorusDepth / 100,
     });
-  }, [eqType, eqFreq]);
+  }, [chorusMix, chorusRate, chorusDepth]);
 
 
   const saveCalib = (on: number, off: number) => {
@@ -1212,6 +1212,116 @@ export default function GestureSynth() {
     setInstrument(id);
     engineRef.current?.setInstrument(id);
   };
+
+  const fxNodes: FxNodeSpec[] = useMemo(
+    () => [
+      {
+        id: "reverb",
+        label: "REVERB",
+        rgb: "126, 176, 255",
+        angle: -90,
+        main: {
+          id: "amount",
+          label: "REVERB",
+          value: reverb,
+          min: 0,
+          max: 100,
+          format: (v) => `${Math.round(v)}%`,
+          onChange: (v) => setReverb(Math.round(v)),
+        },
+      },
+      {
+        id: "delay",
+        label: "DELAY",
+        rgb: "176, 142, 255",
+        angle: 0,
+        main: {
+          id: "mix",
+          label: "DELAY",
+          value: delayMix,
+          min: 0,
+          max: 100,
+          format: (v) => `${Math.round(v)}%`,
+          onChange: (v) => setDelayMix(Math.round(v)),
+        },
+        params: [
+          {
+            id: "feedback",
+            label: "FEEDBACK",
+            value: delayFeedback,
+            min: 0,
+            max: 85,
+            format: (v) => `${Math.round(v)}%`,
+            onChange: (v) => setDelayFeedback(Math.round(v)),
+          },
+        ],
+      },
+      {
+        id: "filter",
+        label: "FILTER",
+        rgb: "150, 226, 200",
+        angle: 90,
+        main: {
+          id: "cutoff",
+          label: "CUTOFF",
+          value: eqFreq,
+          min: 60,
+          max: 16000,
+          curve: "log",
+          format: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)} kHz` : `${Math.round(v)} Hz`),
+          onChange: (v) => setEqFreq(Math.round(v)),
+        },
+        params: [
+          {
+            id: "mod",
+            label: "MOD",
+            value: gestureMod,
+            min: 0,
+            max: 100,
+            format: (v) => `${Math.round(v)}%`,
+            onChange: (v) => setGestureMod(Math.round(v)),
+          },
+        ],
+      },
+      {
+        id: "chorus",
+        label: "CHORUS",
+        rgb: "120, 224, 240",
+        angle: 180,
+        main: {
+          id: "mix",
+          label: "CHORUS",
+          value: chorusMix,
+          min: 0,
+          max: 100,
+          format: (v) => `${Math.round(v)}%`,
+          onChange: (v) => setChorusMix(Math.round(v)),
+        },
+        params: [
+          {
+            id: "rate",
+            label: "RATE",
+            value: chorusRate,
+            min: 0.08,
+            max: 5,
+            curve: "log",
+            format: (v) => `${v.toFixed(2)} Hz`,
+            onChange: (v) => setChorusRate(Number(v.toFixed(2))),
+          },
+          {
+            id: "depth",
+            label: "DEPTH",
+            value: chorusDepth,
+            min: 0,
+            max: 100,
+            format: (v) => `${Math.round(v)}%`,
+            onChange: (v) => setChorusDepth(Math.round(v)),
+          },
+        ],
+      },
+    ],
+    [reverb, delayMix, delayFeedback, eqFreq, gestureMod, chorusMix, chorusRate, chorusDepth],
+  );
 
   const selectClass =
     "w-full rounded-sm border border-border bg-background/60 px-3 py-2 text-sm tracking-wide text-foreground";
@@ -1897,134 +2007,71 @@ export default function GestureSynth() {
       )}
 
       {panel === "fx" && (
-        <div className="mt-3 grid gap-4 celestial-panel rounded-sm p-4 sm:grid-cols-3">
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Riverbero: {reverb}%
-            </label>
-            <input
-              aria-label="Riverbero"
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={reverb}
-              onChange={(e) => setReverb(Number(e.target.value))}
-              className="mt-3 w-full accent-[var(--primary)]"
-            />
+        <div className="mt-3 celestial-panel rounded-sm p-4">
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground">
+            FX Constellation
+          </h2>
+          <div className="mx-auto mt-3 max-w-sm">
+            <FxConstellation coreLabel={instrument} nodes={fxNodes} dark />
           </div>
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Filtro EQ
-            </label>
-            <select
-              aria-label="Tipo filtro EQ"
-              className={`mt-2 ${selectClass}`}
-              value={eqType}
-              onChange={(e) => setEqType(e.target.value as "lowpass" | "highpass")}
-            >
-              <option value="lowpass">Low pass</option>
-              <option value="highpass">High pass</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Cutoff: {eqFreq >= 1000 ? `${(eqFreq / 1000).toFixed(1)} kHz` : `${eqFreq} Hz`}
-            </label>
-            <input
-              aria-label="Cutoff filtro EQ"
-              type="range"
-              min={60}
-              max={16000}
-              step={20}
-              value={eqFreq}
-              onChange={(e) => setEqFreq(Number(e.target.value))}
-              className="mt-3 w-full accent-[var(--primary)]"
-            />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Delay mix: {delayMix}%
-            </label>
-            <input
-              aria-label="Delay mix"
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={delayMix}
-              onChange={(e) => setDelayMix(Number(e.target.value))}
-              className="mt-3 w-full accent-[var(--primary)]"
-            />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Delay feedback: {delayFeedback}%
-            </label>
-            <input
-              aria-label="Delay feedback"
-              type="range"
-              min={0}
-              max={85}
-              step={1}
-              value={delayFeedback}
-              onChange={(e) => setDelayFeedback(Number(e.target.value))}
-              className="mt-3 w-full accent-[var(--primary)]"
-            />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Tempo delay
-            </label>
-            <div className="mt-2 flex gap-2">
-              <button
-                onClick={() => setDelaySync(true)}
-                aria-pressed={delaySync}
-                className={delaySync ? "btn-hero" : "btn-ghost"}
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Tipo filtro
+              </label>
+              <select
+                aria-label="Tipo filtro EQ"
+                className={`mt-2 ${selectClass}`}
+                value={eqType}
+                onChange={(e) => setEqType(e.target.value as "lowpass" | "highpass")}
               >
-                Sync
-              </button>
-              <button
-                onClick={() => setDelaySync(false)}
-                aria-pressed={!delaySync}
-                className={!delaySync ? "btn-hero" : "btn-ghost"}
-              >
-                Libero
-              </button>
+                <option value="lowpass">Low pass</option>
+                <option value="highpass">High pass</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Tempo delay
+              </label>
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() => setDelaySync(true)}
+                  aria-pressed={delaySync}
+                  className={delaySync ? "btn-hero" : "btn-ghost"}
+                >
+                  Sync
+                </button>
+                <button
+                  onClick={() => setDelaySync(false)}
+                  aria-pressed={!delaySync}
+                  className={!delaySync ? "btn-hero" : "btn-ghost"}
+                >
+                  Libero
+                </button>
+              </div>
             </div>
             {delaySync && (
-              <select
-                aria-label="Divisione delay"
-                className={`mt-2 ${selectClass}`}
-                value={delayDivision}
-                onChange={(e) => setDelayDivision(e.target.value as DivisionId)}
-              >
-                {DIVISIONS.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Divisione
+                </label>
+                <select
+                  aria-label="Divisione delay"
+                  className={`mt-2 ${selectClass}`}
+                  value={delayDivision}
+                  onChange={(e) => setDelayDivision(e.target.value as DivisionId)}
+                >
+                  {DIVISIONS.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Modulazione gesto → filtro: {gestureMod}%
-            </label>
-            <input
-              aria-label="Modulazione gesto filtro"
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={gestureMod}
-              onChange={(e) => setGestureMod(Number(e.target.value))}
-              className="mt-3 w-full accent-[var(--primary)]"
-            />
           </div>
         </div>
       )}
-
 
       {panel === "help" && (
         <div className="night-glass mt-3 space-y-2 p-4">
