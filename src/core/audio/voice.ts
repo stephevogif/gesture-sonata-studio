@@ -184,11 +184,12 @@ export class SynthVoice {
     }
   }
 
-  /** Sustained note: swell to `amount`, then hold (or decay for plucky patches). */
-  hold(frequency: number, amount: number, brightness: number) {
+  /** Sustained note: swell to `amount`, then hold (or decay for plucky patches).
+   *  `glide` overrides the preset portamento (legato speed) when provided. */
+  hold(frequency: number, amount: number, brightness: number, glide?: number) {
     if (this.stopped) return;
     const now = this.ctx.currentTime;
-    this.retune(frequency, this.spec.glide);
+    this.retune(frequency, glide ?? this.spec.glide);
     const target = clamp(amount, 0, 1) * this.peak;
     const { sustain, decay, attack } = this.spec.env;
     const gain = this.gain.gain;
