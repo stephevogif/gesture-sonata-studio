@@ -792,6 +792,126 @@ export default function HeavenSynth() {
   const activeDegree = hud.heavens?.degree ?? null;
   const playing = activeDegree != null;
 
+  const fxNodes: FxNodeSpec[] = useMemo(
+    () => [
+      {
+        id: "reverb",
+        label: "REVERB",
+        rgb: "126, 176, 255",
+        angle: -90,
+        main: {
+          id: "amount",
+          label: "REVERB",
+          value: reverb,
+          min: 0,
+          max: 100,
+          format: (v) => `${Math.round(v)}%`,
+          onChange: (v) => setReverb(Math.round(v)),
+        },
+      },
+      {
+        id: "delay",
+        label: "DELAY",
+        rgb: "176, 142, 255",
+        angle: 0,
+        main: {
+          id: "mix",
+          label: "DELAY",
+          value: delayMix,
+          min: 0,
+          max: 100,
+          format: (v) => `${Math.round(v)}%`,
+          onChange: (v) => setDelayMix(Math.round(v)),
+        },
+        params: [
+          {
+            id: "time",
+            label: "TIME",
+            value: delayTime,
+            min: 0.06,
+            max: 1.2,
+            curve: "log",
+            format: (v) => `${Math.round(v * 1000)} ms`,
+            onChange: (v) => setDelayTime(Number(v.toFixed(3))),
+          },
+          {
+            id: "feedback",
+            label: "FEEDBACK",
+            value: delayFeedback,
+            min: 0,
+            max: 85,
+            format: (v) => `${Math.round(v)}%`,
+            onChange: (v) => setDelayFeedback(Math.round(v)),
+          },
+        ],
+      },
+      {
+        id: "filter",
+        label: "FILTER",
+        rgb: "150, 226, 200",
+        angle: 90,
+        main: {
+          id: "cutoff",
+          label: "CUTOFF",
+          value: cutMax,
+          min: 800,
+          max: 14000,
+          curve: "log",
+          format: (v) => `${(v / 1000).toFixed(1)} kHz`,
+          onChange: (v) => setCutMax(Math.round(v / 50) * 50),
+        },
+        params: [
+          {
+            id: "q",
+            label: "RES",
+            value: resonance,
+            min: 0.5,
+            max: 18,
+            format: (v) => v.toFixed(1),
+            onChange: (v) => setResonance(Number(v.toFixed(1))),
+          },
+        ],
+      },
+      {
+        id: "chorus",
+        label: "CHORUS",
+        rgb: "120, 224, 240",
+        angle: 180,
+        main: {
+          id: "mix",
+          label: "CHORUS",
+          value: chorusMix,
+          min: 0,
+          max: 100,
+          format: (v) => `${Math.round(v)}%`,
+          onChange: (v) => setChorusMix(Math.round(v)),
+        },
+        params: [
+          {
+            id: "rate",
+            label: "RATE",
+            value: chorusRate,
+            min: 0.08,
+            max: 5,
+            curve: "log",
+            format: (v) => `${v.toFixed(2)} Hz`,
+            onChange: (v) => setChorusRate(Number(v.toFixed(2))),
+          },
+          {
+            id: "depth",
+            label: "DEPTH",
+            value: chorusDepth,
+            min: 0,
+            max: 100,
+            format: (v) => `${Math.round(v)}%`,
+            onChange: (v) => setChorusDepth(Math.round(v)),
+          },
+        ],
+      },
+    ],
+    [reverb, delayMix, delayTime, delayFeedback, cutMax, resonance, chorusMix, chorusRate, chorusDepth],
+  );
+
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
       active
@@ -1004,32 +1124,24 @@ export default function HeavenSynth() {
 
         {panel === "fx" && (
           <section className="heaven-glass mt-4 space-y-3 p-4 text-white">
-            <h2 className="text-sm font-bold">Effetti</h2>
-            {(
-              [
-                ["Riverbero", reverb, setReverb, 0, 100, 1, "%"],
-                ["Delay mix", delayMix, setDelayMix, 0, 100, 1, "%"],
-                ["Delay feedback", delayFeedback, setDelayFeedback, 0, 90, 1, "%"],
-                ["Risonanza filtro", resonance, setResonance, 0.5, 18, 0.5, ""],
-                ["Cutoff massimo", cutMax, setCutMax, 800, 14000, 100, " Hz"],
-              ] as const
-            ).map(([label, value, set, min, max, step, unit]) => (
-              <label key={label} className="block text-[11px] font-semibold text-slate-600">
-                {label}: <span className="text-slate-900">{value}{unit}</span>
-                <input
-                  type="range"
-                  min={min}
-                  max={max}
-                  step={step}
-                  value={value}
-                  onChange={(e) => set(Number(e.target.value))}
-                  className="mt-1 w-full accent-sky-700"
-                />
-              </label>
-            ))}
+            <h2 className="text-sm font-bold">FX Constellation</h2>
+            <FxConstellation coreLabel={instrument} nodes={fxNodes} dark={false} />
+            <label className="block text-[11px] font-semibold text-slate-600">
+              Legato fra accordi: <span className="text-slate-900">{legato} ms</span>
+              <input
+                type="range"
+                min={0}
+                max={600}
+                step={10}
+                value={legato}
+                onChange={(e) => setLegatoMs(Number(e.target.value))}
+                className="mt-1 w-full accent-sky-700"
+                aria-label="Velocità legato fra accordi"
+              />
+            </label>
             <p className="text-[11px] text-slate-500">
-              Il low pass segue l&apos;altezza del Lato A: mano in basso = suono scuro, mano in alto = cutoff
-              massimo.
+              0 ms = cambio secco, valori alti = accordi che scivolano l&apos;uno nell&apos;altro. Il
+              low pass segue l&apos;altezza del Lato A fino al cutoff impostato.
             </p>
           </section>
         )}
