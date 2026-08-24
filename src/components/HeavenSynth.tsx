@@ -796,11 +796,14 @@ export default function HeavenSynth() {
         (sounding - musicRef.current) * (1 - Math.exp(-dt * (sounding ? 2.6 : 1.1)));
       drawSky(ctx, w, h, glowRef.current, fadeRef.current, dt, musicRef.current);
 
-      if (chord) {
+      const eco = panelOpenRef.current;
+      if (chord && !eco) {
         const amt = 0.35 + Math.min(1, volume) * 0.45;
         for (const hand of hands) emitParticles(hand, w, h, amt);
       }
-      for (const hand of hands) drawHandGlow(ctx, hand, w, h, musicRef.current, volume);
+      if (!eco) {
+        for (const hand of hands) drawHandGlow(ctx, hand, w, h, musicRef.current, volume);
+      }
       drawParticles(ctx, dt);
 
       if (cfg.current.showDebug) for (const hand of hands) drawHand(ctx, hand, w, h);
