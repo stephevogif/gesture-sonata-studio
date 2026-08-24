@@ -9,7 +9,7 @@
  * so the audio engine stays the only owner of the DSP graph.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { FX_CATALOG, fxDef, type FxParamDef } from "@/core/audio/fxCatalog";
 import { GATE_PRESETS, gateGlyph, type GatePresetId } from "@/core/audio/gatePresets";
