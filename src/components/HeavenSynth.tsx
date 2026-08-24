@@ -5,6 +5,7 @@ import {
   Eye,
   EyeOff,
   HelpCircle,
+  ListMusic,
   Mic,
   Music2,
   Play,
@@ -32,6 +33,9 @@ import {
 } from "@/lib/theory";
 import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gestures";
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
+import { useSongMode } from "@/hooks/useSongMode";
+import SongModeHud from "@/components/songs/SongModeHud";
+import { updateSongSession } from "@/core/songs/session";
 import TutorialArt from "@/components/TutorialArt";
 import FxConstellation, { type FxNodeSpec } from "@/components/FxConstellation";
 import { detectKey } from "@/lib/keyDetect";
