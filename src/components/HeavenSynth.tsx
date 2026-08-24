@@ -139,6 +139,22 @@ export default function HeavenSynth() {
   const [panel, setPanel] = useState<PanelId>(null);
   const [hud, setHud] = useState<Hud>({ volume: 0, filter: 8000, heavens: null, fps: 0 });
 
+  // ————— SONG MODE (Heaven Songs) —————
+  const songMode = useSongMode();
+  const songId = songMode.song?.id ?? null;
+  const songRootPc = songMode.rootPc;
+  const songScale = songMode.song?.scale ?? null;
+  const songBpm = songMode.song?.bpm ?? null;
+  /** la song imposta automaticamente tonica, scala e tempo: nessun setup manuale */
+  useEffect(() => {
+    if (!songId || songRootPc == null || !songScale) return;
+    setRootPc(songRootPc);
+    setMode(songScale);
+    if (songBpm) setBpm(songBpm);
+  }, [songId, songRootPc, songScale, songBpm]);
+
+
+
   // ————— effetti (come Sky Synth) —————
   const [reverb, setReverb] = useState(45);
   const [delayMix, setDelayMix] = useState(24);
