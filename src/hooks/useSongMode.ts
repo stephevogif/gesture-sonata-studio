@@ -126,5 +126,6 @@ export function useSongMode(): SongModeState {
     setSectionIndex: (i) => updateSongSession({ sectionIndex: i }),
     reset: () => setStepIndex(0),
     exit: () => setSongSession(null),
+    observe,
   };
 }
