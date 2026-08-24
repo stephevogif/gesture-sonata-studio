@@ -18,6 +18,7 @@ export type VoiceBuses = {
   dry: AudioNode;
   reverb?: AudioNode | undefined;
   delay?: AudioNode | undefined;
+  chorus?: AudioNode | undefined;
 };
 
 function saturationCurve(amount: number): Float32Array<ArrayBuffer> {
@@ -166,6 +167,7 @@ export class SynthVoice {
     this.gain.connect(buses.dry);
     if (!spec.bass && buses.reverb) this.gain.connect(buses.reverb);
     if (buses.delay) this.gain.connect(buses.delay);
+    if (buses.chorus) this.gain.connect(buses.chorus);
   }
 
   /** headroom: bass patches are allowed to be louder, everything else stays clean */
@@ -184,11 +186,12 @@ export class SynthVoice {
     }
   }
 
-  /** Sustained note: swell to `amount`, then hold (or decay for plucky patches). */
-  hold(frequency: number, amount: number, brightness: number) {
+  /** Sustained note: swell to `amount`, then hold (or decay for plucky patches).
+   *  `glide` overrides the preset portamento (legato speed) when provided. */
+  hold(frequency: number, amount: number, brightness: number, glide?: number) {
     if (this.stopped) return;
     const now = this.ctx.currentTime;
-    this.retune(frequency, this.spec.glide);
+    this.retune(frequency, glide ?? this.spec.glide);
     const target = clamp(amount, 0, 1) * this.peak;
     const { sustain, decay, attack } = this.spec.env;
     const gain = this.gain.gain;

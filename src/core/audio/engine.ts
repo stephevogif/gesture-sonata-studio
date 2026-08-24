@@ -43,6 +43,11 @@ export class HeavenAudioEngine {
   delaySync = true;
   delayDivision: DivisionId = "1/8";
   delayTime = 0.3;
+  chorusMix = 0;
+  chorusDepth = 0.5;
+  chorusRate = 0.5;
+  /** portamento (legato) between chords, in seconds; null = preset default */
+  legato: number | null = null;
   /** 0..1 gesture modulation of the master cutoff */
   filterMod = 0.5;
   filterModAmount = 0;
@@ -64,6 +69,7 @@ export class HeavenAudioEngine {
     this.applyReverb();
     this.applyEq();
     this.applyDelay();
+    this.applyChorus();
     await ctx.resume();
     this.arp.setTempo(this.bpm);
   }
@@ -96,6 +102,7 @@ export class HeavenAudioEngine {
         dry: this.rack.master,
         reverb: this.rack.reverbSend,
         delay: this.rack.delaySend,
+        chorus: this.rack.chorusSend,
       });
       this.voices.set(id, voice);
     }
@@ -105,7 +112,7 @@ export class HeavenAudioEngine {
   /** sustained note — amount 0..1 loudness, bright 0..1 timbre */
   noteOn(id: string, freq: number, amount: number, bright = 0.5, inst?: InstrumentId) {
     const voice = this.voiceFor(id, freq, inst ?? this.instrument);
-    voice?.hold(freq, amount, bright);
+    voice?.hold(freq, amount, bright, this.legato ?? undefined);
   }
 
   /** short retriggered note used by the arpeggiator */
@@ -243,6 +250,22 @@ export class HeavenAudioEngine {
     if (opts.division) this.delayDivision = opts.division;
     if (opts.time !== undefined) this.delayTime = opts.time;
     this.applyDelay();
+  }
+
+  setChorus(opts: { mix?: number; depth?: number; rate?: number }) {
+    if (opts.mix !== undefined) this.chorusMix = clamp(opts.mix, 0, 1);
+    if (opts.depth !== undefined) this.chorusDepth = clamp(opts.depth, 0, 1);
+    if (opts.rate !== undefined) this.chorusRate = clamp(opts.rate, 0.05, 6);
+    this.applyChorus();
+  }
+
+  /** legato/portamento time between chords, in seconds (0 = instant) */
+  setLegato(seconds: number | null) {
+    this.legato = seconds === null ? null : clamp(seconds, 0, 1.5);
+  }
+
+  private applyChorus() {
+    this.rack?.setChorus({ mix: this.chorusMix, depth: this.chorusDepth, rate: this.chorusRate });
   }
 
   private applyReverb() {

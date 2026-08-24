@@ -26,15 +26,26 @@ export type EqSettings = {
   q: number;
 };
 
+export type ChorusSettings = {
+  mix: number;
+  depth: number;
+  rate: number;
+};
+
 export class MasterRack {
   readonly master: GainNode;
   readonly reverbSend: GainNode;
   readonly delaySend: GainNode;
+  readonly chorusSend: GainNode;
   readonly analyser: AnalyserNode;
   private readonly eq: BiquadFilterNode;
   private readonly delayL: DelayNode;
   private readonly delayR: DelayNode;
   private readonly delayFeedback: GainNode;
+  private readonly chorusLfoL: OscillatorNode;
+  private readonly chorusLfoR: OscillatorNode;
+  private readonly chorusDepthL: GainNode;
+  private readonly chorusDepthR: GainNode;
 
   constructor(private readonly ctx: AudioContext) {
     this.master = ctx.createGain();
@@ -88,7 +99,46 @@ export class MasterRack {
     this.delayR.connect(panR).connect(this.master);
     this.delayR.connect(tone).connect(this.delayFeedback).connect(this.delayL);
 
+    // ——— chorus: two LFO-modulated short delays panned wide ———
+    this.chorusSend = ctx.createGain();
+    this.chorusSend.gain.value = 0;
+    const chorusL = ctx.createDelay(0.1);
+    chorusL.delayTime.value = 0.017;
+    const chorusR = ctx.createDelay(0.1);
+    chorusR.delayTime.value = 0.023;
+    const cPanL = ctx.createStereoPanner();
+    cPanL.pan.value = -0.8;
+    const cPanR = ctx.createStereoPanner();
+    cPanR.pan.value = 0.8;
+    this.chorusLfoL = ctx.createOscillator();
+    this.chorusLfoL.type = "sine";
+    this.chorusLfoL.frequency.value = 0.5;
+    this.chorusLfoR = ctx.createOscillator();
+    this.chorusLfoR.type = "sine";
+    this.chorusLfoR.frequency.value = 0.37;
+    this.chorusDepthL = ctx.createGain();
+    this.chorusDepthL.gain.value = 0.004;
+    this.chorusDepthR = ctx.createGain();
+    this.chorusDepthR.gain.value = 0.004;
+    this.chorusLfoL.connect(this.chorusDepthL).connect(chorusL.delayTime);
+    this.chorusLfoR.connect(this.chorusDepthR).connect(chorusR.delayTime);
+    this.chorusLfoL.start();
+    this.chorusLfoR.start();
+    this.chorusSend.connect(chorusL).connect(cPanL).connect(this.master);
+    this.chorusSend.connect(chorusR).connect(cPanR).connect(this.master);
+
     this.master.connect(this.eq).connect(this.analyser).connect(ctx.destination);
+  }
+
+  setChorus({ mix, depth, rate }: ChorusSettings) {
+    const now = this.ctx.currentTime;
+    this.chorusSend.gain.setTargetAtTime(clamp(mix, 0, 1), now, 0.06);
+    const d = clamp(depth, 0, 1) * 0.006 + 0.0008;
+    this.chorusDepthL.gain.setTargetAtTime(d, now, 0.08);
+    this.chorusDepthR.gain.setTargetAtTime(d * 0.85, now, 0.08);
+    const r = clamp(rate, 0.05, 6);
+    this.chorusLfoL.frequency.setTargetAtTime(r, now, 0.1);
+    this.chorusLfoR.frequency.setTargetAtTime(r * 0.74, now, 0.1);
   }
 
   setReverb({ amount }: ReverbSettings) {
