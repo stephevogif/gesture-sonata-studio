@@ -1376,6 +1376,15 @@ export default function HeavenSynth() {
       {/* barra inferiore */}
       <nav className="fixed inset-x-0 bottom-0 z-20 px-4 pb-4">
         <div className="heaven-glass mx-auto flex max-w-md items-center justify-between px-4 py-2">
+          <Link
+            to="/songs"
+            aria-label="Heaven Songs"
+            className={`heaven-nav ${songMode.song ? "heaven-nav-on" : ""}`}
+          >
+            <ListMusic className="h-5 w-5" />
+            Songs
+          </Link>
+
           {(
             [
               ["sound", "Sound", Settings2],
