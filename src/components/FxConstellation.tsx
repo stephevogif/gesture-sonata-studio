@@ -48,9 +48,9 @@ const CX = VIEW / 2;
 const CY = VIEW / 2;
 const CORE_R = 34;
 const MIN_R = 44;
-const MAX_R = 138;
+const MAX_R = 118;
 const SAT_MIN = 26;
-const SAT_MAX = 62;
+const SAT_MAX = 56;
 
 const norm = (p: FxParam) => {
   const { min, max, value } = p;
