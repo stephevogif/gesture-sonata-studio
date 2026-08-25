@@ -37,6 +37,9 @@ export type MixSpec = {
 /** `voiceKey@channelId` → voiceKey */
 const baseKey = (key: string) => key.split("@")[0]!;
 
+/** hard ceiling on simultaneous voices across every channel */
+const MAX_TOTAL_VOICES = 20;
+
 /** voices kept alive per active instrument channel */
 const MAX_VOICES_PER_CHANNEL = 8;
 
@@ -77,6 +80,11 @@ export class HeavenAudioEngine {
   /** 0..1 gesture modulation of the master cutoff */
   filterMod = 0.5;
   filterModAmount = 0;
+  /** last values pushed to the rack: guards against per-frame redundant writes */
+  private lastReverb = -1;
+  private lastEqFreq = -1;
+  private lastEqType: BiquadFilterType | null = null;
+  private lastEqQ = -1;
 
   constructor() {
     this.arp = new Arpeggiator((event) => this.playArpEvent(event));
@@ -93,6 +101,11 @@ export class HeavenAudioEngine {
     this.ctx = ctx;
     this.rack = new MasterRack(ctx);
     this.masterChain = new FxChain(ctx, this.rack.master, this.rack.postMaster);
+    // fresh rack → invalidate the redundancy guards
+    this.lastReverb = -1;
+    this.lastEqFreq = -1;
+    this.lastEqType = null;
+    this.lastEqQ = -1;
     if (this.mix) this.applyMix(this.mix);
     this.applyReverb();
     this.applyEq();
@@ -142,7 +155,11 @@ export class HeavenAudioEngine {
         channel.instrument = layer.instrument;
       }
       if (!channel) {
-        channel = new InstrumentChannel(ctx, layer.instrument, rack.master, layer.gain);
+        channel = new InstrumentChannel(ctx, layer.instrument, rack.master, layer.gain, {
+          reverb: rack.reverbSend,
+          delay: rack.delaySend,
+          chorus: rack.chorusSend,
+        });
         this.channels.set(layer.id, channel);
       }
       channel.setGain(layer.gain);
@@ -202,7 +219,11 @@ export class HeavenAudioEngine {
    * bounded instead of degrading into audio drop-outs.
    */
   private trimVoices() {
-    const max = Math.max(8, MAX_VOICES_PER_CHANNEL * Math.max(1, this.channels.size));
+    // total polyphony is capped: layering 4 instruments must not multiply CPU by 4
+    const max = Math.min(
+      MAX_TOTAL_VOICES,
+      Math.max(8, MAX_VOICES_PER_CHANNEL * Math.max(1, this.channels.size)),
+    );
     if (this.voices.size <= max) return;
     for (const key of this.voices.keys()) {
       if (this.voices.size <= max) break;
@@ -401,17 +422,27 @@ export class HeavenAudioEngine {
   }
 
   private applyReverb() {
+    // the hand-control loop calls this every frame: skip inaudible updates
+    if (Math.abs(this.reverbAmount - this.lastReverb) < 0.004) return;
+    this.lastReverb = this.reverbAmount;
     this.rack?.setReverb({ amount: this.reverbAmount });
   }
 
   private applyEq() {
     const factor =
       this.filterModAmount > 0 ? 1 + this.filterModAmount * (this.filterMod * 5 - 1.5) : 1;
-    this.rack?.setEq({
-      type: this.eqType,
-      frequency: this.eqFreq * Math.max(0.15, factor),
-      q: this.eqQ,
-    });
+    const frequency = this.eqFreq * Math.max(0.15, factor);
+    if (
+      this.lastEqType === this.eqType &&
+      Math.abs(this.lastEqQ - this.eqQ) < 0.005 &&
+      Math.abs(frequency - this.lastEqFreq) < Math.max(4, frequency * 0.004)
+    ) {
+      return;
+    }
+    this.lastEqType = this.eqType;
+    this.lastEqQ = this.eqQ;
+    this.lastEqFreq = frequency;
+    this.rack?.setEq({ type: this.eqType, frequency, q: this.eqQ });
   }
 
   private applyDelay() {
