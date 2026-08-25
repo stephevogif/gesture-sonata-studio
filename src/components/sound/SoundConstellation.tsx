@@ -13,6 +13,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Save, Sparkles, Wand2, X } from "lucide-react";
+import Knob from "@/components/sound/Knob";
+
 import { FX_CATALOG, fxDef, type FxParamDef } from "@/core/audio/fxCatalog";
 import { GATE_PRESETS, gateGlyph, type GatePresetId } from "@/core/audio/gatePresets";
 import type { FxTypeId } from "@/core/audio/fx";
@@ -129,6 +131,9 @@ export default function SoundConstellation({
   const [anchor, setAnchor] = useState<Anchor>(initial);
   const [selected, setSelected] = useState<NodeRef | null>(initial);
   const [picker, setPicker] = useState<"sound" | "fx" | null>(null);
+  /** nodo per cui è stata chiesta la ✕ di eliminazione (chiede conferma) */
+  const [confirmDel, setConfirmDel] = useState<NodeRef | null>(null);
+
 
   /* ————— libreria preset ————— */
   const [presets, setPresets] = useState<SoundPreset[]>([]);
@@ -272,10 +277,14 @@ export default function SoundConstellation({
   };
 
   const deleteFx = (id: string) => {
-    const parent = selectedFxInfo?.parent ?? null;
+    const parent =
+      state.master.some((f) => f.id === id)
+        ? null
+        : (state.instruments.find((l) => l.effects.some((f) => f.id === id))?.id ?? null);
     onChange(removeFx(state, parent, id));
     setSelected((s) => (s?.kind === "fx" && s.id === id ? null : s));
   };
+
 
   const anchorGeo = anchorLayer
     ? geometry.find((g) => g.layer.id === anchorLayer.id)
@@ -284,9 +293,66 @@ export default function SoundConstellation({
   const masterFxList = state.master;
   const dark = tone === "dark";
 
+  /** salvataggio rapido dall'icona in alto: strumento selezionato o catena FX corrente */
+  const quickSave = () => {
+    const layer =
+      selected?.kind === "layer" ? layers.find((l) => l.id === selected.id) : undefined;
+    const name =
+      presetName.trim() ||
+      `${layer ? instrumentName(layer.instrument) : "FX"} ${new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+    setPresets(
+      layer ? savePreset({ name, kind: "layer", layer }) : savePreset({ name, kind: "fx", effects: fxList }),
+    );
+    setPresetName("");
+    setPresetsOpen(true);
+  };
+
+  const confirmLabel =
+    confirmDel?.kind === "layer"
+      ? instrumentName(layers.find((l) => l.id === confirmDel.id)?.instrument ?? "piano")
+      : confirmDel?.kind === "fx"
+        ? fxDef(
+            (state.master.find((f) => f.id === confirmDel.id) ??
+              state.instruments.flatMap((l) => l.effects).find((f) => f.id === confirmDel.id))
+              ?.type ?? "reverb",
+          ).label
+        : "";
+
   return (
     <div className={`sc ${dark ? "sc-dark" : "sc-light"}`}>
+      <div className="sc-pop-head">
+        <span>EFFECT CONSOLE</span>
+        <button className="sc-chip sc-chip-on" aria-label="Salva preset" onClick={quickSave}>
+          <Save className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {confirmDel && (
+        <div className="sc-confirm">
+          Eliminare <b>{confirmLabel}</b>?
+          <div className="mt-1.5 flex gap-1.5">
+            <button
+              className="sc-danger"
+              onClick={() => {
+                if (confirmDel.kind === "layer") deleteLayer(confirmDel.id);
+                else if (confirmDel.kind === "fx") deleteFx(confirmDel.id);
+                setConfirmDel(null);
+              }}
+            >
+              Elimina
+            </button>
+            <button className="sc-chip" onClick={() => setConfirmDel(null)}>
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="sc-stage">
+
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VIEW} ${VIEW}`}
@@ -315,6 +381,37 @@ export default function SoundConstellation({
               pointerEvents="none"
             />
           ))}
+
+          {/* piccoli pianeti/stelle decorativi che orbitano lentamente */}
+          {[0.34, 0.67, 1].map((k, i) => {
+            const r = MIN_R + (MAX_R - MIN_R) * k;
+            return (
+              <g
+                key={`spin-${k}`}
+                className="sc-spin"
+                pointerEvents="none"
+                style={{
+                  animationDuration: `${26 + i * 14}s`,
+                  animationDirection: i % 2 ? "reverse" : "normal",
+                }}
+              >
+                {[0, 120, 240].map((deg, j) => {
+                  const a = ((deg + i * 37) * Math.PI) / 180;
+                  return (
+                    <circle
+                      key={deg}
+                      cx={C + Math.cos(a) * r}
+                      cy={C + Math.sin(a) * r}
+                      r={j === 0 ? 1.5 : 1}
+                      className="sc-orbit-dot"
+                      opacity={0.35 + j * 0.15}
+                    />
+                  );
+                })}
+              </g>
+            );
+          })}
+
 
           {/* master sun */}
           <circle cx={C} cy={C} r={SUN_R * 2.2} fill="url(#sc-sun)" pointerEvents="none" />
@@ -392,13 +489,18 @@ export default function SoundConstellation({
                     style={{ filter: `drop-shadow(0 0 10px rgba(${rgb},0.75))` }}
                   />
                 )}
-                {/* base halo */}
+                {/* alone radiante: più il volume è alto, più respira luminoso */}
                 <circle
                   cx={x}
                   cy={y}
-                  r={20 + layer.gain * 6}
-                  fill={`rgba(${rgb},${0.05 + layer.gain * 0.12})`}
+                  r={20 + layer.gain * 8}
+                  fill={`rgba(${rgb},${0.05 + layer.gain * 0.16})`}
                   pointerEvents="none"
+                  className="sc-radiate"
+                  style={{
+                    animationDuration: `${(4.4 - layer.gain * 2.4).toFixed(2)}s`,
+                    filter: `drop-shadow(0 0 ${4 + layer.gain * 16}px rgba(${rgb},${0.35 + layer.gain * 0.55}))`,
+                  }}
                 />
                 <circle
                   cx={x}
@@ -409,6 +511,23 @@ export default function SoundConstellation({
                   strokeWidth={on ? 2.4 : 1}
                   pointerEvents="none"
                 />
+
+                {/* ✕ di eliminazione, visibile solo sul nodo selezionato */}
+                {on && layers.length > 1 && (
+                  <g
+                    className="sc-kill"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDel({ kind: "layer", id: layer.id });
+                    }}
+                  >
+                    <circle cx={x + 17} cy={y - 17} r={8} className="sc-kill-bg" />
+                    <text x={x + 17} y={y - 14} textAnchor="middle" className="sc-kill-x">
+                      ✕
+                    </text>
+                  </g>
+                )}
+
 
                 <text
                   x={x}
@@ -500,12 +619,39 @@ export default function SoundConstellation({
                   <circle
                     cx={x}
                     cy={y}
+                    r={10 + fx.amount * 4}
+                    fill={`rgba(${def.rgb},${0.06 + fx.amount * 0.14})`}
+                    pointerEvents="none"
+                    className="sc-radiate"
+                    style={{
+                      animationDuration: `${(4.2 - fx.amount * 2.3).toFixed(2)}s`,
+                      filter: `drop-shadow(0 0 ${3 + fx.amount * 12}px rgba(${def.rgb},${0.3 + fx.amount * 0.6}))`,
+                    }}
+                  />
+                  <circle
+                    cx={x}
+                    cy={y}
                     r={7}
                     fill={`rgba(${def.rgb},${0.3 + fx.amount * 0.6})`}
                     stroke={`rgba(${def.rgb},${on ? 1 : 0.95})`}
                     strokeWidth={on ? 2 : 0.8}
                     pointerEvents="none"
                   />
+                  {on && (
+                    <g
+                      className="sc-kill"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDel({ kind: "fx", id: fx.id });
+                      }}
+                    >
+                      <circle cx={x + 12} cy={y - 12} r={7} className="sc-kill-bg" />
+                      <text x={x + 12} y={y - 9} textAnchor="middle" className="sc-kill-x">
+                        ✕
+                      </text>
+                    </g>
+                  )}
+
                   <text
                     x={x}
                     y={Math.max(10, y - 13)}
@@ -748,9 +894,10 @@ export default function SoundConstellation({
       )}
 
 
-      {/* ————— editor aperto con un solo tocco ————— */}
+      {/* ————— pannello parametri: finestra laterale, non copre la console ————— */}
       {selected && (
-        <div className="sc-editor">
+        <div className="sc-dock" role="dialog" aria-label="Parametri">
+
           <div className="sc-pop-head">
             <span>
               {selected.kind === "master"
@@ -789,13 +936,11 @@ export default function SoundConstellation({
                   <button
                     className="sc-danger"
                     aria-label={`Rimuovi ${fxDef(fx.type).label}`}
-                    onClick={() => {
-                      onChange(removeFx(state, null, fx.id));
-                      setSelected((s) => (s?.kind === "fx" && s.id === fx.id ? null : s));
-                    }}
+                    onClick={() => setConfirmDel({ kind: "fx", id: fx.id })}
                   >
                     ✕
                   </button>
+
                 </div>
               ))}
             </div>
@@ -829,8 +974,21 @@ export default function SoundConstellation({
                         ))}
                       </select>
                     </label>
+                    <div className="sc-knobs">
+                      <Knob
+                        label="Volume"
+                        value={editingLayer.gain}
+                        display={`${Math.round(editingLayer.gain * 100)}%`}
+                        onChange={(t) =>
+                          onChange(
+                            patchLayer(state, editingLayer.id, { gain: Number(t.toFixed(2)) }),
+                          )
+                        }
+                        size={70}
+                      />
+                    </div>
                     <label className="sc-field-label">
-                      Volume: <b>{Math.round(editingLayer.gain * 100)}%</b>
+                      Volume (slider)
                       <input
                         type="range"
                         min={0}
@@ -848,10 +1006,14 @@ export default function SoundConstellation({
                       />
                     </label>
                     {layers.length > 1 && (
-                      <button className="sc-danger" onClick={() => deleteLayer(editingLayer.id)}>
+                      <button
+                        className="sc-danger"
+                        onClick={() => setConfirmDel({ kind: "layer", id: editingLayer.id })}
+                      >
                         ✕ Rimuovi strumento
                       </button>
                     )}
+
                   </>
                 );
               })()}
@@ -873,9 +1035,13 @@ export default function SoundConstellation({
                 >
                   {selectedFxInfo.fx.bypass ? "OFF" : "ON"}
                 </button>
-                <button className="sc-danger" onClick={() => deleteFx(selectedFxInfo.fx.id)}>
+                <button
+                  className="sc-danger"
+                  onClick={() => setConfirmDel({ kind: "fx", id: selectedFxInfo.fx.id })}
+                >
                   ✕ Rimuovi effetto
                 </button>
+
               </div>
 
               {selectedFxInfo.fx.type === "gate" && (
@@ -901,8 +1067,47 @@ export default function SoundConstellation({
                 </div>
               )}
 
-              <label className="sc-field-label mt-2">
-                Quantità: <b>{Math.round(selectedFxInfo.fx.amount * 100)}%</b>
+              <div className="sc-knobs mt-2">
+                <Knob
+                  label="Quantità"
+                  value={selectedFxInfo.fx.amount}
+                  display={`${Math.round(selectedFxInfo.fx.amount * 100)}%`}
+                  onChange={(t) =>
+                    onChange(
+                      patchFx(state, selectedFxInfo.parent, selectedFxInfo.fx.id, {
+                        amount: Number(t.toFixed(2)),
+                      }),
+                    )
+                  }
+                  size={70}
+                />
+                {fxDef(selectedFxInfo.fx.type).params.map((def) => {
+                  const value = selectedFxInfo.fx.params[def.id] ?? def.default;
+                  return (
+                    <Knob
+                      key={def.id}
+                      label={def.label}
+                      value={normParam(def, value)}
+                      display={formatParam(def, value)}
+                      onChange={(t) => {
+                        const next = def.toggle ? (t > 0.5 ? 1 : 0) : denormParam(def, t);
+                        onChange(
+                          setFxParam(
+                            state,
+                            selectedFxInfo.parent,
+                            selectedFxInfo.fx.id,
+                            def.id,
+                            next,
+                          ),
+                        );
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              <label className="sc-field-label">
+                Quantità (slider)
                 <input
                   type="range"
                   min={0}
@@ -920,32 +1125,6 @@ export default function SoundConstellation({
                 />
               </label>
 
-              {fxDef(selectedFxInfo.fx.type).params.map((def) => {
-                const value = selectedFxInfo.fx.params[def.id] ?? def.default;
-                return (
-                  <label key={def.id} className="sc-field-label">
-                    {def.label}: <b>{formatParam(def, value)}</b>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1000}
-                      value={Math.round(normParam(def, value) * 1000)}
-                      aria-label={def.label}
-                      onChange={(e) => {
-                        const next = def.toggle
-                          ? Number(e.target.value) > 500
-                            ? 1
-                            : 0
-                          : denormParam(def, Number(e.target.value) / 1000);
-                        onChange(
-                          setFxParam(state, selectedFxInfo.parent, selectedFxInfo.fx.id, def.id, next),
-                        );
-                      }}
-                      className="sc-range"
-                    />
-                  </label>
-                );
-              })}
             </>
           )}
         </div>

@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
+  Contrast,
   HelpCircle,
   ListMusic,
   Mic,
@@ -167,6 +168,15 @@ export default function HeavenSynth() {
   const instrument: InstrumentId = mix.instruments[0]?.instrument ?? "pads";
   const [showDebug, setShowDebug] = useState(true);
   const [panel, setPanel] = useState<PanelId>(null);
+  const [hiContrast, setHiContrast] = useState<boolean>(false);
+
+  useEffect(() => {
+    setHiContrast(localStorage.getItem("sky.hiContrast") === "1");
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("sky.hiContrast", hiContrast ? "1" : "0");
+  }, [hiContrast]);
+
   /** eco mode: while a floating window is open the canvas drops its extras */
   const panelOpenRef = useRef(false);
   panelOpenRef.current = panel !== null;
@@ -916,7 +926,9 @@ export default function HeavenSynth() {
     "mt-1.5 w-full appearance-none rounded-xl border border-white/60 bg-white/70 px-3 py-2.5 text-[13px] font-semibold tracking-normal text-[#2b3855] shadow-sm outline-none transition focus:border-[rgba(255,222,160,0.95)]";
 
   return (
-    <div className="heaven-scene relative min-h-screen overflow-hidden text-[#33405a]">
+    <div
+      className={`heaven-scene relative min-h-screen overflow-hidden text-[#33405a] ${hiContrast ? "hc" : ""}`}
+    >
       {/* strato camera: sfondo vivo di tutta la pagina */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <video
@@ -950,13 +962,24 @@ export default function HeavenSynth() {
               Heaven Synth
             </p>
           </div>
-          <button
-            onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
-            aria-label="Guida"
-            className="heaven-orb-btn"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHiContrast((v) => !v)}
+              aria-label="Alto contrasto"
+              aria-pressed={hiContrast}
+              className="heaven-orb-btn"
+            >
+              <Contrast className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
+              aria-label="Guida"
+              className="heaven-orb-btn"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </div>
+
         </header>
 
         <h1 className="heaven-title mt-5 text-center text-[2.1rem] leading-none sm:text-5xl">
