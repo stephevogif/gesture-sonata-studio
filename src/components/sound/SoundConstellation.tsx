@@ -129,7 +129,8 @@ export default function SoundConstellation({
       ? { kind: "master" }
       : { kind: "layer", id: state.instruments[0].id };
   const [anchor, setAnchor] = useState<Anchor>(initial);
-  const [selected, setSelected] = useState<NodeRef | null>(initial);
+  /** all'apertura nessuna finestra parametri: si vede solo la costellazione */
+  const [selected, setSelected] = useState<NodeRef | null>(null);
   const [picker, setPicker] = useState<"sound" | "fx" | null>(null);
   /** nodo per cui è stata chiesta la ✕ di eliminazione (chiede conferma) */
   const [confirmDel, setConfirmDel] = useState<NodeRef | null>(null);
