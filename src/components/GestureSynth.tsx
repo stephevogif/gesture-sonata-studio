@@ -301,8 +301,9 @@ export default function GestureSynth() {
   const [chord, setChord] = useState<ChordId>("off");
   const [hold, setHold] = useState(false);
 
-  const [reverb, setReverb] = useState(93);
-  const [delayMix, setDelayMix] = useState(28);
+  // gli effetti vivono nella Sound Constellation: la catena legacy resta a zero
+  const [reverb, setReverb] = useState(0);
+  const [delayMix, setDelayMix] = useState(0);
   const [delayFeedback, setDelayFeedback] = useState(35);
   const [delaySync, setDelaySync] = useState(true);
   const [delayDivision, setDelayDivision] = useState<DivisionId>("1/8");
