@@ -428,13 +428,18 @@ export default function SoundConstellation({
                     style={{ filter: `drop-shadow(0 0 10px rgba(${rgb},0.75))` }}
                   />
                 )}
-                {/* base halo */}
+                {/* alone radiante: più il volume è alto, più respira luminoso */}
                 <circle
                   cx={x}
                   cy={y}
-                  r={20 + layer.gain * 6}
-                  fill={`rgba(${rgb},${0.05 + layer.gain * 0.12})`}
+                  r={20 + layer.gain * 8}
+                  fill={`rgba(${rgb},${0.05 + layer.gain * 0.16})`}
                   pointerEvents="none"
+                  className="sc-radiate"
+                  style={{
+                    animationDuration: `${(4.4 - layer.gain * 2.4).toFixed(2)}s`,
+                    filter: `drop-shadow(0 0 ${4 + layer.gain * 16}px rgba(${rgb},${0.35 + layer.gain * 0.55}))`,
+                  }}
                 />
                 <circle
                   cx={x}
@@ -445,6 +450,23 @@ export default function SoundConstellation({
                   strokeWidth={on ? 2.4 : 1}
                   pointerEvents="none"
                 />
+
+                {/* ✕ di eliminazione, visibile solo sul nodo selezionato */}
+                {on && layers.length > 1 && (
+                  <g
+                    className="sc-kill"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDel({ kind: "layer", id: layer.id });
+                    }}
+                  >
+                    <circle cx={x + 17} cy={y - 17} r={8} className="sc-kill-bg" />
+                    <text x={x + 17} y={y - 14} textAnchor="middle" className="sc-kill-x">
+                      ✕
+                    </text>
+                  </g>
+                )}
+
 
                 <text
                   x={x}
