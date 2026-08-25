@@ -190,7 +190,7 @@ export default function HeavenSynth() {
   const [cutMax, setCutMax] = useState(8000);
   const [resonance, setResonance] = useState(6);
   /** legato: tempo di scivolamento fra un accordo e l'altro, in ms */
-  const [legato, setLegatoMs] = useState(90);
+  const [legato, setLegatoMs] = useState(15);
 
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -908,8 +908,8 @@ export default function HeavenSynth() {
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
       active
-        ? "border-[rgba(255,222,160,0.9)] bg-[rgba(255,238,200,0.28)] text-[#3a2f16] shadow-sm"
-        : "border-white/50 bg-white/25 text-[#3f4b62] hover:border-white/80"
+        ? "border-[rgba(255,222,160,0.95)] bg-[rgba(255,238,200,0.32)] text-[#2b1f0a] shadow-sm"
+        : "border-white/50 bg-white/15 text-[#f0f6ff] hover:border-white/85 hover:bg-white/22"
     }`;
 
   const field =
@@ -1169,7 +1169,7 @@ export default function HeavenSynth() {
                 </label>
               </div>
               <div className="space-y-2 border-t border-white/20 pt-3">
-                <h3 className="text-xs font-bold">Ascolto automatico</h3>
+                <h3 className="text-xs font-bold text-[#f8fbff] drop-shadow-sm">Ascolto automatico</h3>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {[16000, 24000, 32000].map((d) => (
                     <button
@@ -1181,12 +1181,12 @@ export default function HeavenSynth() {
                       {d / 1000}s
                     </button>
                   ))}
-                  <button onClick={toggleListen} className={chip(listening)}>
+                  <button onClick={toggleListen} className={chip(listing)}>
                     {listening ? `Ferma (${Math.round(listenProgress * 100)}%)` : "Ascolta"}
                   </button>
                 </div>
                 {listenMsg && !listening && (
-                  <p className="text-[11px] text-slate-500">{listenMsg}</p>
+                  <p className="text-[11px] font-medium text-[#f0f6ff]/90 drop-shadow-sm">{listenMsg}</p>
                 )}
               </div>
               {songMode.song && (
