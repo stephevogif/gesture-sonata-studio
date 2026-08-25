@@ -31,10 +31,13 @@ import {
   removeLayer,
   replaceFxChain,
   setFxParam,
+  cloneMix,
   type MixState,
 } from "@/core/sound/mix";
 import {
   deletePreset,
+  exportPresetFile,
+  importPresetFile,
   listPresets,
   savePreset,
   MAX_PRESETS,
@@ -140,7 +143,8 @@ export default function SoundConstellation({
   const [presets, setPresets] = useState<SoundPreset[]>([]);
   const [presetName, setPresetName] = useState("");
   /** "" = salva la catena FX corrente, altrimenti l'id dello strumento */
-  const [presetTarget, setPresetTarget] = useState("");
+  const [presetTarget, setPresetTarget] = useState("console");
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const [presetsOpen, setPresetsOpen] = useState(false);
   useEffect(() => setPresets(listPresets()), []);
 
@@ -305,18 +309,19 @@ export default function SoundConstellation({
   };
 
   const saveCurrentPreset = () => {
-    const layer =
-      presetTarget ? layers.find((l) => l.id === presetTarget) : undefined;
-    const name =
-      presetName.trim() ||
-      `${layer ? instrumentName(layer.instrument) : "FX"} ${new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
+    const layer = presetTarget && presetTarget !== "console"
+      ? layers.find((l) => l.id === presetTarget)
+      : undefined;
+    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const fallback =
+      presetTarget === "console" ? `Console ${time}` : `${layer ? instrumentName(layer.instrument) : "FX"} ${time}`;
+    const name = presetName.trim() || fallback;
     setPresets(
-      layer
-        ? savePreset({ name, kind: "layer", layer })
-        : savePreset({ name, kind: "fx", effects: fxList }),
+      presetTarget === "console"
+        ? savePreset({ name, kind: "console", mix: state })
+        : layer
+          ? savePreset({ name, kind: "layer", layer })
+          : savePreset({ name, kind: "fx", effects: fxList }),
     );
     setPresetName("");
   };
