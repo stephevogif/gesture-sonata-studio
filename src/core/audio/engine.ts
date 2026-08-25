@@ -142,7 +142,11 @@ export class HeavenAudioEngine {
         channel.instrument = layer.instrument;
       }
       if (!channel) {
-        channel = new InstrumentChannel(ctx, layer.instrument, rack.master, layer.gain);
+        channel = new InstrumentChannel(ctx, layer.instrument, rack.master, layer.gain, {
+          reverb: rack.reverbSend,
+          delay: rack.delaySend,
+          chorus: rack.chorusSend,
+        });
         this.channels.set(layer.id, channel);
       }
       channel.setGain(layer.gain);
