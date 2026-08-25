@@ -1086,7 +1086,12 @@ export default function HeavenSynth() {
             subtitle={`${mix.instruments.length} ${mix.instruments.length === 1 ? "strumento" : "strumenti"} · trascina per il mix`}
             onClose={() => setPanel(null)}
           >
-            <SoundConstellation state={mix} onChange={setMix} />
+            <SoundConstellation
+              state={mix}
+              onChange={setMix}
+              handControl={handControl}
+              onHandControlChange={updateHandControl}
+            />
             <div className="mt-3 space-y-3 border-t border-white/40 pt-3">
               <label className="block text-[11px] font-semibold">
                 Legato fra accordi: <b>{legato} ms</b>
