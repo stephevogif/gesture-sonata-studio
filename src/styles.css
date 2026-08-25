@@ -2255,6 +2255,8 @@
 /* ————— SOUND CONSTELLATION: tasti +, ✕ rossa, editor ————— */
 .sc-stage {
   position: relative;
+  /* spazio in basso per i tasti + fissi: non coprono mai i testi */
+  padding-bottom: 3.2rem;
 }
 /* i due tasti + stanno in basso, centrati: non coprono mai la console */
 .sc-fabs {
