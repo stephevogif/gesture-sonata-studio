@@ -211,6 +211,16 @@ export default function HeavenSynth() {
   const volFollowRef = useRef(false);
   volFollowRef.current = volFollow;
 
+  // ————— controllo con le mani: tutto spento di default, si attiva dal pannello Suono —————
+  const [handControl, setHandControl] = useState<HandControl>(DEFAULT_HAND_CONTROL);
+  const handControlRef = useRef<HandControl>(DEFAULT_HAND_CONTROL);
+  handControlRef.current = handControl;
+  useEffect(() => setHandControl(readHandControl("sky.heaven.handControl")), []);
+  const updateHandControl = useCallback((next: HandControl) => {
+    setHandControl(next);
+    writeHandControl("sky.heaven.handControl", next);
+  }, []);
+
   // gesto "doppio pugno": chiudi e riapri entrambe le mani per accendere/spegnere l'arp
   const fistAtRef = useRef(0);
   const armedRef = useRef(false);
