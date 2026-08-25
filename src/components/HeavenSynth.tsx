@@ -9,6 +9,7 @@ import {
   Mic,
   Music2,
   Play,
+  RefreshCw,
   Repeat,
   Sliders,
   Square,
@@ -1008,7 +1009,11 @@ export default function HeavenSynth() {
                   aria-label={camError ? "Riprova" : "Play"}
                   className="heaven-play heaven-play-breathe mx-auto mt-6"
                 >
-                  <Play className="h-7 w-7" />
+                  {camError ? (
+                    <RefreshCw className="h-7 w-7" />
+                  ) : (
+                    <Play className="h-7 w-7" />
+                  )}
                 </button>
               )}
             </div>

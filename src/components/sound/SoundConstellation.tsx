@@ -405,8 +405,8 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
           {anchorGeo &&
             fxList.map((fx, i) => {
               const def = fxDef(fx.type);
-              const base = (anchorGeo.angle ?? 0) + 120 + i * 50;
-              const a = (base * Math.PI) / 180;
+              const baseDeg = ((anchorGeo.angle ?? 0) * 180) / Math.PI + 120 + i * 50;
+              const a = (baseDeg * Math.PI) / 180;
               const r = FX_MIN + (FX_MAX - FX_MIN) * clamp01(fx.amount);
               const x = anchorGeo.x + Math.cos(a) * r;
               const y = anchorGeo.y + Math.sin(a) * r;
