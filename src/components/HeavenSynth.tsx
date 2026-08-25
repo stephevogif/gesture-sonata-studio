@@ -909,6 +909,21 @@ export default function HeavenSynth() {
   const activeDegree = hud.heavens?.degree ?? null;
   const playing = activeDegree != null;
 
+  /* etichetta accordo sotto ogni grado I–VII */
+  const degreeChordLabels = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) =>
+        buildChord({
+          rootPc,
+          mode,
+          degree: i,
+          tonality: "auto",
+          voicing: "triad",
+        }).label,
+      ),
+    [rootPc, mode],
+  );
+
   /* Song Mode: confronta il grado atteso con quello riconosciuto (manual follow) */
   const observeSong = songMode.observe;
   useEffect(() => {
