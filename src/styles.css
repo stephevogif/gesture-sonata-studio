@@ -2318,6 +2318,8 @@
 }
 .sc-editor {
   margin-top: 0.6rem;
+  max-height: 16rem;
+  overflow-y: auto;
 }
 .sc-pop-head {
   display: flex;
