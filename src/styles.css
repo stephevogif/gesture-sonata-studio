@@ -2439,13 +2439,21 @@
   justify-content: flex-start;
 }
 .sc-confirm {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(18rem, calc(100vw - 2rem));
   border-radius: 0.9rem;
   border: 1px solid rgba(255, 130, 130, 0.6);
-  background: rgba(120, 22, 22, 0.35);
-  padding: 0.55rem 0.65rem;
+  background: rgba(120, 22, 22, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 0.75rem 0.9rem;
   font-size: 11px;
   font-weight: 600;
   color: #ffe3e3;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.7);
 }
 .sc-orbit-dot {
   fill: rgba(226, 238, 255, 0.85);
