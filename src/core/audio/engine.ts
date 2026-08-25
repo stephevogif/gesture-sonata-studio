@@ -101,6 +101,11 @@ export class HeavenAudioEngine {
     this.ctx = ctx;
     this.rack = new MasterRack(ctx);
     this.masterChain = new FxChain(ctx, this.rack.master, this.rack.postMaster);
+    // fresh rack → invalidate the redundancy guards
+    this.lastReverb = -1;
+    this.lastEqFreq = -1;
+    this.lastEqType = null;
+    this.lastEqQ = -1;
     if (this.mix) this.applyMix(this.mix);
     this.applyReverb();
     this.applyEq();
