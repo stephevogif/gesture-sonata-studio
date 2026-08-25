@@ -35,6 +35,13 @@ import TutorialArt from "@/components/TutorialArt";
 import FloatingWindow from "@/components/ui/FloatingWindow";
 import SoundConstellation from "@/components/sound/SoundConstellation";
 import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
+import {
+  DEFAULT_HAND_CONTROL,
+  readHandControl,
+  sourceValue,
+  writeHandControl,
+  type HandControl,
+} from "@/core/sound/handControl";
 import { detectKey } from "@/lib/keyDetect";
 
 type PanelId = null | "sound" | "scale" | "arp" | "help";
