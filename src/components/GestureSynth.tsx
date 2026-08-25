@@ -312,7 +312,23 @@ export default function GestureSynth() {
   const [chorusMix, setChorusMix] = useState(0);
   const [chorusRate, setChorusRate] = useState(0.5);
   const [chorusDepth, setChorusDepth] = useState(50);
-  const [gestureMod, setGestureMod] = useState(40);
+  const [gestureMod, setGestureMod] = useState(0);
+
+  // ————— Sound Constellation (solo master: il sole e le sue lune) —————
+  const [mix, setMix] = useState<MixState>(() => ({ ...defaultMix(), instruments: [] }));
+  useEffect(() => {
+    engineRef.current?.applyMix(toMixSpec(mix));
+  }, [mix]);
+
+  // ————— controllo con le mani: opt-in, tutto spento di default —————
+  const [handControl, setHandControl] = useState<HandControl>(DEFAULT_HAND_CONTROL);
+  const handControlRef = useRef<HandControl>(DEFAULT_HAND_CONTROL);
+  handControlRef.current = handControl;
+  useEffect(() => setHandControl(readHandControl("sky.night.handControl")), []);
+  const updateHandControl = useCallback((next: HandControl) => {
+    setHandControl(next);
+    writeHandControl("sky.night.handControl", next);
+  }, []);
 
 
   const [listening, setListening] = useState(false);
