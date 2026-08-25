@@ -1137,7 +1137,7 @@ export default function HeavenSynth() {
           <FloatingWindow title="Tonalità e scala" onClose={() => setPanel(null)}>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f0f6ff]/90 drop-shadow-sm">
                   Tonica
                   <select
                     value={rootPc}
@@ -1152,7 +1152,7 @@ export default function HeavenSynth() {
                     ))}
                   </select>
                 </label>
-                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f0f6ff]/90 drop-shadow-sm">
                   Scala
                   <select
                     value={mode}
@@ -1191,8 +1191,8 @@ export default function HeavenSynth() {
               </div>
               {songMode.song && (
                 <div className="space-y-2 border-t border-white/20 pt-3">
-                  <h3 className="text-xs font-bold">Trasposizione della song</h3>
-                  <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  <h3 className="text-xs font-bold text-[#f8fbff] drop-shadow-sm">Trasposizione della song</h3>
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f0f6ff]/90 drop-shadow-sm">
                     Tonalità
                     <select
                       value={rootPc}
@@ -1212,12 +1212,12 @@ export default function HeavenSynth() {
                       ))}
                     </select>
                   </label>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-[#f0f6ff]/80 drop-shadow-sm">
                     I gradi ({songMode.degrees.join(" · ")}) non cambiano: cambia solo la tonalità.
                   </p>
                 </div>
               )}
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-[#f0f6ff]/80 drop-shadow-sm">
                 Tonica e scala restano bloccate: le mani scelgono solo il grado (1–7).
                 {songMode.song ? " In Song Mode le imposta la canzone." : ""}
               </p>
