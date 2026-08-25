@@ -1197,6 +1197,8 @@ export default function GestureSynth() {
       // audio e fotocamera partono insieme
       const camReady = openCamera(videoRef.current!);
       await engine.start();
+      // gli effetti della Sound Constellation sono attivi già dalla prima nota
+      engine.applyMix(toMixSpec(mix));
       engine.setArp({
         enabled: arpLeft || arpRight,
         rate: arpRate,
