@@ -558,12 +558,39 @@ export default function SoundConstellation({
                   <circle
                     cx={x}
                     cy={y}
+                    r={10 + fx.amount * 4}
+                    fill={`rgba(${def.rgb},${0.06 + fx.amount * 0.14})`}
+                    pointerEvents="none"
+                    className="sc-radiate"
+                    style={{
+                      animationDuration: `${(4.2 - fx.amount * 2.3).toFixed(2)}s`,
+                      filter: `drop-shadow(0 0 ${3 + fx.amount * 12}px rgba(${def.rgb},${0.3 + fx.amount * 0.6}))`,
+                    }}
+                  />
+                  <circle
+                    cx={x}
+                    cy={y}
                     r={7}
                     fill={`rgba(${def.rgb},${0.3 + fx.amount * 0.6})`}
                     stroke={`rgba(${def.rgb},${on ? 1 : 0.95})`}
                     strokeWidth={on ? 2 : 0.8}
                     pointerEvents="none"
                   />
+                  {on && (
+                    <g
+                      className="sc-kill"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDel({ kind: "fx", id: fx.id });
+                      }}
+                    >
+                      <circle cx={x + 12} cy={y - 12} r={7} className="sc-kill-bg" />
+                      <text x={x + 12} y={y - 9} textAnchor="middle" className="sc-kill-x">
+                        ✕
+                      </text>
+                    </g>
+                  )}
+
                   <text
                     x={x}
                     y={Math.max(10, y - 13)}
