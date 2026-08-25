@@ -2317,14 +2317,22 @@
   gap: 0.45rem;
 }
 .sc-pop {
-  position: absolute;
-  right: 0;
-  top: 4.6rem;
-  z-index: 2;
-  width: min(16rem, 92%);
-  max-height: 15rem;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 3.2rem;
+  z-index: 66;
+  width: min(22rem, calc(100vw - 1.4rem));
+  max-height: min(58vh, 22rem);
   overflow-y: auto;
+  box-shadow: 0 26px 60px -20px rgba(0, 6, 22, 0.95);
 }
+@media (min-width: 900px) {
+  .sc-pop {
+    top: 5rem;
+  }
+}
+
 .sc-editor {
   margin-top: 0.6rem;
   max-height: 16rem;
