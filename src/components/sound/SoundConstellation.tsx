@@ -131,6 +131,9 @@ export default function SoundConstellation({
   const [anchor, setAnchor] = useState<Anchor>(initial);
   const [selected, setSelected] = useState<NodeRef | null>(initial);
   const [picker, setPicker] = useState<"sound" | "fx" | null>(null);
+  /** nodo per cui è stata chiesta la ✕ di eliminazione (chiede conferma) */
+  const [confirmDel, setConfirmDel] = useState<NodeRef | null>(null);
+
 
   /* ————— libreria preset ————— */
   const [presets, setPresets] = useState<SoundPreset[]>([]);
