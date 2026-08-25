@@ -37,6 +37,9 @@ export type MixSpec = {
 /** `voiceKey@channelId` → voiceKey */
 const baseKey = (key: string) => key.split("@")[0]!;
 
+/** hard ceiling on simultaneous voices across every channel */
+const MAX_TOTAL_VOICES = 20;
+
 /** voices kept alive per active instrument channel */
 const MAX_VOICES_PER_CHANNEL = 8;
 
@@ -409,6 +412,9 @@ export class HeavenAudioEngine {
   }
 
   private applyReverb() {
+    // the hand-control loop calls this every frame: skip inaudible updates
+    if (Math.abs(this.reverbAmount - this.lastReverb) < 0.004) return;
+    this.lastReverb = this.reverbAmount;
     this.rack?.setReverb({ amount: this.reverbAmount });
   }
 
