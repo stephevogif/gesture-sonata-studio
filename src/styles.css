@@ -2321,7 +2321,7 @@
   top: 3.2rem;
   z-index: 66;
   width: min(22rem, calc(100vw - 1.4rem));
-  max-height: min(58vh, 22rem);
+  max-height: calc(100vh - var(--heaven-nav-h, 4.5rem) - env(safe-area-inset-bottom) - 9rem);
   overflow-y: auto;
   box-shadow: 0 26px 60px -20px rgba(0, 6, 22, 0.95);
 }
@@ -2419,7 +2419,7 @@
   right: 0.6rem;
   top: 3.5rem;
   width: min(19rem, calc(100vw - 1.2rem));
-  max-height: min(60vh, 26rem);
+  max-height: calc(100vh - var(--heaven-nav-h, 4.5rem) - env(safe-area-inset-bottom) - 8.5rem);
   overflow-y: auto;
   border-radius: 1.1rem;
   border: 1px solid rgba(160, 195, 255, 0.26);
@@ -2446,6 +2446,26 @@
   .sc-dock {
     top: 5rem;
   }
+}
+.sc-dock-presets {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(22rem, calc(100vw - 1.2rem));
+  z-index: 64;
+}
+@keyframes sc-presets-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+.sc-dock-presets {
+  animation: sc-presets-in 200ms ease-out;
 }
 .sc-knobs {
   display: flex;
