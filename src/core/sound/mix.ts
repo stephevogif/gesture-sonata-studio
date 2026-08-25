@@ -174,3 +174,11 @@ export function replaceFxChain(state: MixState, layerId: string | null, list: Mi
   if (layerId === null) return { ...state, master: next };
   return patchLayer(state, layerId, { effects: next });
 }
+
+/** full deep copy of the console state, with fresh ids */
+export function cloneMix(state: MixState): MixState {
+  return {
+    instruments: state.instruments.map(cloneLayer),
+    master: cloneFxList(state.master),
+  };
+}
