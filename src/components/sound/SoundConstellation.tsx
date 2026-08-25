@@ -294,10 +294,16 @@ export default function SoundConstellation({
   const masterFxList = state.master;
   const dark = tone === "dark";
 
-  /** salvataggio rapido dall'icona in alto: strumento selezionato o catena FX corrente */
-  const quickSave = () => {
+  /** l'icona in alto apre la finestra PRESET (nessun salvataggio silenzioso) */
+  const openPresets = () => {
+    setPicker(null);
+    setSelected(null);
+    setPresetsOpen(true);
+  };
+
+  const saveCurrentPreset = () => {
     const layer =
-      selected?.kind === "layer" ? layers.find((l) => l.id === selected.id) : undefined;
+      selectedLayerForPreset ? layers.find((l) => l.id === selectedLayerForPreset) : undefined;
     const name =
       presetName.trim() ||
       `${layer ? instrumentName(layer.instrument) : "FX"} ${new Date().toLocaleTimeString([], {
@@ -305,11 +311,13 @@ export default function SoundConstellation({
         minute: "2-digit",
       })}`;
     setPresets(
-      layer ? savePreset({ name, kind: "layer", layer }) : savePreset({ name, kind: "fx", effects: fxList }),
+      layer
+        ? savePreset({ name, kind: "layer", layer })
+        : savePreset({ name, kind: "fx", effects: fxList }),
     );
     setPresetName("");
-    setPresetsOpen(true);
   };
+
 
   const confirmLabel =
     confirmDel?.kind === "layer"
