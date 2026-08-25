@@ -1005,12 +1005,25 @@ export default function SoundConstellation({
                         className="sc-range"
                       />
                     </label>
+                    <button
+                      className="sc-add"
+                      disabled={editingLayer.effects.length >= 4}
+                      onClick={() => {
+                        setAnchor({ kind: "layer", id: editingLayer.id });
+                        setPicker("fx");
+                      }}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      FX su {instrumentName(editingLayer.instrument)} ·{" "}
+                      {editingLayer.effects.length}/4
+                    </button>
                     <div className="flex flex-col gap-2">
                       {editingLayer.effects.length === 0 && (
                         <p className="sc-hint">
                           Nessun effetto su questo strumento. Tocca + FX per aggiungerne uno.
                         </p>
                       )}
+
                       {editingLayer.effects.map((fx) => (
                         <div
                           key={fx.id}
