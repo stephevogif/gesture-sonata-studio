@@ -522,16 +522,18 @@ export default function SoundConstellation({
 
         {/* ————— i due tasti + ————— */}
         <div className="sc-fabs">
-          <button
-            className="sc-fab"
-            disabled={layers.length >= MAX_LAYERS}
-            aria-label="Aggiungi suono"
-            onClick={() => setPicker(picker === "sound" ? null : "sound")}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>SUONO</span>
-          </button>
+          {!masterOnly && (
+            <button
+              className="sc-fab"
+              disabled={layers.length >= MAX_LAYERS}
+              aria-label="Aggiungi suono"
+              onClick={() => setPicker(picker === "sound" ? null : "sound")}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>SUONO</span>
+            </button>
+          )}
           <button
             className="sc-fab"
             disabled={fxList.length >= 4}
