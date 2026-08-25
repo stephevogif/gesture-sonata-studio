@@ -168,6 +168,15 @@ export default function HeavenSynth() {
   const instrument: InstrumentId = mix.instruments[0]?.instrument ?? "pads";
   const [showDebug, setShowDebug] = useState(true);
   const [panel, setPanel] = useState<PanelId>(null);
+  const [hiContrast, setHiContrast] = useState<boolean>(false);
+
+  useEffect(() => {
+    setHiContrast(localStorage.getItem("sky.hiContrast") === "1");
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("sky.hiContrast", hiContrast ? "1" : "0");
+  }, [hiContrast]);
+
   /** eco mode: while a floating window is open the canvas drops its extras */
   const panelOpenRef = useRef(false);
   panelOpenRef.current = panel !== null;
