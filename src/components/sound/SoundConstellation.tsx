@@ -275,7 +275,14 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
           </defs>
 
           {[0.34, 0.67, 1].map((k) => (
-            <circle key={k} cx={C} cy={C} r={MIN_R + (MAX_R - MIN_R) * k} className="sc-orbit" />
+            <circle
+              key={k}
+              cx={C}
+              cy={C}
+              r={MIN_R + (MAX_R - MIN_R) * k}
+              className="sc-orbit"
+              pointerEvents="none"
+            />
           ))}
 
           {/* master sun */}
