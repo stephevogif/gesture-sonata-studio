@@ -1005,6 +1005,33 @@ export default function SoundConstellation({
                         className="sc-range"
                       />
                     </label>
+                    <div className="flex flex-col gap-2">
+                      {editingLayer.effects.length === 0 && (
+                        <p className="sc-hint">
+                          Nessun effetto su questo strumento. Tocca + FX per aggiungerne uno.
+                        </p>
+                      )}
+                      {editingLayer.effects.map((fx) => (
+                        <div
+                          key={fx.id}
+                          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                        >
+                          <button
+                            className="text-left text-xs font-semibold"
+                            onClick={() => setSelected({ kind: "fx", id: fx.id })}
+                          >
+                            {fxDef(fx.type).label} · {Math.round(fx.amount * 100)}%
+                          </button>
+                          <button
+                            className="sc-danger"
+                            aria-label={`Rimuovi ${fxDef(fx.type).label}`}
+                            onClick={() => setConfirmDel({ kind: "fx", id: fx.id })}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                     {layers.length > 1 && (
                       <button
                         className="sc-danger"
@@ -1013,6 +1040,7 @@ export default function SoundConstellation({
                         ✕ Rimuovi strumento
                       </button>
                     )}
+
 
                   </>
                 );
