@@ -2353,3 +2353,160 @@
   font-size: 11px;
   font-weight: 700;
 }
+
+/* ————— KNOB / DOCK PARAMETRI (console analogica) ————— */
+.knob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+.knob-track {
+  fill: none;
+  stroke: rgba(160, 190, 240, 0.22);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.knob-fill {
+  fill: none;
+  stroke: #f0b34a;
+  stroke-width: 5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 5px rgba(240, 179, 74, 0.6));
+}
+.knob-cap {
+  fill: rgba(12, 22, 45, 0.92);
+  stroke: rgba(180, 205, 250, 0.28);
+}
+.knob-needle {
+  stroke: #ffe0a3;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.knob-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffe0a3;
+}
+.knob-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: 0.75;
+  text-align: center;
+}
+
+/* pannello parametri agganciato al lato, non copre la console */
+.sc-dock {
+  position: fixed;
+  z-index: 60;
+  right: 0.6rem;
+  top: 3.5rem;
+  width: min(19rem, calc(100vw - 1.2rem));
+  max-height: min(60vh, 26rem);
+  overflow-y: auto;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(160, 195, 255, 0.26);
+  background: linear-gradient(180deg, rgba(20, 36, 72, 0.98), rgba(8, 16, 36, 0.99));
+  box-shadow: 0 24px 60px -22px rgba(0, 6, 22, 0.95);
+  padding: 0.65rem 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: #eaf1ff;
+  animation: sc-dock-in 220ms ease-out;
+}
+@keyframes sc-dock-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (min-width: 900px) {
+  .sc-dock {
+    top: 5rem;
+  }
+}
+.sc-knobs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-start;
+}
+.sc-confirm {
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 130, 130, 0.6);
+  background: rgba(120, 22, 22, 0.35);
+  padding: 0.55rem 0.65rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffe3e3;
+}
+.sc-orbit-dot {
+  fill: rgba(226, 238, 255, 0.85);
+  filter: drop-shadow(0 0 3px rgba(200, 225, 255, 0.9));
+}
+.sc-spin {
+  transform-origin: 160px 160px;
+  animation: sc-spin linear infinite;
+}
+@keyframes sc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sc-radiate {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: sc-radiate ease-in-out infinite;
+}
+@keyframes sc-radiate {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+}
+
+/* ————— ALTO CONTRASTO (Seven Heavens) ————— */
+.hc .heaven-nav,
+.hc .sc-chip,
+.hc .sc-fab,
+.hc .sc-preset {
+  border-color: rgba(255, 236, 200, 0.95) !important;
+  background: rgba(6, 14, 34, 0.82) !important;
+  color: #fff8e8 !important;
+  font-weight: 800;
+}
+.hc .sc-chip-on,
+.hc .heaven-nav-on {
+  background: #f5c46a !important;
+  color: #10203f !important;
+}
+.hc .sc-hint,
+.hc .sc-field-label,
+.hc .knob-label {
+  opacity: 1 !important;
+  color: #fff6e2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+}
+.hc .fw-sheet,
+.hc .sc-dock,
+.hc .sc-pop,
+.hc .sc-editor {
+  background: linear-gradient(180deg, rgba(6, 14, 34, 0.99), rgba(3, 8, 22, 1)) !important;
+  border-color: rgba(255, 226, 165, 0.6) !important;
+  color: #fff8e8 !important;
+}
+.hc .heaven-bottom-shade {
+  opacity: 1;
+}
