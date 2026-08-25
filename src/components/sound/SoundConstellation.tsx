@@ -251,6 +251,7 @@ export default function SoundConstellation({
         setSelected({ kind: "fx", id: drag.fxId });
       }
       setPicker(null);
+      setPresetsOpen(false);
     }
   }, []);
 
@@ -684,7 +685,11 @@ export default function SoundConstellation({
               className="sc-fab"
               disabled={layers.length >= MAX_LAYERS}
               aria-label="Aggiungi suono"
-              onClick={() => setPicker(picker === "sound" ? null : "sound")}
+              onClick={() => {
+                setPresetsOpen(false);
+                setSelected(null);
+                setPicker(picker === "sound" ? null : "sound");
+              }}
             >
               <Plus className="h-3.5 w-3.5" />
               <Sparkles className="h-3.5 w-3.5" />
@@ -695,7 +700,11 @@ export default function SoundConstellation({
             className="sc-fab"
             disabled={fxList.length >= 4}
             aria-label="Aggiungi effetto"
-            onClick={() => setPicker(picker === "fx" ? null : "fx")}
+            onClick={() => {
+              setPresetsOpen(false);
+              setSelected(null);
+              setPicker(picker === "fx" ? null : "fx");
+            }}
           >
             <Plus className="h-3.5 w-3.5" />
             <Wand2 className="h-3.5 w-3.5" />
