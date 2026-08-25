@@ -2258,14 +2258,22 @@
 }
 /* i due tasti + stanno sotto la costellazione, nel flusso: non coprono nulla */
 .sc-fabs {
-  position: relative;
-  margin: 0.6rem auto 0;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--heaven-nav-h, 4.5rem) + env(safe-area-inset-bottom) + 0.6rem);
+  margin: 0;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  z-index: 62;
+  z-index: 68;
+  padding: 0.3rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(8, 16, 36, 0.72);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px -14px rgba(0, 6, 22, 0.9);
 }
 
 
