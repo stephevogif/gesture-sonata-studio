@@ -129,7 +129,8 @@ export default function SoundConstellation({
       ? { kind: "master" }
       : { kind: "layer", id: state.instruments[0].id };
   const [anchor, setAnchor] = useState<Anchor>(initial);
-  const [selected, setSelected] = useState<NodeRef | null>(initial);
+  /** all'apertura nessuna finestra parametri: si vede solo la costellazione */
+  const [selected, setSelected] = useState<NodeRef | null>(null);
   const [picker, setPicker] = useState<"sound" | "fx" | null>(null);
   /** nodo per cui è stata chiesta la ✕ di eliminazione (chiede conferma) */
   const [confirmDel, setConfirmDel] = useState<NodeRef | null>(null);
@@ -138,6 +139,8 @@ export default function SoundConstellation({
   /* ————— libreria preset ————— */
   const [presets, setPresets] = useState<SoundPreset[]>([]);
   const [presetName, setPresetName] = useState("");
+  /** "" = salva la catena FX corrente, altrimenti l'id dello strumento */
+  const [presetTarget, setPresetTarget] = useState("");
   const [presetsOpen, setPresetsOpen] = useState(false);
   useEffect(() => setPresets(listPresets()), []);
 
@@ -248,6 +251,7 @@ export default function SoundConstellation({
         setSelected({ kind: "fx", id: drag.fxId });
       }
       setPicker(null);
+      setPresetsOpen(false);
     }
   }, []);
 
@@ -293,10 +297,16 @@ export default function SoundConstellation({
   const masterFxList = state.master;
   const dark = tone === "dark";
 
-  /** salvataggio rapido dall'icona in alto: strumento selezionato o catena FX corrente */
-  const quickSave = () => {
+  /** l'icona in alto apre la finestra PRESET (nessun salvataggio silenzioso) */
+  const openPresets = () => {
+    setPicker(null);
+    setSelected(null);
+    setPresetsOpen(true);
+  };
+
+  const saveCurrentPreset = () => {
     const layer =
-      selected?.kind === "layer" ? layers.find((l) => l.id === selected.id) : undefined;
+      presetTarget ? layers.find((l) => l.id === presetTarget) : undefined;
     const name =
       presetName.trim() ||
       `${layer ? instrumentName(layer.instrument) : "FX"} ${new Date().toLocaleTimeString([], {
@@ -304,11 +314,13 @@ export default function SoundConstellation({
         minute: "2-digit",
       })}`;
     setPresets(
-      layer ? savePreset({ name, kind: "layer", layer }) : savePreset({ name, kind: "fx", effects: fxList }),
+      layer
+        ? savePreset({ name, kind: "layer", layer })
+        : savePreset({ name, kind: "fx", effects: fxList }),
     );
     setPresetName("");
-    setPresetsOpen(true);
   };
+
 
   const confirmLabel =
     confirmDel?.kind === "layer"
@@ -325,7 +337,7 @@ export default function SoundConstellation({
     <div className={`sc ${dark ? "sc-dark" : "sc-light"}`}>
       <div className="sc-pop-head">
         <span>EFFECT CONSOLE</span>
-        <button className="sc-chip sc-chip-on" aria-label="Salva preset" onClick={quickSave}>
+        <button className="sc-chip sc-chip-on" aria-label="Salva preset" onClick={openPresets}>
           <Save className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -673,7 +685,11 @@ export default function SoundConstellation({
               className="sc-fab"
               disabled={layers.length >= MAX_LAYERS}
               aria-label="Aggiungi suono"
-              onClick={() => setPicker(picker === "sound" ? null : "sound")}
+              onClick={() => {
+                setPresetsOpen(false);
+                setSelected(null);
+                setPicker(picker === "sound" ? null : "sound");
+              }}
             >
               <Plus className="h-3.5 w-3.5" />
               <Sparkles className="h-3.5 w-3.5" />
@@ -684,7 +700,11 @@ export default function SoundConstellation({
             className="sc-fab"
             disabled={fxList.length >= 4}
             aria-label="Aggiungi effetto"
-            onClick={() => setPicker(picker === "fx" ? null : "fx")}
+            onClick={() => {
+              setPresetsOpen(false);
+              setSelected(null);
+              setPicker(picker === "fx" ? null : "fx");
+            }}
           >
             <Plus className="h-3.5 w-3.5" />
             <Wand2 className="h-3.5 w-3.5" />
@@ -749,106 +769,104 @@ export default function SoundConstellation({
         Tocca un nodo per selezionarlo e aprire i parametri · trascina per regolare volume o quantità.
       </p>
 
-      {/* ————— libreria preset: salva / apri / elimina ————— */}
-      <div className="sc-editor mt-2">
-        <div className="sc-pop-head">
-          <span>PRESET · {presets.length}/{MAX_PRESETS}</span>
-          <button
-            className="sc-chip"
-            aria-expanded={presetsOpen}
-            onClick={() => setPresetsOpen((v) => !v)}
-          >
-            {presetsOpen ? "Chiudi" : "Apri"}
-          </button>
-        </div>
+      {/* ————— libreria preset: finestra a parte (icona salva in alto) ————— */}
+      {presetsOpen && (
+        <div className="sc-dock sc-dock-presets" role="dialog" aria-label="Preset">
+          <div className="sc-pop-head">
+            <span>
+              PRESET · {presets.length}/{MAX_PRESETS}
+            </span>
+            <button
+              className="sc-pop-x"
+              aria-label="Chiudi preset"
+              onClick={() => setPresetsOpen(false)}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
 
-        {presetsOpen && (
-          <>
-            <div className="mt-2 flex gap-1.5">
-              <input
-                className="sc-field flex-1"
-                placeholder={
-                  selected?.kind === "layer" ? "Nome preset strumento" : "Nome preset effetti"
-                }
-                aria-label="Nome del preset"
-                value={presetName}
-                onChange={(e) => setPresetName(e.target.value)}
-              />
-              <button
-                className="sc-chip sc-chip-on"
-                onClick={() => {
-                  const layer =
-                    selected?.kind === "layer"
-                      ? layers.find((l) => l.id === selected.id)
-                      : undefined;
-                  const name =
-                    presetName.trim() ||
-                    (layer ? instrumentName(layer.instrument) : "FX") +
-                      " " +
-                      new Date().toLocaleDateString();
-                  const next = layer
-                    ? savePreset({ name, kind: "layer", layer })
-                    : savePreset({ name, kind: "fx", effects: fxList });
-                  setPresets(next);
-                  setPresetName("");
-                }}
+          {!masterOnly && layers.length > 0 && (
+            <label className="sc-field-label">
+              Cosa salvare
+              <select
+                className="sc-field"
+                aria-label="Contenuto del preset"
+                value={presetTarget}
+                onChange={(e) => setPresetTarget(e.target.value)}
               >
-                <Save className="h-3.5 w-3.5" /> Salva
-              </button>
-            </div>
-
-            {presets.length === 0 ? (
-              <p className="sc-hint mt-2">
-                Nessun preset salvato. Seleziona uno strumento (o il Master) e salva la sua
-                configurazione con i suoi effetti.
-              </p>
-            ) : (
-              <div className="mt-2 flex flex-col gap-1.5">
-                {presets.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
-                  >
-                    <span className="min-w-0 flex-1 truncate text-left text-xs font-semibold">
-                      {p.name}
-                      <span className="ml-2 opacity-60">
-                        {p.kind === "layer" ? "strumento" : `${p.effects.length} fx`}
-                      </span>
-                    </span>
-                    <button
-                      className="sc-chip"
-                      disabled={p.kind === "layer" && (masterOnly || layers.length >= MAX_LAYERS)}
-                      onClick={() => {
-                        if (p.kind === "layer") {
-                          const updated = insertLayer(state, p.layer);
-                          onChange(updated);
-                          const added = updated.instruments[updated.instruments.length - 1];
-                          if (added) {
-                            setAnchor({ kind: "layer", id: added.id });
-                            setSelected({ kind: "layer", id: added.id });
-                          }
-                        } else {
-                          onChange(replaceFxChain(state, fxParentId, p.effects));
-                          setSelected(anchor.kind === "master" ? { kind: "master" } : anchor);
-                        }
-                      }}
-                    >
-                      Apri
-                    </button>
-                    <button
-                      className="sc-danger"
-                      aria-label={`Elimina preset ${p.name}`}
-                      onClick={() => setPresets(deletePreset(p.id))}
-                    >
-                      ✕
-                    </button>
-                  </div>
+                <option value="">
+                  Catena FX ({anchorLayer ? instrumentName(anchorLayer.instrument) : "Master"})
+                </option>
+                {layers.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    Strumento · {instrumentName(l.instrument)}
+                  </option>
                 ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+              </select>
+            </label>
+          )}
+
+          <div className="flex gap-1.5">
+            <input
+              className="sc-field flex-1"
+              placeholder={presetTarget ? "Nome preset strumento" : "Nome preset effetti"}
+              aria-label="Nome del preset"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+            />
+            <button className="sc-chip sc-chip-on" onClick={saveCurrentPreset}>
+              <Save className="h-3.5 w-3.5" /> Salva
+            </button>
+          </div>
+
+          {presets.length === 0 ? (
+            <p className="sc-hint">
+              Nessun preset salvato. Scegli cosa salvare, dai un nome e premi Salva.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {presets.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                >
+                  <span className="min-w-0 flex-1 truncate text-left text-xs font-semibold">
+                    {p.name}
+                    <span className="ml-2 opacity-60">
+                      {p.kind === "layer" ? "strumento" : `${p.effects.length} fx`}
+                    </span>
+                  </span>
+                  <button
+                    className="sc-chip"
+                    disabled={p.kind === "layer" && (masterOnly || layers.length >= MAX_LAYERS)}
+                    onClick={() => {
+                      if (p.kind === "layer") {
+                        const updated = insertLayer(state, p.layer);
+                        onChange(updated);
+                        const added = updated.instruments[updated.instruments.length - 1];
+                        if (added) setAnchor({ kind: "layer", id: added.id });
+                      } else {
+                        onChange(replaceFxChain(state, fxParentId, p.effects));
+                      }
+                      setPresetsOpen(false);
+                    }}
+                  >
+                    Apri
+                  </button>
+                  <button
+                    className="sc-danger"
+                    aria-label={`Elimina preset ${p.name}`}
+                    onClick={() => setPresets(deletePreset(p.id))}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* ————— controllo con le mani (disattivato di default) ————— */}
       {handControl && onHandControlChange && (
