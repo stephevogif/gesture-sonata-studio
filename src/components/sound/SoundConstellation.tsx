@@ -291,6 +291,15 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
               movedRef.current = false;
               dragRef.current = { kind: "master", sx: x, sy: y };
             }}
+            onClick={() => {
+              if (!movedRef.current) {
+                setAnchor({ kind: "master" });
+                setSelected({ kind: "master" });
+                setPicker(null);
+              }
+              movedRef.current = false;
+              dragRef.current = null;
+            }}
           />
           <text x={C} y={C + 4} className="sc-sun-label" textAnchor="middle" pointerEvents="none">
             MASTER
