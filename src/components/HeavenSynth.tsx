@@ -9,6 +9,7 @@ import {
   Mic,
   Music2,
   Play,
+  RefreshCw,
   Repeat,
   Sliders,
   Square,
