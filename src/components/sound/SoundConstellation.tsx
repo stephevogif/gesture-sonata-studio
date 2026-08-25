@@ -286,7 +286,7 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
           ))}
 
           {/* master sun */}
-          <circle cx={C} cy={C} r={SUN_R * 2.2} fill="url(#sc-sun)" />
+          <circle cx={C} cy={C} r={SUN_R * 2.2} fill="url(#sc-sun)" pointerEvents="none" />
           <circle
             cx={C}
             cy={C}
