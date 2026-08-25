@@ -2256,20 +2256,18 @@
 .sc-stage {
   position: relative;
 }
+/* i due tasti + stanno in basso, centrati: non coprono mai la console */
 .sc-fabs {
   position: fixed;
-  top: 3.5rem;
-  left: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--heaven-nav-h, 4.5rem) + env(safe-area-inset-bottom) + 0.7rem);
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   z-index: 62;
-}
-@media (min-width: 900px) {
-  .sc-fabs {
-    top: 5rem;
-  }
 }
 
 
