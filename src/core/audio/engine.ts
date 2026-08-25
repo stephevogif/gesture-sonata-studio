@@ -206,7 +206,11 @@ export class HeavenAudioEngine {
    * bounded instead of degrading into audio drop-outs.
    */
   private trimVoices() {
-    const max = Math.max(8, MAX_VOICES_PER_CHANNEL * Math.max(1, this.channels.size));
+    // total polyphony is capped: layering 4 instruments must not multiply CPU by 4
+    const max = Math.min(
+      MAX_TOTAL_VOICES,
+      Math.max(8, MAX_VOICES_PER_CHANNEL * Math.max(1, this.channels.size)),
+    );
     if (this.voices.size <= max) return;
     for (const key of this.voices.keys()) {
       if (this.voices.size <= max) break;
