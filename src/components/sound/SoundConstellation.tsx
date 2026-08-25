@@ -13,6 +13,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Save, Sparkles, Wand2, X } from "lucide-react";
+import Knob from "@/components/sound/Knob";
+
 import { FX_CATALOG, fxDef, type FxParamDef } from "@/core/audio/fxCatalog";
 import { GATE_PRESETS, gateGlyph, type GatePresetId } from "@/core/audio/gatePresets";
 import type { FxTypeId } from "@/core/audio/fx";
