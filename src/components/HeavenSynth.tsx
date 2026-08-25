@@ -950,13 +950,24 @@ export default function HeavenSynth() {
               Heaven Synth
             </p>
           </div>
-          <button
-            onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
-            aria-label="Guida"
-            className="heaven-orb-btn"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHiContrast((v) => !v)}
+              aria-label="Alto contrasto"
+              aria-pressed={hiContrast}
+              className="heaven-orb-btn"
+            >
+              <Contrast className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
+              aria-label="Guida"
+              className="heaven-orb-btn"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </div>
+
         </header>
 
         <h1 className="heaven-title mt-5 text-center text-[2.1rem] leading-none sm:text-5xl">
