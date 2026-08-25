@@ -106,20 +106,35 @@ type Props = {
   state: MixState;
   onChange: (next: MixState) => void;
   tone?: "light" | "dark";
+  /** hides the instrument planets: only the MASTER sun and its FX moons */
+  masterOnly?: boolean;
+  handControl?: HandControl;
+  onHandControlChange?: (next: HandControl) => void;
 };
 
-export default function SoundConstellation({ state, onChange, tone = "light" }: Props) {
+export default function SoundConstellation({
+  state,
+  onChange,
+  tone = "light",
+  masterOnly = false,
+  handControl,
+  onHandControlChange,
+}: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<Drag | null>(null);
-  const [anchor, setAnchor] = useState<Anchor>({
-    kind: "layer",
-    id: state.instruments[0]?.id ?? "",
-  });
-  const [selected, setSelected] = useState<NodeRef | null>({
-    kind: "layer",
-    id: state.instruments[0]?.id ?? "",
-  });
+  const initial: Anchor =
+    masterOnly || !state.instruments[0]
+      ? { kind: "master" }
+      : { kind: "layer", id: state.instruments[0].id };
+  const [anchor, setAnchor] = useState<Anchor>(initial);
+  const [selected, setSelected] = useState<NodeRef | null>(initial);
   const [picker, setPicker] = useState<"sound" | "fx" | null>(null);
+
+  /* ————— libreria preset ————— */
+  const [presets, setPresets] = useState<SoundPreset[]>([]);
+  const [presetName, setPresetName] = useState("");
+  const [presetsOpen, setPresetsOpen] = useState(false);
+  useEffect(() => setPresets(listPresets()), []);
 
   const layers = state.instruments;
   const anchorLayer = anchor.kind === "layer" ? layers.find((l) => l.id === anchor.id) ?? null : null;
