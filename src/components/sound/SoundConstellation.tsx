@@ -321,6 +321,37 @@ export default function SoundConstellation({
             />
           ))}
 
+          {/* piccoli pianeti/stelle decorativi che orbitano lentamente */}
+          {[0.34, 0.67, 1].map((k, i) => {
+            const r = MIN_R + (MAX_R - MIN_R) * k;
+            return (
+              <g
+                key={`spin-${k}`}
+                className="sc-spin"
+                pointerEvents="none"
+                style={{
+                  animationDuration: `${26 + i * 14}s`,
+                  animationDirection: i % 2 ? "reverse" : "normal",
+                }}
+              >
+                {[0, 120, 240].map((deg, j) => {
+                  const a = ((deg + i * 37) * Math.PI) / 180;
+                  return (
+                    <circle
+                      key={deg}
+                      cx={C + Math.cos(a) * r}
+                      cy={C + Math.sin(a) * r}
+                      r={j === 0 ? 1.5 : 1}
+                      className="sc-orbit-dot"
+                      opacity={0.35 + j * 0.15}
+                    />
+                  );
+                })}
+              </g>
+            );
+          })}
+
+
           {/* master sun */}
           <circle cx={C} cy={C} r={SUN_R * 2.2} fill="url(#sc-sun)" pointerEvents="none" />
           <circle
