@@ -159,3 +159,18 @@ export function toMixSpec(state: MixState): MixSpec {
     master: { effects: state.master.map(toSpec) },
   };
 }
+
+/* ————— preset helpers ————— */
+
+/** appends a saved layer (instrument + its FX chain) as a new planet */
+export function insertLayer(state: MixState, layer: MixLayer): MixState {
+  if (state.instruments.length >= MAX_LAYERS) return state;
+  return { ...state, instruments: [...state.instruments, cloneLayer(layer)] };
+}
+
+/** replaces the whole FX chain of a node (`null` = master) with a saved one */
+export function replaceFxChain(state: MixState, layerId: string | null, list: MixFx[]): MixState {
+  const next = cloneFxList(list).slice(0, 4);
+  if (layerId === null) return { ...state, master: next };
+  return patchLayer(state, layerId, { effects: next });
+}
