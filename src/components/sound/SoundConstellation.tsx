@@ -972,8 +972,21 @@ export default function SoundConstellation({
                         ))}
                       </select>
                     </label>
+                    <div className="sc-knobs">
+                      <Knob
+                        label="Volume"
+                        value={editingLayer.gain}
+                        display={`${Math.round(editingLayer.gain * 100)}%`}
+                        onChange={(t) =>
+                          onChange(
+                            patchLayer(state, editingLayer.id, { gain: Number(t.toFixed(2)) }),
+                          )
+                        }
+                        size={70}
+                      />
+                    </div>
                     <label className="sc-field-label">
-                      Volume: <b>{Math.round(editingLayer.gain * 100)}%</b>
+                      Volume (slider)
                       <input
                         type="range"
                         min={0}
@@ -991,10 +1004,14 @@ export default function SoundConstellation({
                       />
                     </label>
                     {layers.length > 1 && (
-                      <button className="sc-danger" onClick={() => deleteLayer(editingLayer.id)}>
+                      <button
+                        className="sc-danger"
+                        onClick={() => setConfirmDel({ kind: "layer", id: editingLayer.id })}
+                      >
                         ✕ Rimuovi strumento
                       </button>
                     )}
+
                   </>
                 );
               })()}
