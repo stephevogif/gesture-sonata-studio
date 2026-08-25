@@ -1044,8 +1044,47 @@ export default function SoundConstellation({
                 </div>
               )}
 
-              <label className="sc-field-label mt-2">
-                Quantità: <b>{Math.round(selectedFxInfo.fx.amount * 100)}%</b>
+              <div className="sc-knobs mt-2">
+                <Knob
+                  label="Quantità"
+                  value={selectedFxInfo.fx.amount}
+                  display={`${Math.round(selectedFxInfo.fx.amount * 100)}%`}
+                  onChange={(t) =>
+                    onChange(
+                      patchFx(state, selectedFxInfo.parent, selectedFxInfo.fx.id, {
+                        amount: Number(t.toFixed(2)),
+                      }),
+                    )
+                  }
+                  size={70}
+                />
+                {fxDef(selectedFxInfo.fx.type).params.map((def) => {
+                  const value = selectedFxInfo.fx.params[def.id] ?? def.default;
+                  return (
+                    <Knob
+                      key={def.id}
+                      label={def.label}
+                      value={normParam(def, value)}
+                      display={formatParam(def, value)}
+                      onChange={(t) => {
+                        const next = def.toggle ? (t > 0.5 ? 1 : 0) : denormParam(def, t);
+                        onChange(
+                          setFxParam(
+                            state,
+                            selectedFxInfo.parent,
+                            selectedFxInfo.fx.id,
+                            def.id,
+                            next,
+                          ),
+                        );
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              <label className="sc-field-label">
+                Quantità (slider)
                 <input
                   type="range"
                   min={0}
@@ -1063,32 +1102,6 @@ export default function SoundConstellation({
                 />
               </label>
 
-              {fxDef(selectedFxInfo.fx.type).params.map((def) => {
-                const value = selectedFxInfo.fx.params[def.id] ?? def.default;
-                return (
-                  <label key={def.id} className="sc-field-label">
-                    {def.label}: <b>{formatParam(def, value)}</b>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1000}
-                      value={Math.round(normParam(def, value) * 1000)}
-                      aria-label={def.label}
-                      onChange={(e) => {
-                        const next = def.toggle
-                          ? Number(e.target.value) > 500
-                            ? 1
-                            : 0
-                          : denormParam(def, Number(e.target.value) / 1000);
-                        onChange(
-                          setFxParam(state, selectedFxInfo.parent, selectedFxInfo.fx.id, def.id, next),
-                        );
-                      }}
-                      className="sc-range"
-                    />
-                  </label>
-                );
-              })}
             </>
           )}
         </div>
