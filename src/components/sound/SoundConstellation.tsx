@@ -603,6 +603,151 @@ export default function SoundConstellation({
         Tocca un nodo per selezionarlo e aprire i parametri · trascina per regolare volume o quantità.
       </p>
 
+      {/* ————— libreria preset: salva / apri / elimina ————— */}
+      <div className="sc-editor mt-2">
+        <div className="sc-pop-head">
+          <span>PRESET · {presets.length}/{MAX_PRESETS}</span>
+          <button
+            className="sc-chip"
+            aria-expanded={presetsOpen}
+            onClick={() => setPresetsOpen((v) => !v)}
+          >
+            {presetsOpen ? "Chiudi" : "Apri"}
+          </button>
+        </div>
+
+        {presetsOpen && (
+          <>
+            <div className="mt-2 flex gap-1.5">
+              <input
+                className="sc-field flex-1"
+                placeholder={
+                  selected?.kind === "layer" ? "Nome preset strumento" : "Nome preset effetti"
+                }
+                aria-label="Nome del preset"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+              />
+              <button
+                className="sc-chip sc-chip-on"
+                onClick={() => {
+                  const layer =
+                    selected?.kind === "layer"
+                      ? layers.find((l) => l.id === selected.id)
+                      : undefined;
+                  const name =
+                    presetName.trim() ||
+                    (layer ? instrumentName(layer.instrument) : "FX") +
+                      " " +
+                      new Date().toLocaleDateString();
+                  const next = layer
+                    ? savePreset({ name, kind: "layer", layer })
+                    : savePreset({ name, kind: "fx", effects: fxList });
+                  setPresets(next);
+                  setPresetName("");
+                }}
+              >
+                <Save className="h-3.5 w-3.5" /> Salva
+              </button>
+            </div>
+
+            {presets.length === 0 ? (
+              <p className="sc-hint mt-2">
+                Nessun preset salvato. Seleziona uno strumento (o il Master) e salva la sua
+                configurazione con i suoi effetti.
+              </p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-1.5">
+                {presets.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-left text-xs font-semibold">
+                      {p.name}
+                      <span className="ml-2 opacity-60">
+                        {p.kind === "layer" ? "strumento" : `${p.effects.length} fx`}
+                      </span>
+                    </span>
+                    <button
+                      className="sc-chip"
+                      disabled={p.kind === "layer" && (masterOnly || layers.length >= MAX_LAYERS)}
+                      onClick={() => {
+                        if (p.kind === "layer") {
+                          const updated = insertLayer(state, p.layer);
+                          onChange(updated);
+                          const added = updated.instruments[updated.instruments.length - 1];
+                          if (added) {
+                            setAnchor({ kind: "layer", id: added.id });
+                            setSelected({ kind: "layer", id: added.id });
+                          }
+                        } else {
+                          onChange(replaceFxChain(state, fxParentId, p.effects));
+                          setSelected(anchor.kind === "master" ? { kind: "master" } : anchor);
+                        }
+                      }}
+                    >
+                      Apri
+                    </button>
+                    <button
+                      className="sc-danger"
+                      aria-label={`Elimina preset ${p.name}`}
+                      onClick={() => setPresets(deletePreset(p.id))}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ————— controllo con le mani (disattivato di default) ————— */}
+      {handControl && onHandControlChange && (
+        <div className="sc-editor mt-2">
+          <div className="sc-pop-head">
+            <span>CONTROLLO MANI</span>
+            <button
+              className="sc-chip"
+              onClick={() =>
+                onHandControlChange({ cutoff: "off", volume: "off", reverb: "off" })
+              }
+            >
+              Azzera
+            </button>
+          </div>
+          {HAND_TARGETS.map((t) => (
+            <label key={t.id} className="sc-field-label">
+              {t.label}
+              <select
+                className="sc-field"
+                aria-label={`Controllo mani per ${t.label}`}
+                value={handControl[t.id as HandTargetId]}
+                onChange={(e) =>
+                  onHandControlChange({
+                    ...handControl,
+                    [t.id]: e.target.value as HandSource,
+                  })
+                }
+              >
+                {HAND_SOURCES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          <p className="sc-hint">
+            Di default nessun parametro segue le mani: attiva qui quello che vuoi suonare col
+            gesto.
+          </p>
+        </div>
+      )}
+
+
       {/* ————— editor aperto con un solo tocco ————— */}
       {selected && (
         <div className="sc-editor">
