@@ -139,6 +139,8 @@ export default function SoundConstellation({
   /* ————— libreria preset ————— */
   const [presets, setPresets] = useState<SoundPreset[]>([]);
   const [presetName, setPresetName] = useState("");
+  /** "" = salva la catena FX corrente, altrimenti l'id dello strumento */
+  const [presetTarget, setPresetTarget] = useState("");
   const [presetsOpen, setPresetsOpen] = useState(false);
   useEffect(() => setPresets(listPresets()), []);
 
@@ -303,7 +305,7 @@ export default function SoundConstellation({
 
   const saveCurrentPreset = () => {
     const layer =
-      selectedLayerForPreset ? layers.find((l) => l.id === selectedLayerForPreset) : undefined;
+      presetTarget ? layers.find((l) => l.id === presetTarget) : undefined;
     const name =
       presetName.trim() ||
       `${layer ? instrumentName(layer.instrument) : "FX"} ${new Date().toLocaleTimeString([], {
@@ -334,7 +336,7 @@ export default function SoundConstellation({
     <div className={`sc ${dark ? "sc-dark" : "sc-light"}`}>
       <div className="sc-pop-head">
         <span>EFFECT CONSOLE</span>
-        <button className="sc-chip sc-chip-on" aria-label="Salva preset" onClick={quickSave}>
+        <button className="sc-chip sc-chip-on" aria-label="Salva preset" onClick={openPresets}>
           <Save className="h-3.5 w-3.5" />
         </button>
       </div>
