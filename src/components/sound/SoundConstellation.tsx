@@ -785,31 +785,37 @@ export default function SoundConstellation({
             </button>
           </div>
 
-          {!masterOnly && layers.length > 0 && (
-            <label className="sc-field-label">
-              Cosa salvare
-              <select
-                className="sc-field"
-                aria-label="Contenuto del preset"
-                value={presetTarget}
-                onChange={(e) => setPresetTarget(e.target.value)}
-              >
-                <option value="">
-                  Catena FX ({anchorLayer ? instrumentName(anchorLayer.instrument) : "Master"})
-                </option>
-                {layers.map((l) => (
+          <label className="sc-field-label">
+            Cosa salvare
+            <select
+              className="sc-field"
+              aria-label="Contenuto del preset"
+              value={presetTarget}
+              onChange={(e) => setPresetTarget(e.target.value)}
+            >
+              <option value="console">Console completa (tutti i suoni + FX)</option>
+              <option value="">
+                Solo catena FX ({anchorLayer ? instrumentName(anchorLayer.instrument) : "Master"})
+              </option>
+              {!masterOnly &&
+                layers.map((l) => (
                   <option key={l.id} value={l.id}>
-                    Strumento · {instrumentName(l.instrument)}
+                    Solo strumento · {instrumentName(l.instrument)}
                   </option>
                 ))}
-              </select>
-            </label>
-          )}
+            </select>
+          </label>
 
           <div className="flex gap-1.5">
             <input
               className="sc-field flex-1"
-              placeholder={presetTarget ? "Nome preset strumento" : "Nome preset effetti"}
+              placeholder={
+                presetTarget === "console"
+                  ? "Nome preset console"
+                  : presetTarget
+                    ? "Nome preset strumento"
+                    : "Nome preset effetti"
+              }
               aria-label="Nome del preset"
               value={presetName}
               onChange={(e) => setPresetName(e.target.value)}
@@ -819,9 +825,29 @@ export default function SoundConstellation({
             </button>
           </div>
 
+          <div className="flex gap-1.5">
+            <button className="sc-chip flex-1" onClick={() => fileRef.current?.click()}>
+              Importa preset
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              aria-label="Importa un preset da file"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                const next = await importPresetFile(file);
+                if (next) setPresets(next);
+              }}
+            />
+          </div>
+
           {presets.length === 0 ? (
             <p className="sc-hint">
-              Nessun preset salvato. Scegli cosa salvare, dai un nome e premi Salva.
+              Nessun preset salvato. Salva la console completa per riusarla anche in altri progetti.
             </p>
           ) : (
             <div className="flex flex-col gap-1.5">
@@ -833,14 +859,28 @@ export default function SoundConstellation({
                   <span className="min-w-0 flex-1 truncate text-left text-xs font-semibold">
                     {p.name}
                     <span className="ml-2 opacity-60">
-                      {p.kind === "layer" ? "strumento" : `${p.effects.length} fx`}
+                      {p.kind === "console"
+                        ? `console · ${p.mix.instruments.length} suoni`
+                        : p.kind === "layer"
+                          ? "strumento"
+                          : `${p.effects.length} fx`}
                     </span>
                   </span>
                   <button
                     className="sc-chip"
                     disabled={p.kind === "layer" && (masterOnly || layers.length >= MAX_LAYERS)}
                     onClick={() => {
-                      if (p.kind === "layer") {
+                      if (p.kind === "console") {
+                        const next = cloneMix(p.mix);
+                        onChange(next);
+                        const first = next.instruments[0];
+                        setAnchor(
+                          masterOnly || !first
+                            ? { kind: "master" }
+                            : { kind: "layer", id: first.id },
+                        );
+                        setSelected(null);
+                      } else if (p.kind === "layer") {
                         const updated = insertLayer(state, p.layer);
                         onChange(updated);
                         const added = updated.instruments[updated.instruments.length - 1];
@@ -854,6 +894,13 @@ export default function SoundConstellation({
                     Apri
                   </button>
                   <button
+                    className="sc-chip"
+                    aria-label={`Esporta preset ${p.name}`}
+                    onClick={() => exportPresetFile(p)}
+                  >
+                    Esporta
+                  </button>
+                  <button
                     className="sc-danger"
                     aria-label={`Elimina preset ${p.name}`}
                     onClick={() => setPresets(deletePreset(p.id))}
@@ -864,6 +911,7 @@ export default function SoundConstellation({
               ))}
             </div>
           )}
+
         </div>
       )}
 
