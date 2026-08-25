@@ -324,6 +324,7 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                   y2={y}
                   stroke={`rgba(${rgb},${0.25 + layer.gain * 0.5})`}
                   strokeWidth={1}
+                  pointerEvents="none"
                 />
                 <circle
                   cx={x}
