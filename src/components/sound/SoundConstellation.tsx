@@ -1103,6 +1103,14 @@ export default function SoundConstellation({
 
               </div>
 
+              <p className="mt-1.5 text-[10px] uppercase tracking-[0.12em] opacity-70">
+                {selectedFxInfo.parent === null
+                  ? "Master · applicato a tutto il mix"
+                  : `Solo su ${instrumentName(
+                      layers.find((l) => l.id === selectedFxInfo.parent)?.instrument ?? "piano",
+                    )}`}
+              </p>
+
               {selectedFxInfo.fx.type === "gate" && (
                 <div className="mt-2 grid grid-cols-2 gap-1.5">
                   {GATE_PRESETS.map((p) => (
