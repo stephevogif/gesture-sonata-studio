@@ -330,6 +330,15 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                     movedRef.current = false;
                     dragRef.current = { kind: "layer", layerId: layer.id, sx, sy };
                   }}
+                  onClick={() => {
+                    if (!movedRef.current) {
+                      setAnchor({ kind: "layer", id: layer.id });
+                      setSelected({ kind: "layer", id: layer.id });
+                      setPicker(null);
+                    }
+                    movedRef.current = false;
+                    dragRef.current = null;
+                  }}
                 />
                 {/* selected glow ring */}
                 {on && (
