@@ -315,7 +315,7 @@ export default function GestureSynth() {
   const [gestureMod, setGestureMod] = useState(0);
 
   // ————— Sound Constellation (solo master: il sole e le sue lune) —————
-  const [mix, setMix] = useState<MixState>(() => ({ ...defaultMix(), instruments: [] }));
+  const [mix, setMix] = useState<MixState>(() => ({ ...defaultMix("pads"), instruments: [] }));
   useEffect(() => {
     engineRef.current?.applyMix(toMixSpec(mix));
   }, [mix]);
