@@ -936,13 +936,11 @@ export default function SoundConstellation({
                   <button
                     className="sc-danger"
                     aria-label={`Rimuovi ${fxDef(fx.type).label}`}
-                    onClick={() => {
-                      onChange(removeFx(state, null, fx.id));
-                      setSelected((s) => (s?.kind === "fx" && s.id === fx.id ? null : s));
-                    }}
+                    onClick={() => setConfirmDel({ kind: "fx", id: fx.id })}
                   >
                     ✕
                   </button>
+
                 </div>
               ))}
             </div>
