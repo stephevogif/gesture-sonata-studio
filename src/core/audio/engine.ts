@@ -80,6 +80,11 @@ export class HeavenAudioEngine {
   /** 0..1 gesture modulation of the master cutoff */
   filterMod = 0.5;
   filterModAmount = 0;
+  /** last values pushed to the rack: guards against per-frame redundant writes */
+  private lastReverb = -1;
+  private lastEqFreq = -1;
+  private lastEqType: BiquadFilterType | null = null;
+  private lastEqQ = -1;
 
   constructor() {
     this.arp = new Arpeggiator((event) => this.playArpEvent(event));
@@ -421,11 +426,18 @@ export class HeavenAudioEngine {
   private applyEq() {
     const factor =
       this.filterModAmount > 0 ? 1 + this.filterModAmount * (this.filterMod * 5 - 1.5) : 1;
-    this.rack?.setEq({
-      type: this.eqType,
-      frequency: this.eqFreq * Math.max(0.15, factor),
-      q: this.eqQ,
-    });
+    const frequency = this.eqFreq * Math.max(0.15, factor);
+    if (
+      this.lastEqType === this.eqType &&
+      Math.abs(this.lastEqQ - this.eqQ) < 0.005 &&
+      Math.abs(frequency - this.lastEqFreq) < Math.max(4, frequency * 0.004)
+    ) {
+      return;
+    }
+    this.lastEqType = this.eqType;
+    this.lastEqQ = this.eqQ;
+    this.lastEqFreq = frequency;
+    this.rack?.setEq({ type: this.eqType, frequency, q: this.eqQ });
   }
 
   private applyDelay() {
