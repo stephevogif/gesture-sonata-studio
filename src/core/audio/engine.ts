@@ -343,6 +343,14 @@ export class HeavenAudioEngine {
     this.applyReverb();
   }
 
+  /** smooth master volume, used by the optional hand-control mapping */
+  setMasterGain(value: number) {
+    const rack = this.rack;
+    const ctx = this.ctx;
+    if (!rack || !ctx) return;
+    rack.master.gain.setTargetAtTime(clamp(value, 0, 1) * 0.9, ctx.currentTime, 0.05);
+  }
+
   setEq(type: BiquadFilterType, freq: number) {
     this.eqType = type;
     this.eqFreq = freq;

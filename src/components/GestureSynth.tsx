@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import TutorialArt from "@/components/TutorialArt";
-import FxConstellation, { type FxNodeSpec } from "@/components/FxConstellation";
+import SoundConstellation from "@/components/sound/SoundConstellation";
+import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
+import {
+  DEFAULT_HAND_CONTROL,
+  readHandControl,
+  sourceValue,
+  writeHandControl,
+  type HandControl,
+} from "@/core/sound/handControl";
 import {
   ArrowLeft,
   ArrowRight,
@@ -293,8 +301,9 @@ export default function GestureSynth() {
   const [chord, setChord] = useState<ChordId>("off");
   const [hold, setHold] = useState(false);
 
-  const [reverb, setReverb] = useState(93);
-  const [delayMix, setDelayMix] = useState(28);
+  // gli effetti vivono nella Sound Constellation: la catena legacy resta a zero
+  const [reverb, setReverb] = useState(0);
+  const [delayMix, setDelayMix] = useState(0);
   const [delayFeedback, setDelayFeedback] = useState(35);
   const [delaySync, setDelaySync] = useState(true);
   const [delayDivision, setDelayDivision] = useState<DivisionId>("1/8");
@@ -303,7 +312,23 @@ export default function GestureSynth() {
   const [chorusMix, setChorusMix] = useState(0);
   const [chorusRate, setChorusRate] = useState(0.5);
   const [chorusDepth, setChorusDepth] = useState(50);
-  const [gestureMod, setGestureMod] = useState(40);
+  const [gestureMod, setGestureMod] = useState(0);
+
+  // ————— Sound Constellation (solo master: il sole e le sue lune) —————
+  const [mix, setMix] = useState<MixState>(() => ({ ...defaultMix("pads"), instruments: [] }));
+  useEffect(() => {
+    engineRef.current?.applyMix(toMixSpec(mix));
+  }, [mix]);
+
+  // ————— controllo con le mani: opt-in, tutto spento di default —————
+  const [handControl, setHandControl] = useState<HandControl>(DEFAULT_HAND_CONTROL);
+  const handControlRef = useRef<HandControl>(DEFAULT_HAND_CONTROL);
+  handControlRef.current = handControl;
+  useEffect(() => setHandControl(readHandControl("sky.night.handControl")), []);
+  const updateHandControl = useCallback((next: HandControl) => {
+    setHandControl(next);
+    writeHandControl("sky.night.handControl", next);
+  }, []);
 
 
   const [listening, setListening] = useState(false);
@@ -815,6 +840,7 @@ export default function GestureSynth() {
 
       let maxSoundLevel = 0;
       let maxMod = 0;
+      const sides: { left: { height: number; openness: number } | null; right: { height: number; openness: number } | null } = { left: null, right: null };
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
         
@@ -836,6 +862,15 @@ export default function GestureSynth() {
         const handSize =
           Math.hypot(wrist.x - midMcp.x, wrist.y - midMcp.y) || 0.12;
         const indexRatio = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y) / handSize;
+        const tipSpread =
+          ([8, 12, 16, 20] as const).reduce(
+            (sum, ti) => sum + Math.hypot(pts[ti]!.x - wrist.x, pts[ti]!.y - wrist.y),
+            0,
+          ) /
+          (4 * handSize);
+        const openness = Math.max(0, Math.min(1, (tipSpread - 1.6) / 1.4));
+        const sideHeight = Math.max(0, Math.min(1, 1 - wrist.y));
+        sides[isRight ? "right" : "left"] = { height: sideHeight, openness };
         if (i === 0) liveRatioRef.current = indexRatio;
         if (calibPhaseRef.current === "open") calibSamplesRef.current.open.push(indexRatio);
         else if (calibPhaseRef.current === "closed") calibSamplesRef.current.closed.push(indexRatio);
@@ -1044,6 +1079,15 @@ export default function GestureSynth() {
       musicLevelRef.current = musicLevelRef.current * 0.92 + maxSoundLevel * 0.08;
       if (gm > 0) engine.setFilterMod(maxMod, gm / 100);
 
+      // ————— controllo con le mani (opt-in dalla Sound Constellation) —————
+      const hc = handControlRef.current;
+      const cutSrc = sourceValue(hc.cutoff, sides.left, sides.right);
+      const volSrc = sourceValue(hc.volume, sides.left, sides.right);
+      const revSrc = sourceValue(hc.reverb, sides.left, sides.right);
+      if (cutSrc !== null) engine.setEq(eqType, 220 * Math.pow(16000 / 220, cutSrc));
+      if (volSrc !== null) engine.setMasterGain(0.05 + volSrc * 0.95);
+      if (revSrc !== null) engine.setReverb(revSrc);
+
       // update + draw particelle
       hueRef.current = (hueRef.current + 2.5) % 360;
       const parts = particlesRef.current;
@@ -1172,6 +1216,8 @@ export default function GestureSynth() {
       // audio e fotocamera partono insieme
       const camReady = openCamera(videoRef.current!);
       await engine.start();
+      // gli effetti della Sound Constellation sono attivi già dalla prima nota
+      engine.applyMix(toMixSpec(mix));
       engine.setArp({
         enabled: arpLeft || arpRight,
         rate: arpRate,
@@ -1213,115 +1259,6 @@ export default function GestureSynth() {
     engineRef.current?.setInstrument(id);
   };
 
-  const fxNodes: FxNodeSpec[] = useMemo(
-    () => [
-      {
-        id: "reverb",
-        label: "REVERB",
-        rgb: "126, 176, 255",
-        angle: -90,
-        main: {
-          id: "amount",
-          label: "REVERB",
-          value: reverb,
-          min: 0,
-          max: 100,
-          format: (v) => `${Math.round(v)}%`,
-          onChange: (v) => setReverb(Math.round(v)),
-        },
-      },
-      {
-        id: "delay",
-        label: "DELAY",
-        rgb: "176, 142, 255",
-        angle: 0,
-        main: {
-          id: "mix",
-          label: "DELAY",
-          value: delayMix,
-          min: 0,
-          max: 100,
-          format: (v) => `${Math.round(v)}%`,
-          onChange: (v) => setDelayMix(Math.round(v)),
-        },
-        params: [
-          {
-            id: "feedback",
-            label: "FEEDBACK",
-            value: delayFeedback,
-            min: 0,
-            max: 85,
-            format: (v) => `${Math.round(v)}%`,
-            onChange: (v) => setDelayFeedback(Math.round(v)),
-          },
-        ],
-      },
-      {
-        id: "filter",
-        label: "FILTER",
-        rgb: "150, 226, 200",
-        angle: 90,
-        main: {
-          id: "cutoff",
-          label: "CUTOFF",
-          value: eqFreq,
-          min: 60,
-          max: 16000,
-          curve: "log",
-          format: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)} kHz` : `${Math.round(v)} Hz`),
-          onChange: (v) => setEqFreq(Math.round(v)),
-        },
-        params: [
-          {
-            id: "mod",
-            label: "MOD",
-            value: gestureMod,
-            min: 0,
-            max: 100,
-            format: (v) => `${Math.round(v)}%`,
-            onChange: (v) => setGestureMod(Math.round(v)),
-          },
-        ],
-      },
-      {
-        id: "chorus",
-        label: "CHORUS",
-        rgb: "120, 224, 240",
-        angle: 180,
-        main: {
-          id: "mix",
-          label: "CHORUS",
-          value: chorusMix,
-          min: 0,
-          max: 100,
-          format: (v) => `${Math.round(v)}%`,
-          onChange: (v) => setChorusMix(Math.round(v)),
-        },
-        params: [
-          {
-            id: "rate",
-            label: "RATE",
-            value: chorusRate,
-            min: 0.08,
-            max: 5,
-            curve: "log",
-            format: (v) => `${v.toFixed(2)} Hz`,
-            onChange: (v) => setChorusRate(Number(v.toFixed(2))),
-          },
-          {
-            id: "depth",
-            label: "DEPTH",
-            value: chorusDepth,
-            min: 0,
-            max: 100,
-            format: (v) => `${Math.round(v)}%`,
-            onChange: (v) => setChorusDepth(Math.round(v)),
-          },
-        ],
-      },
-    ],
-    [reverb, delayMix, delayFeedback, eqFreq, gestureMod, chorusMix, chorusRate, chorusDepth],
-  );
 
   const selectClass =
     "w-full rounded-sm border border-border bg-background/60 px-3 py-2 text-sm tracking-wide text-foreground";
@@ -2009,66 +1946,16 @@ export default function GestureSynth() {
       {panel === "fx" && (
         <div className="mt-3 celestial-panel rounded-sm p-4">
           <h2 className="text-xs uppercase tracking-widest text-muted-foreground">
-            FX Constellation
+            Sound Constellation
           </h2>
-          <div className="mx-auto mt-3 max-w-sm">
-            <FxConstellation coreLabel={instrument} nodes={fxNodes} dark />
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                Tipo filtro
-              </label>
-              <select
-                aria-label="Tipo filtro EQ"
-                className={`mt-2 ${selectClass}`}
-                value={eqType}
-                onChange={(e) => setEqType(e.target.value as "lowpass" | "highpass")}
-              >
-                <option value="lowpass">Low pass</option>
-                <option value="highpass">High pass</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                Tempo delay
-              </label>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => setDelaySync(true)}
-                  aria-pressed={delaySync}
-                  className={delaySync ? "btn-hero" : "btn-ghost"}
-                >
-                  Sync
-                </button>
-                <button
-                  onClick={() => setDelaySync(false)}
-                  aria-pressed={!delaySync}
-                  className={!delaySync ? "btn-hero" : "btn-ghost"}
-                >
-                  Libero
-                </button>
-              </div>
-            </div>
-            {delaySync && (
-              <div>
-                <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Divisione
-                </label>
-                <select
-                  aria-label="Divisione delay"
-                  className={`mt-2 ${selectClass}`}
-                  value={delayDivision}
-                  onChange={(e) => setDelayDivision(e.target.value as DivisionId)}
-                >
-                  {DIVISIONS.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+          <div className="mt-3">
+            <SoundConstellation
+              masterOnly
+              state={mix}
+              onChange={setMix}
+              handControl={handControl}
+              onHandControlChange={updateHandControl}
+            />
           </div>
         </div>
       )}

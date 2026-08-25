@@ -35,6 +35,13 @@ import TutorialArt from "@/components/TutorialArt";
 import FloatingWindow from "@/components/ui/FloatingWindow";
 import SoundConstellation from "@/components/sound/SoundConstellation";
 import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
+import {
+  DEFAULT_HAND_CONTROL,
+  readHandControl,
+  sourceValue,
+  writeHandControl,
+  type HandControl,
+} from "@/core/sound/handControl";
 import { detectKey } from "@/lib/keyDetect";
 
 type PanelId = null | "sound" | "scale" | "arp" | "help";
@@ -203,6 +210,16 @@ export default function HeavenSynth() {
   const [volFollow, setVolFollow] = useState(false);
   const volFollowRef = useRef(false);
   volFollowRef.current = volFollow;
+
+  // ————— controllo con le mani: tutto spento di default, si attiva dal pannello Suono —————
+  const [handControl, setHandControl] = useState<HandControl>(DEFAULT_HAND_CONTROL);
+  const handControlRef = useRef<HandControl>(DEFAULT_HAND_CONTROL);
+  handControlRef.current = handControl;
+  useEffect(() => setHandControl(readHandControl("sky.heaven.handControl")), []);
+  const updateHandControl = useCallback((next: HandControl) => {
+    setHandControl(next);
+    writeHandControl("sky.heaven.handControl", next);
+  }, []);
 
   // gesto "doppio pugno": chiudi e riapri entrambe le mani per accendere/spegnere l'arp
   const fistAtRef = useRef(0);
@@ -698,15 +715,26 @@ export default function HeavenSynth() {
       const right = hands.find((x) => x.handedness === "right") ?? null;
       const { rootPc: root, mode: md, cutMax: cmax } = cfg.current;
 
-      // ————— Lato B (destra): altezza = volume (solo se il controllo mano è attivo) —————
-      const handVol = right ? heightToGain(right.height) : 0;
-      const volume = volSm.current.push(volFollowRef.current ? handVol : 1);
+      // ————— controllo con le mani: attivo solo per i parametri scelti dall'utente —————
+      const hc = handControlRef.current;
+      const volSrc = sourceValue(hc.volume, left, right);
+      const cutSrc = sourceValue(hc.cutoff, left, right);
+      const revSrc = sourceValue(hc.reverb, left, right);
 
-      // ————— Lato A (sinistra): altezza = low pass risonante —————
-      const cutTarget = left ? 260 * Math.pow(Math.max(400, cmax) / 260, left.height) : cmax;
+      // volume: sorgente scelta > gesto 10 dita (mano B) > fisso al 100%
+      const handVol =
+        volSrc !== null ? heightToGain(volSrc) : right ? heightToGain(right.height) : 0;
+      const volume = volSm.current.push(
+        volSrc !== null ? handVol : volFollowRef.current ? handVol : 1,
+      );
+
+      // low pass risonante: fermo al massimo finché non lo assegni a una mano
+      const cutTarget =
+        cutSrc !== null ? 260 * Math.pow(Math.max(400, cmax) / 260, cutSrc) : cmax;
       const cutoff = cutSm.current.push(cutTarget);
       engine.setEq("lowpass", cutoff);
-      const bright = Math.max(0.1, Math.min(1, left ? left.height : 0.6));
+      if (revSrc !== null) engine.setReverb(revSrc);
+      const bright = Math.max(0.1, Math.min(1, cutSrc !== null ? cutSrc : 0.6));
 
       let chord: Chord | null = null;
       let heavensHud: Hud["heavens"] = null;
@@ -1058,7 +1086,12 @@ export default function HeavenSynth() {
             subtitle={`${mix.instruments.length} ${mix.instruments.length === 1 ? "strumento" : "strumenti"} · trascina per il mix`}
             onClose={() => setPanel(null)}
           >
-            <SoundConstellation state={mix} onChange={setMix} />
+            <SoundConstellation
+              state={mix}
+              onChange={setMix}
+              handControl={handControl}
+              onHandControlChange={updateHandControl}
+            />
             <div className="mt-3 space-y-3 border-t border-white/40 pt-3">
               <label className="block text-[11px] font-semibold">
                 Legato fra accordi: <b>{legato} ms</b>

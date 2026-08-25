@@ -51,6 +51,15 @@ export function createLayer(instrument: InstrumentId, gain = 0.8): MixLayer {
   return { id: uid("ch-"), instrument, gain, effects: [] };
 }
 
+/** deep copies with fresh ids, so a preset can be inserted many times */
+export function cloneFxList(list: MixFx[]): MixFx[] {
+  return list.map((f) => ({ ...f, id: uid("fx-"), params: { ...f.params } }));
+}
+
+export function cloneLayer(layer: MixLayer): MixLayer {
+  return { ...layer, id: uid("ch-"), effects: cloneFxList(layer.effects) };
+}
+
 export function defaultMix(instrument: InstrumentId): MixState {
   return {
     instruments: [createLayer(instrument, 0.85)],
@@ -149,4 +158,19 @@ export function toMixSpec(state: MixState): MixSpec {
     })),
     master: { effects: state.master.map(toSpec) },
   };
+}
+
+/* ————— preset helpers ————— */
+
+/** appends a saved layer (instrument + its FX chain) as a new planet */
+export function insertLayer(state: MixState, layer: MixLayer): MixState {
+  if (state.instruments.length >= MAX_LAYERS) return state;
+  return { ...state, instruments: [...state.instruments, cloneLayer(layer)] };
+}
+
+/** replaces the whole FX chain of a node (`null` = master) with a saved one */
+export function replaceFxChain(state: MixState, layerId: string | null, list: MixFx[]): MixState {
+  const next = cloneFxList(list).slice(0, 4);
+  if (layerId === null) return { ...state, master: next };
+  return patchLayer(state, layerId, { effects: next });
 }
