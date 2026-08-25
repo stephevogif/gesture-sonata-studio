@@ -715,15 +715,26 @@ export default function HeavenSynth() {
       const right = hands.find((x) => x.handedness === "right") ?? null;
       const { rootPc: root, mode: md, cutMax: cmax } = cfg.current;
 
-      // ————— Lato B (destra): altezza = volume (solo se il controllo mano è attivo) —————
-      const handVol = right ? heightToGain(right.height) : 0;
-      const volume = volSm.current.push(volFollowRef.current ? handVol : 1);
+      // ————— controllo con le mani: attivo solo per i parametri scelti dall'utente —————
+      const hc = handControlRef.current;
+      const volSrc = sourceValue(hc.volume, left, right);
+      const cutSrc = sourceValue(hc.cutoff, left, right);
+      const revSrc = sourceValue(hc.reverb, left, right);
 
-      // ————— Lato A (sinistra): altezza = low pass risonante —————
-      const cutTarget = left ? 260 * Math.pow(Math.max(400, cmax) / 260, left.height) : cmax;
+      // volume: sorgente scelta > gesto 10 dita (mano B) > fisso al 100%
+      const handVol =
+        volSrc !== null ? heightToGain(volSrc) : right ? heightToGain(right.height) : 0;
+      const volume = volSm.current.push(
+        volSrc !== null ? handVol : volFollowRef.current ? handVol : 1,
+      );
+
+      // low pass risonante: fermo al massimo finché non lo assegni a una mano
+      const cutTarget =
+        cutSrc !== null ? 260 * Math.pow(Math.max(400, cmax) / 260, cutSrc) : cmax;
       const cutoff = cutSm.current.push(cutTarget);
       engine.setEq("lowpass", cutoff);
-      const bright = Math.max(0.1, Math.min(1, left ? left.height : 0.6));
+      if (revSrc !== null) engine.setReverb(revSrc);
+      const bright = Math.max(0.1, Math.min(1, cutSrc !== null ? cutSrc : 0.6));
 
       let chord: Chord | null = null;
       let heavensHud: Hud["heavens"] = null;
