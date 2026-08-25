@@ -890,9 +890,10 @@ export default function SoundConstellation({
       )}
 
 
-      {/* ————— editor aperto con un solo tocco ————— */}
+      {/* ————— pannello parametri: finestra laterale, non copre la console ————— */}
       {selected && (
-        <div className="sc-editor">
+        <div className="sc-dock" role="dialog" aria-label="Parametri">
+
           <div className="sc-pop-head">
             <span>
               {selected.kind === "master"
