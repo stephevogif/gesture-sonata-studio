@@ -840,6 +840,7 @@ export default function GestureSynth() {
 
       let maxSoundLevel = 0;
       let maxMod = 0;
+      const sides: { left: { height: number; openness: number } | null; right: { height: number; openness: number } | null } = { left: null, right: null };
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
         
@@ -861,6 +862,15 @@ export default function GestureSynth() {
         const handSize =
           Math.hypot(wrist.x - midMcp.x, wrist.y - midMcp.y) || 0.12;
         const indexRatio = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y) / handSize;
+        const tipSpread =
+          ([8, 12, 16, 20] as const).reduce(
+            (sum, ti) => sum + Math.hypot(pts[ti]!.x - wrist.x, pts[ti]!.y - wrist.y),
+            0,
+          ) /
+          (4 * handSize);
+        const openness = Math.max(0, Math.min(1, (tipSpread - 1.6) / 1.4));
+        const sideHeight = Math.max(0, Math.min(1, 1 - wrist.y));
+        sides[isRight ? "right" : "left"] = { height: sideHeight, openness };
         if (i === 0) liveRatioRef.current = indexRatio;
         if (calibPhaseRef.current === "open") calibSamplesRef.current.open.push(indexRatio);
         else if (calibPhaseRef.current === "closed") calibSamplesRef.current.closed.push(indexRatio);
@@ -1068,6 +1078,15 @@ export default function GestureSynth() {
 
       musicLevelRef.current = musicLevelRef.current * 0.92 + maxSoundLevel * 0.08;
       if (gm > 0) engine.setFilterMod(maxMod, gm / 100);
+
+      // ————— controllo con le mani (opt-in dalla Sound Constellation) —————
+      const hc = handControlRef.current;
+      const cutSrc = sourceValue(hc.cutoff, sides.left, sides.right);
+      const volSrc = sourceValue(hc.volume, sides.left, sides.right);
+      const revSrc = sourceValue(hc.reverb, sides.left, sides.right);
+      if (cutSrc !== null) engine.setEq(eqType, 220 * Math.pow(16000 / 220, cutSrc));
+      if (volSrc !== null) engine.setMasterGain(0.05 + volSrc * 0.95);
+      if (revSrc !== null) engine.setReverb(revSrc);
 
       // update + draw particelle
       hueRef.current = (hueRef.current + 2.5) % 360;
