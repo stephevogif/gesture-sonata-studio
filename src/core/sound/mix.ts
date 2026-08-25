@@ -51,6 +51,15 @@ export function createLayer(instrument: InstrumentId, gain = 0.8): MixLayer {
   return { id: uid("ch-"), instrument, gain, effects: [] };
 }
 
+/** deep copies with fresh ids, so a preset can be inserted many times */
+export function cloneFxList(list: MixFx[]): MixFx[] {
+  return list.map((f) => ({ ...f, id: uid("fx-"), params: { ...f.params } }));
+}
+
+export function cloneLayer(layer: MixLayer): MixLayer {
+  return { ...layer, id: uid("ch-"), effects: cloneFxList(layer.effects) };
+}
+
 export function defaultMix(instrument: InstrumentId): MixState {
   return {
     instruments: [createLayer(instrument, 0.85)],
