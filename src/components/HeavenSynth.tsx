@@ -280,8 +280,12 @@ export default function HeavenSynth() {
         signal: ac.signal,
         onProgress: ({ progress }) => setListenProgress(progress),
       });
-      const md: ModeId =
-        res.scaleId === "dorian" ? "dorian" : res.mode === "minor" ? "minor" : "major";
+      const detected = res.scaleId === "naturalMinor" ? "minor" : res.scaleId;
+      const md: ModeId = MODES.some((m) => m.id === detected)
+        ? (detected as ModeId)
+        : res.mode === "minor"
+          ? "minor"
+          : "major";
       setRootPc(res.rootPc);
       setMode(md);
       const name = `${KEYS[res.rootPc]} ${MODES.find((m) => m.id === md)?.name ?? ""}`;

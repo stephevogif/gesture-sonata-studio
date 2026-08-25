@@ -27,13 +27,30 @@ export type KeyName = (typeof KEYS)[number];
 
 export const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
 
-export type ModeId = "major" | "minor" | "dorian" | "mixolydian";
+export type ModeId =
+  | "major"
+  | "minor"
+  | "dorian"
+  | "mixolydian"
+  | "minorPent"
+  | "majorPent"
+  | "harmonicMinor"
+  | "phrygian"
+  | "blues"
+  | "chromatic";
 
+/** Same scale registry offered by Night Sky, usable by the chord engine. */
 export const MODES: { id: ModeId; name: string; steps: number[] }[] = [
-  { id: "major", name: "Major", steps: [0, 2, 4, 5, 7, 9, 11] },
-  { id: "minor", name: "Minor", steps: [0, 2, 3, 5, 7, 8, 10] },
-  { id: "dorian", name: "Dorian", steps: [0, 2, 3, 5, 7, 9, 10] },
-  { id: "mixolydian", name: "Mixolydian", steps: [0, 2, 4, 5, 7, 9, 10] },
+  { id: "major", name: "Maggiore", steps: [0, 2, 4, 5, 7, 9, 11] },
+  { id: "minor", name: "Minore naturale", steps: [0, 2, 3, 5, 7, 8, 10] },
+  { id: "harmonicMinor", name: "Minore armonica", steps: [0, 2, 3, 5, 7, 8, 11] },
+  { id: "dorian", name: "Dorica", steps: [0, 2, 3, 5, 7, 9, 10] },
+  { id: "phrygian", name: "Frigia", steps: [0, 1, 3, 5, 7, 8, 10] },
+  { id: "mixolydian", name: "Mixolidia", steps: [0, 2, 4, 5, 7, 9, 10] },
+  { id: "minorPent", name: "Pentatonica minore", steps: [0, 3, 5, 7, 10] },
+  { id: "majorPent", name: "Pentatonica maggiore", steps: [0, 2, 4, 7, 9] },
+  { id: "blues", name: "Blues", steps: [0, 3, 5, 6, 7, 10] },
+  { id: "chromatic", name: "Cromatica", steps: Array.from({ length: 12 }, (_, i) => i) },
 ];
 
 export type Tonality = "auto" | "major" | "minor";
