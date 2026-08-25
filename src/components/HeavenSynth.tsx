@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
+  Contrast,
   HelpCircle,
   ListMusic,
   Mic,
@@ -916,7 +917,9 @@ export default function HeavenSynth() {
     "mt-1.5 w-full appearance-none rounded-xl border border-white/60 bg-white/70 px-3 py-2.5 text-[13px] font-semibold tracking-normal text-[#2b3855] shadow-sm outline-none transition focus:border-[rgba(255,222,160,0.95)]";
 
   return (
-    <div className="heaven-scene relative min-h-screen overflow-hidden text-[#33405a]">
+    <div
+      className={`heaven-scene relative min-h-screen overflow-hidden text-[#33405a] ${hiContrast ? "hc" : ""}`}
+    >
       {/* strato camera: sfondo vivo di tutta la pagina */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <video
