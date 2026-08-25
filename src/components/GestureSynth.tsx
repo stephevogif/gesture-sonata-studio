@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import TutorialArt from "@/components/TutorialArt";
-import FxConstellation, { type FxNodeSpec } from "@/components/FxConstellation";
+import SoundConstellation from "@/components/sound/SoundConstellation";
+import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
+import {
+  DEFAULT_HAND_CONTROL,
+  readHandControl,
+  sourceValue,
+  writeHandControl,
+  type HandControl,
+} from "@/core/sound/handControl";
 import {
   ArrowLeft,
   ArrowRight,
