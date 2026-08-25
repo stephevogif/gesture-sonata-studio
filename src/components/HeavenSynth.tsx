@@ -1014,11 +1014,18 @@ export default function HeavenSynth() {
         {songMode.song && <SongModeHud state={songMode} rootPc={rootPc} mode={mode} />}
 
         {/* i sette cieli */}
-        <div className="relative mt-7 flex items-center justify-between px-1">
-          <div className="heaven-thread pointer-events-none absolute inset-x-2 top-1/2" />
+        <div className="relative mt-7 flex items-start justify-between px-1">
+          <div className="heaven-thread pointer-events-none absolute inset-x-2 top-[1.1rem]" />
           {ROMAN.slice(0, 7).map((r, i) => (
-            <div key={r} className={`heaven-node ${activeDegree === i ? "heaven-node-on" : ""}`}>
-              {r}
+            <div key={r} className="flex flex-col items-center gap-1">
+              <div className={`heaven-node ${activeDegree === i ? "heaven-node-on" : ""}`}>{r}</div>
+              <span
+                className={`text-[9px] font-semibold tracking-[0.06em] drop-shadow ${
+                  activeDegree === i ? "text-[#fff3d2]" : "text-white/75"
+                }`}
+              >
+                {degreeChordLabels[i]}
+              </span>
             </div>
           ))}
         </div>
