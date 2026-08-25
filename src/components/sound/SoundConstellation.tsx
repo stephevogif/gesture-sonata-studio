@@ -2,14 +2,10 @@
  * SOUND CONSTELLATION — one screen for instruments (up to 4) and their FX.
  *
  * The MASTER node is the sun at the centre. Each instrument is a planet: its
- * DISTANCE from the sun is its level in the mix. Selecting a node reveals its
- * effects as moons; a moon's distance from its planet is the effect amount.
- *
- * Interaction (all on the constellation itself, no side panels):
- *   • drag           → volume (planet) / amount (moon)
- *   • two + buttons  → add sound · add FX to the selected node
- *   • double tap     → arms a red X badge on that node, tap it to delete
- *   • press & hold   → opens the editor sheet for that sound or effect
+ * DISTANCE from the sun is its level in the mix. Tapping a node selects it and
+ * opens a scrollable parameter sheet below; dragging a node adjusts volume
+ * (planet) or effect amount (moon). The selected node lights up with a glowing
+ * outline so you always know what you are touching.
  *
  * Purely presentational: it edits an immutable `MixState` through `onChange`,
  * so the audio engine stays the only owner of the DSP graph.
@@ -41,8 +37,7 @@ const MIN_R = 52;
 const MAX_R = 122;
 const FX_MIN = 24;
 const FX_MAX = 54;
-const HOLD_MS = 480;
-const DOUBLE_MS = 320;
+const MOVE_THRESHOLD = 3;
 
 const INSTRUMENT_RGB = ["255, 216, 150", "168, 214, 255", "205, 180, 255", "170, 240, 205"];
 
@@ -80,13 +75,16 @@ function formatParam(def: FxParamDef, value: number) {
 }
 
 type Drag =
-  | { kind: "layer"; layerId: string }
-  | { kind: "fx"; layerId: string | null; fxId: string; ox: number; oy: number };
+  | { kind: "master"; sx: number; sy: number }
+  | { kind: "layer"; layerId: string; sx: number; sy: number }
+  | { kind: "fx"; layerId: string | null; fxId: string; ox: number; oy: number; sx: number; sy: number };
 
-/** node identity used by delete-arming and the hold editor */
-type NodeRef = { kind: "layer"; id: string } | { kind: "fx"; id: string };
+type NodeRef =
+  | { kind: "master" }
+  | { kind: "layer"; id: string }
+  | { kind: "fx"; id: string };
 
-const sameNode = (a: NodeRef | null, b: NodeRef) => !!a && a.kind === b.kind && a.id === b.id;
+type Anchor = { kind: "master" } | { kind: "layer"; id: string };
 
 type Props = {
   state: MixState;
@@ -97,24 +95,31 @@ type Props = {
 export default function SoundConstellation({ state, onChange, tone = "light" }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<Drag | null>(null);
-  /** null = master bus selected */
-  const [selected, setSelected] = useState<string | null>(state.instruments[0]?.id ?? null);
-  const [selectedFx, setSelectedFx] = useState<string | null>(null);
-  /** node armed for deletion (red X visible) */
-  const [armed, setArmed] = useState<NodeRef | null>(null);
-  /** node opened by press & hold */
-  const [editing, setEditing] = useState<NodeRef | null>(null);
-  /** picker overlays driven by the two + buttons */
+  const [anchor, setAnchor] = useState<Anchor>({
+    kind: "layer",
+    id: state.instruments[0]?.id ?? "",
+  });
+  const [selected, setSelected] = useState<NodeRef | null>({
+    kind: "layer",
+    id: state.instruments[0]?.id ?? "",
+  });
   const [picker, setPicker] = useState<"sound" | "fx" | null>(null);
 
   const layers = state.instruments;
-  const selectedLayer = layers.find((l) => l.id === selected) ?? null;
-  const fxList = fxListOf(state, selectedLayer ? selectedLayer.id : null);
-  const activeFx = fxList.find((f) => f.id === selectedFx) ?? null;
-  const editingLayer =
-    editing?.kind === "layer" ? (layers.find((l) => l.id === editing.id) ?? null) : null;
-  const editingFx = editing?.kind === "fx" ? (fxList.find((f) => f.id === editing.id) ?? null) : null;
-  const targetLayerId = selectedLayer ? selectedLayer.id : null;
+  const anchorLayer = anchor.kind === "layer" ? layers.find((l) => l.id === anchor.id) ?? null : null;
+  const fxList = fxListOf(state, anchorLayer ? anchorLayer.id : null);
+  const fxParentId = anchor.kind === "master" ? null : anchor.id;
+
+  const selectedFxInfo = useMemo(() => {
+    if (selected?.kind !== "fx") return null;
+    const inMaster = state.master.find((f) => f.id === selected.id);
+    if (inMaster) return { fx: inMaster, parent: null as string | null };
+    for (const l of state.instruments) {
+      const fx = l.effects.find((f) => f.id === selected.id);
+      if (fx) return { fx, parent: l.id };
+    }
+    return null;
+  }, [selected, state]);
 
   const geometry = useMemo(
     () =>
@@ -141,65 +146,24 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
     };
   }, []);
 
-  /**
-   * Dragging is coalesced into one update per animation frame: pointermove can
-   * fire far faster than the display, and every update reconciles React plus
-   * the audio graph. `stateRef` keeps the frame callback on the latest mix.
-   */
   const stateRef = useRef(state);
   stateRef.current = state;
   const frameRef = useRef(0);
   const pendingRef = useRef<{ x: number; y: number } | null>(null);
-  const holdRef = useRef(0);
   const movedRef = useRef(false);
-  const lastTapRef = useRef<{ key: string; at: number }>({ key: "", at: 0 });
-
-  const clearHold = useCallback(() => {
-    if (holdRef.current) {
-      window.clearTimeout(holdRef.current);
-      holdRef.current = 0;
-    }
-  }, []);
-
-  /** shared gesture bookkeeping for every draggable node */
-  const beginGesture = useCallback(
-    (node: NodeRef) => {
-      movedRef.current = false;
-      clearHold();
-      holdRef.current = window.setTimeout(() => {
-        if (movedRef.current) return;
-        dragRef.current = null;
-        setArmed(null);
-        setEditing(node);
-      }, HOLD_MS);
-      const key = `${node.kind}:${node.id}`;
-      const now = Date.now();
-      const prev = lastTapRef.current;
-      if (prev.key === key && now - prev.at < DOUBLE_MS) {
-        clearHold();
-        dragRef.current = null;
-        setArmed((a) => (sameNode(a, node) ? null : node));
-        lastTapRef.current = { key: "", at: 0 };
-        return false;
-      }
-      lastTapRef.current = { key, at: now };
-      return true;
-    },
-    [clearHold],
-  );
 
   const applyPending = useCallback(() => {
     frameRef.current = 0;
     const drag = dragRef.current;
     const point = pendingRef.current;
     pendingRef.current = null;
-    if (!drag || !point) return;
+    if (!drag || drag.kind === "master" || !point) return;
     const current = stateRef.current;
     if (drag.kind === "layer") {
       const dist = Math.hypot(point.x - C, point.y - C);
       const gain = clamp01((dist - MIN_R) / (MAX_R - MIN_R));
-      const layer = current.instruments.find((l) => l.id === drag.layerId);
       const next = Number(gain.toFixed(2));
+      const layer = current.instruments.find((l) => l.id === drag.layerId);
       if (!layer || layer.gain === next) return;
       onChange(patchLayer(current, drag.layerId, { gain: next }));
       return;
@@ -213,53 +177,80 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!dragRef.current) return;
+      const drag = dragRef.current;
+      if (!drag) return;
       e.preventDefault();
-      movedRef.current = true;
-      clearHold();
-      pendingRef.current = toSvg(e.clientX, e.clientY);
+      const { x, y } = toSvg(e.clientX, e.clientY);
+      if (!movedRef.current) {
+        const dist = Math.hypot(x - drag.sx, y - drag.sy);
+        if (dist > MOVE_THRESHOLD) movedRef.current = true;
+      }
+      if (drag.kind === "master") return;
+      pendingRef.current = { x, y };
       if (!frameRef.current) frameRef.current = requestAnimationFrame(applyPending);
     },
-    [applyPending, clearHold, toSvg],
+    [applyPending, toSvg],
   );
 
   const endDrag = useCallback(() => {
+    const drag = dragRef.current;
+    const wasMoved = movedRef.current;
     dragRef.current = null;
     pendingRef.current = null;
-    clearHold();
     if (frameRef.current) {
       cancelAnimationFrame(frameRef.current);
       frameRef.current = 0;
     }
-  }, [clearHold]);
+    if (drag && !wasMoved) {
+      if (drag.kind === "master") {
+        setAnchor({ kind: "master" });
+        setSelected({ kind: "master" });
+      } else if (drag.kind === "layer") {
+        setAnchor({ kind: "layer", id: drag.layerId });
+        setSelected({ kind: "layer", id: drag.layerId });
+      } else if (drag.kind === "fx") {
+        setSelected({ kind: "fx", id: drag.fxId });
+      }
+      setPicker(null);
+    }
+  }, []);
 
   useEffect(
     () => () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      if (holdRef.current) window.clearTimeout(holdRef.current);
     },
     [],
   );
 
   const deleteLayer = (id: string) => {
-    onChange(removeLayer(state, id));
-    setArmed(null);
-    setEditing(null);
-    if (selected === id) setSelected(layers.find((l) => l.id !== id)?.id ?? null);
-    setSelectedFx(null);
+    const next = removeLayer(state, id);
+    onChange(next);
+    setAnchor((a) =>
+      a.kind === "layer" && a.id === id ? { kind: "layer", id: next.instruments[0]?.id ?? "" } : a,
+    );
+    setSelected((s) => {
+      if (s?.kind === "layer" && s.id === id) return null;
+      if (s?.kind === "fx") {
+        const wasInLayer = state.instruments
+          .find((l) => l.id === id)
+          ?.effects.some((f) => f.id === s.id);
+        return wasInLayer ? null : s;
+      }
+      return s;
+    });
   };
 
   const deleteFx = (id: string) => {
-    onChange(removeFx(state, targetLayerId, id));
-    setArmed(null);
-    setEditing(null);
-    if (selectedFx === id) setSelectedFx(null);
+    const parent = selectedFxInfo?.parent ?? null;
+    onChange(removeFx(state, parent, id));
+    setSelected((s) => (s?.kind === "fx" && s.id === id ? null : s));
   };
 
-  const anchor = selectedLayer
-    ? geometry.find((g) => g.layer.id === selectedLayer.id)
+  const anchorGeo = anchorLayer
+    ? geometry.find((g) => g.layer.id === anchorLayer.id)
     : { x: C, y: C, angle: 0, rgb: "255, 236, 190", layer: null };
 
+  const masterFxList = state.master;
   const dark = tone === "dark";
 
   return (
@@ -293,11 +284,12 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
             cx={C}
             cy={C}
             r={SUN_R}
-            className={`sc-sun ${selectedLayer === null ? "sc-sun-on" : ""}`}
-            onClick={() => {
-              setSelected(null);
-              setSelectedFx(null);
-              setArmed(null);
+            className={`sc-sun ${selected?.kind === "master" ? "sc-sun-on" : ""}`}
+            onPointerDown={(e) => {
+              (e.target as Element).setPointerCapture?.(e.pointerId);
+              const { x, y } = toSvg(e.clientX, e.clientY);
+              movedRef.current = false;
+              dragRef.current = { kind: "master", sx: x, sy: y };
             }}
           />
           <text x={C} y={C + 4} className="sc-sun-label" textAnchor="middle" pointerEvents="none">
@@ -306,8 +298,7 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
 
           {/* instrument planets */}
           {geometry.map(({ layer, x, y, rgb }) => {
-            const on = selected === layer.id;
-            const isArmed = sameNode(armed, { kind: "layer", id: layer.id });
+            const on = selected?.kind === "layer" && selected.id === layer.id;
             return (
               <g key={layer.id}>
                 <line
@@ -326,14 +317,25 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                   style={{ cursor: "grab" }}
                   onPointerDown={(e) => {
                     (e.target as Element).setPointerCapture?.(e.pointerId);
-                    setSelected(layer.id);
-                    setSelectedFx(null);
-                    if (!beginGesture({ kind: "layer", id: layer.id })) return;
-                    dragRef.current = { kind: "layer", layerId: layer.id };
+                    const { x: sx, y: sy } = toSvg(e.clientX, e.clientY);
+                    movedRef.current = false;
+                    dragRef.current = { kind: "layer", layerId: layer.id, sx, sy };
                   }}
                 />
-                {/* halo drawn as a plain circle: SVG filters re-rasterise on every
-                    drag frame and stall low-end phones */}
+                {/* selected glow ring */}
+                {on && (
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={22}
+                    fill={`rgba(${rgb},0.08)`}
+                    stroke={`rgba(${rgb},0.9)`}
+                    strokeWidth={1.6}
+                    pointerEvents="none"
+                    style={{ filter: `drop-shadow(0 0 10px rgba(${rgb},0.75))` }}
+                  />
+                )}
+                {/* base halo */}
                 <circle
                   cx={x}
                   cy={y}
@@ -346,8 +348,8 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                   cy={y}
                   r={16}
                   fill={`rgba(${rgb},${0.14 + layer.gain * 0.34})`}
-                  stroke={`rgba(${rgb},${0.5 + layer.gain * 0.5})`}
-                  strokeWidth={on ? 2 : 1}
+                  stroke={`rgba(${rgb},${on ? 0.95 : 0.5 + layer.gain * 0.5})`}
+                  strokeWidth={on ? 2.4 : 1}
                   pointerEvents="none"
                 />
 
@@ -369,41 +371,25 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                 >
                   {Math.round(layer.gain * 100)}%
                 </text>
-
-                {isArmed && layers.length > 1 && (
-                  <g
-                    className="sc-kill"
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      deleteLayer(layer.id);
-                    }}
-                  >
-                    <circle cx={x + 17} cy={y - 17} r={9} className="sc-kill-bg" />
-                    <text x={x + 17} y={y - 13.5} className="sc-kill-x" textAnchor="middle">
-                      ✕
-                    </text>
-                  </g>
-                )}
               </g>
             );
           })}
 
-          {/* FX moons of the selected node */}
-          {anchor &&
+          {/* FX moons of the anchor node */}
+          {anchorGeo &&
             fxList.map((fx, i) => {
               const def = fxDef(fx.type);
-              const base = (anchor.angle ?? 0) + 120 + i * 50;
+              const base = (anchorGeo.angle ?? 0) + 120 + i * 50;
               const a = (base * Math.PI) / 180;
               const r = FX_MIN + (FX_MAX - FX_MIN) * clamp01(fx.amount);
-              const x = anchor.x + Math.cos(a) * r;
-              const y = anchor.y + Math.sin(a) * r;
-              const on = selectedFx === fx.id;
-              const isArmed = sameNode(armed, { kind: "fx", id: fx.id });
+              const x = anchorGeo.x + Math.cos(a) * r;
+              const y = anchorGeo.y + Math.sin(a) * r;
+              const on = selected?.kind === "fx" && selected.id === fx.id;
               return (
                 <g key={fx.id}>
                   <line
-                    x1={anchor.x}
-                    y1={anchor.y}
+                    x1={anchorGeo.x}
+                    y1={anchorGeo.y}
                     x2={x}
                     y2={y}
                     stroke={`rgba(${def.rgb},0.45)`}
@@ -419,24 +405,39 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                     onPointerDown={(e) => {
                       e.stopPropagation();
                       (e.target as Element).setPointerCapture?.(e.pointerId);
-                      setSelectedFx(fx.id);
-                      if (!beginGesture({ kind: "fx", id: fx.id })) return;
+                      const { x: sx, y: sy } = toSvg(e.clientX, e.clientY);
+                      movedRef.current = false;
                       dragRef.current = {
                         kind: "fx",
-                        layerId: targetLayerId,
+                        layerId: fxParentId,
                         fxId: fx.id,
-                        ox: anchor.x,
-                        oy: anchor.y,
+                        ox: anchorGeo.x,
+                        oy: anchorGeo.y,
+                        sx,
+                        sy,
                       };
                     }}
                   />
+                  {/* selected glow ring */}
+                  {on && (
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r={11}
+                      fill={`rgba(${def.rgb},0.12)`}
+                      stroke={`rgba(${def.rgb},0.95)`}
+                      strokeWidth={1.4}
+                      pointerEvents="none"
+                      style={{ filter: `drop-shadow(0 0 8px rgba(${def.rgb},0.8))` }}
+                    />
+                  )}
                   <circle
                     cx={x}
                     cy={y}
                     r={7}
                     fill={`rgba(${def.rgb},${0.3 + fx.amount * 0.6})`}
-                    stroke={`rgba(${def.rgb},0.95)`}
-                    strokeWidth={on ? 1.8 : 0.8}
+                    stroke={`rgba(${def.rgb},${on ? 1 : 0.95})`}
+                    strokeWidth={on ? 2 : 0.8}
                     pointerEvents="none"
                   />
                   <text
@@ -448,21 +449,6 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                   >
                     {def.label.toUpperCase()} {Math.round(fx.amount * 100)}
                   </text>
-
-                  {isArmed && (
-                    <g
-                      className="sc-kill"
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        deleteFx(fx.id);
-                      }}
-                    >
-                      <circle cx={x + 11} cy={y - 11} r={8} className="sc-kill-bg" />
-                      <text x={x + 11} y={y - 8} className="sc-kill-x" textAnchor="middle">
-                        ✕
-                      </text>
-                    </g>
-                  )}
                 </g>
               );
             })}
@@ -510,8 +496,9 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                       onClick={() => {
                         const updated = addLayer(state, it.id as InstrumentId);
                         onChange(updated);
-                        setSelected(updated.instruments[updated.instruments.length - 1]!.id);
-                        setSelectedFx(null);
+                        const newId = updated.instruments[updated.instruments.length - 1]!.id;
+                        setAnchor({ kind: "layer", id: newId });
+                        setSelected({ kind: "layer", id: newId });
                         setPicker(null);
                       }}
                     >
@@ -523,10 +510,11 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                       key={def.type}
                       className="sc-chip"
                       onClick={() => {
-                        const updated = addFx(state, targetLayerId, def.type as FxTypeId);
+                        const updated = addFx(state, fxParentId, def.type as FxTypeId);
                         onChange(updated);
-                        const list = fxListOf(updated, targetLayerId);
-                        setSelectedFx(list[list.length - 1]?.id ?? null);
+                        const list = fxListOf(updated, fxParentId);
+                        const newFx = list[list.length - 1];
+                        if (newFx) setSelected({ kind: "fx", id: newFx.id });
                         setPicker(null);
                       }}
                     >
@@ -537,105 +525,159 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
             <p className="sc-hint">
               {picker === "sound"
                 ? `${layers.length}/${MAX_LAYERS} strumenti nella costellazione`
-                : `Effetti su ${selectedLayer ? instrumentName(selectedLayer.instrument) : "Master"} · ${fxList.length}/4`}
+                : `Effetti su ${anchorLayer ? instrumentName(anchorLayer.instrument) : "Master"} · ${fxList.length}/4`}
             </p>
           </div>
         )}
       </div>
 
       <p className="sc-hint">
-        Trascina un pianeta: lontano dal sole = più volume · doppio tap = ✕ rossa per cancellare ·
-        tieni premuto = modifica suono o parametri dell'effetto.
+        Tocca un nodo per selezionarlo e aprire i parametri · trascina per regolare volume o quantità.
       </p>
 
-      {/* ————— editor da press & hold ————— */}
-      {(editingLayer || editingFx) && (
+      {/* ————— editor aperto con un solo tocco ————— */}
+      {selected && (
         <div className="sc-editor">
           <div className="sc-pop-head">
             <span>
-              {editingLayer
-                ? instrumentName(editingLayer.instrument).toUpperCase()
-                : fxDef(editingFx!.type).label.toUpperCase()}
+              {selected.kind === "master"
+                ? "MASTER"
+                : selected.kind === "layer"
+                  ? instrumentName(
+                      layers.find((l) => l.id === selected.id)?.instrument ?? "piano",
+                    ).toUpperCase()
+                  : fxDef(selectedFxInfo?.fx?.type ?? "reverb").label.toUpperCase()}
             </span>
-            <button aria-label="Chiudi editor" className="sc-pop-x" onClick={() => setEditing(null)}>
+            <button
+              aria-label="Chiudi editor"
+              className="sc-pop-x"
+              onClick={() => setSelected(null)}
+            >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          {editingLayer && (
+          {selected.kind === "master" && (
+            <div className="flex flex-col gap-2">
+              {masterFxList.length === 0 && (
+                <p className="sc-hint">Nessun effetto sul Master. Tocca + FX per aggiungerne uno.</p>
+              )}
+              {masterFxList.map((fx) => (
+                <div
+                  key={fx.id}
+                  className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                >
+                  <button
+                    className="text-left text-xs font-semibold"
+                    onClick={() => setSelected({ kind: "fx", id: fx.id })}
+                  >
+                    {fxDef(fx.type).label} · {Math.round(fx.amount * 100)}%
+                  </button>
+                  <button
+                    className="sc-danger"
+                    aria-label={`Rimuovi ${fxDef(fx.type).label}`}
+                    onClick={() => {
+                      onChange(removeFx(state, null, fx.id));
+                      setSelected((s) => (s?.kind === "fx" && s.id === fx.id ? null : s));
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {selected.kind === "layer" && (
             <>
-              <label className="sc-field-label">
-                Strumento
-                <select
-                  className="sc-field"
-                  aria-label="Strumento del nodo"
-                  value={editingLayer.instrument}
-                  onChange={(e) =>
+              {(() => {
+                const editingLayer = layers.find((l) => l.id === selected.id);
+                if (!editingLayer) return null;
+                return (
+                  <>
+                    <label className="sc-field-label">
+                      Strumento
+                      <select
+                        className="sc-field"
+                        aria-label="Strumento del nodo"
+                        value={editingLayer.instrument}
+                        onChange={(e) =>
+                          onChange(
+                            patchLayer(state, editingLayer.id, {
+                              instrument: e.target.value as InstrumentId,
+                            }),
+                          )
+                        }
+                      >
+                        {INSTRUMENTS.map((it) => (
+                          <option key={it.id} value={it.id}>
+                            {it.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="sc-field-label">
+                      Volume: <b>{Math.round(editingLayer.gain * 100)}%</b>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={Math.round(editingLayer.gain * 100)}
+                        aria-label="Volume dello strumento"
+                        onChange={(e) =>
+                          onChange(
+                            patchLayer(state, editingLayer.id, {
+                              gain: Number(e.target.value) / 100,
+                            }),
+                          )
+                        }
+                        className="sc-range"
+                      />
+                    </label>
+                    {layers.length > 1 && (
+                      <button className="sc-danger" onClick={() => deleteLayer(editingLayer.id)}>
+                        ✕ Rimuovi strumento
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {selected.kind === "fx" && selectedFxInfo && (
+            <>
+              <div className="flex gap-1.5">
+                <button
+                  className={`sc-chip ${selectedFxInfo.fx.bypass ? "" : "sc-chip-on"}`}
+                  onClick={() =>
                     onChange(
-                      patchLayer(state, editingLayer.id, {
-                        instrument: e.target.value as InstrumentId,
+                      patchFx(state, selectedFxInfo.parent, selectedFxInfo.fx.id, {
+                        bypass: !selectedFxInfo.fx.bypass,
                       }),
                     )
                   }
                 >
-                  {INSTRUMENTS.map((it) => (
-                    <option key={it.id} value={it.id}>
-                      {it.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="sc-field-label">
-                Volume: <b>{Math.round(editingLayer.gain * 100)}%</b>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={Math.round(editingLayer.gain * 100)}
-                  aria-label="Volume dello strumento"
-                  onChange={(e) =>
-                    onChange(
-                      patchLayer(state, editingLayer.id, { gain: Number(e.target.value) / 100 }),
-                    )
-                  }
-                  className="sc-range"
-                />
-              </label>
-              {layers.length > 1 && (
-                <button className="sc-danger" onClick={() => deleteLayer(editingLayer.id)}>
-                  ✕ Rimuovi strumento
+                  {selectedFxInfo.fx.bypass ? "OFF" : "ON"}
                 </button>
-              )}
-            </>
-          )}
-
-          {editingFx && (
-            <>
-              <div className="flex gap-1.5">
-                <button
-                  className={`sc-chip ${editingFx.bypass ? "" : "sc-chip-on"}`}
-                  onClick={() =>
-                    onChange(
-                      patchFx(state, targetLayerId, editingFx.id, { bypass: !editingFx.bypass }),
-                    )
-                  }
-                >
-                  {editingFx.bypass ? "OFF" : "ON"}
-                </button>
-                <button className="sc-danger" onClick={() => deleteFx(editingFx.id)}>
+                <button className="sc-danger" onClick={() => deleteFx(selectedFxInfo.fx.id)}>
                   ✕ Rimuovi effetto
                 </button>
               </div>
 
-              {editingFx.type === "gate" && (
+              {selectedFxInfo.fx.type === "gate" && (
                 <div className="mt-2 grid grid-cols-2 gap-1.5">
                   {GATE_PRESETS.map((p) => (
                     <button
                       key={p.id}
                       onClick={() =>
-                        onChange(patchFx(state, targetLayerId, editingFx.id, { preset: p.id }))
+                        onChange(
+                          patchFx(state, selectedFxInfo.parent, selectedFxInfo.fx.id, {
+                            preset: p.id,
+                          }),
+                        )
                       }
-                      className={`sc-preset ${editingFx.preset === p.id ? "sc-chip-on" : ""}`}
+                      className={`sc-preset ${selectedFxInfo.fx.preset === p.id ? "sc-chip-on" : ""}`}
                     >
                       <span className="block text-[11px] font-bold">{p.name}</span>
                       <span className="block font-mono text-[10px] opacity-70">
@@ -647,16 +689,16 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
               )}
 
               <label className="sc-field-label mt-2">
-                Quantità: <b>{Math.round(editingFx.amount * 100)}%</b>
+                Quantità: <b>{Math.round(selectedFxInfo.fx.amount * 100)}%</b>
                 <input
                   type="range"
                   min={0}
                   max={100}
-                  value={Math.round(editingFx.amount * 100)}
+                  value={Math.round(selectedFxInfo.fx.amount * 100)}
                   aria-label="Quantità effetto"
                   onChange={(e) =>
                     onChange(
-                      patchFx(state, targetLayerId, editingFx.id, {
+                      patchFx(state, selectedFxInfo.parent, selectedFxInfo.fx.id, {
                         amount: Number(e.target.value) / 100,
                       }),
                     )
@@ -665,8 +707,8 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                 />
               </label>
 
-              {fxDef(editingFx.type).params.map((def) => {
-                const value = editingFx.params[def.id] ?? def.default;
+              {fxDef(selectedFxInfo.fx.type).params.map((def) => {
+                const value = selectedFxInfo.fx.params[def.id] ?? def.default;
                 return (
                   <label key={def.id} className="sc-field-label">
                     {def.label}: <b>{formatParam(def, value)}</b>
@@ -682,7 +724,9 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
                             ? 1
                             : 0
                           : denormParam(def, Number(e.target.value) / 1000);
-                        onChange(setFxParam(state, targetLayerId, editingFx.id, def.id, next));
+                        onChange(
+                          setFxParam(state, selectedFxInfo.parent, selectedFxInfo.fx.id, def.id, next),
+                        );
                       }}
                       className="sc-range"
                     />
@@ -692,12 +736,6 @@ export default function SoundConstellation({ state, onChange, tone = "light" }: 
             </>
           )}
         </div>
-      )}
-
-      {activeFx && !editing && (
-        <p className="sc-hint">
-          Selezionato: <b>{fxDef(activeFx.type).label}</b> · {Math.round(activeFx.amount * 100)}%
-        </p>
       )}
     </div>
   );
