@@ -277,10 +277,14 @@ export default function SoundConstellation({
   };
 
   const deleteFx = (id: string) => {
-    const parent = selectedFxInfo?.parent ?? null;
+    const parent =
+      state.master.some((f) => f.id === id)
+        ? null
+        : (state.instruments.find((l) => l.effects.some((f) => f.id === id))?.id ?? null);
     onChange(removeFx(state, parent, id));
     setSelected((s) => (s?.kind === "fx" && s.id === id ? null : s));
   };
+
 
   const anchorGeo = anchorLayer
     ? geometry.find((g) => g.layer.id === anchorLayer.id)
