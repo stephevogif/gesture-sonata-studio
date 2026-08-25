@@ -289,9 +289,66 @@ export default function SoundConstellation({
   const masterFxList = state.master;
   const dark = tone === "dark";
 
+  /** salvataggio rapido dall'icona in alto: strumento selezionato o catena FX corrente */
+  const quickSave = () => {
+    const layer =
+      selected?.kind === "layer" ? layers.find((l) => l.id === selected.id) : undefined;
+    const name =
+      presetName.trim() ||
+      `${layer ? instrumentName(layer.instrument) : "FX"} ${new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+    setPresets(
+      layer ? savePreset({ name, kind: "layer", layer }) : savePreset({ name, kind: "fx", effects: fxList }),
+    );
+    setPresetName("");
+    setPresetsOpen(true);
+  };
+
+  const confirmLabel =
+    confirmDel?.kind === "layer"
+      ? instrumentName(layers.find((l) => l.id === confirmDel.id)?.instrument ?? "piano")
+      : confirmDel?.kind === "fx"
+        ? fxDef(
+            (state.master.find((f) => f.id === confirmDel.id) ??
+              state.instruments.flatMap((l) => l.effects).find((f) => f.id === confirmDel.id))
+              ?.type ?? "reverb",
+          ).label
+        : "";
+
   return (
     <div className={`sc ${dark ? "sc-dark" : "sc-light"}`}>
+      <div className="sc-pop-head">
+        <span>EFFECT CONSOLE</span>
+        <button className="sc-chip sc-chip-on" aria-label="Salva preset" onClick={quickSave}>
+          <Save className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {confirmDel && (
+        <div className="sc-confirm">
+          Eliminare <b>{confirmLabel}</b>?
+          <div className="mt-1.5 flex gap-1.5">
+            <button
+              className="sc-danger"
+              onClick={() => {
+                if (confirmDel.kind === "layer") deleteLayer(confirmDel.id);
+                else if (confirmDel.kind === "fx") deleteFx(confirmDel.id);
+                setConfirmDel(null);
+              }}
+            >
+              Elimina
+            </button>
+            <button className="sc-chip" onClick={() => setConfirmDel(null)}>
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="sc-stage">
+
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VIEW} ${VIEW}`}
