@@ -1181,7 +1181,7 @@ export default function HeavenSynth() {
                       {d / 1000}s
                     </button>
                   ))}
-                  <button onClick={toggleListen} className={chip(listing)}>
+                  <button onClick={toggleListen} className={chip(listening)}>
                     {listening ? `Ferma (${Math.round(listenProgress * 100)}%)` : "Ascolta"}
                   </button>
                 </div>
