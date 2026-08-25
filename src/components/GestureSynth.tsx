@@ -1908,66 +1908,16 @@ export default function GestureSynth() {
       {panel === "fx" && (
         <div className="mt-3 celestial-panel rounded-sm p-4">
           <h2 className="text-xs uppercase tracking-widest text-muted-foreground">
-            FX Constellation
+            Sound Constellation
           </h2>
-          <div className="mx-auto mt-3 max-w-sm">
-            <FxConstellation coreLabel={instrument} nodes={fxNodes} dark />
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                Tipo filtro
-              </label>
-              <select
-                aria-label="Tipo filtro EQ"
-                className={`mt-2 ${selectClass}`}
-                value={eqType}
-                onChange={(e) => setEqType(e.target.value as "lowpass" | "highpass")}
-              >
-                <option value="lowpass">Low pass</option>
-                <option value="highpass">High pass</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                Tempo delay
-              </label>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => setDelaySync(true)}
-                  aria-pressed={delaySync}
-                  className={delaySync ? "btn-hero" : "btn-ghost"}
-                >
-                  Sync
-                </button>
-                <button
-                  onClick={() => setDelaySync(false)}
-                  aria-pressed={!delaySync}
-                  className={!delaySync ? "btn-hero" : "btn-ghost"}
-                >
-                  Libero
-                </button>
-              </div>
-            </div>
-            {delaySync && (
-              <div>
-                <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Divisione
-                </label>
-                <select
-                  aria-label="Divisione delay"
-                  className={`mt-2 ${selectClass}`}
-                  value={delayDivision}
-                  onChange={(e) => setDelayDivision(e.target.value as DivisionId)}
-                >
-                  {DIVISIONS.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+          <div className="mt-3">
+            <SoundConstellation
+              masterOnly
+              state={mix}
+              onChange={setMix}
+              handControl={handControl}
+              onHandControlChange={updateHandControl}
+            />
           </div>
         </div>
       )}
