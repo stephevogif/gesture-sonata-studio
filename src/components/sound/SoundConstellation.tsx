@@ -1016,9 +1016,13 @@ export default function SoundConstellation({
                 >
                   {selectedFxInfo.fx.bypass ? "OFF" : "ON"}
                 </button>
-                <button className="sc-danger" onClick={() => deleteFx(selectedFxInfo.fx.id)}>
+                <button
+                  className="sc-danger"
+                  onClick={() => setConfirmDel({ kind: "fx", id: selectedFxInfo.fx.id })}
+                >
                   ✕ Rimuovi effetto
                 </button>
+
               </div>
 
               {selectedFxInfo.fx.type === "gate" && (
