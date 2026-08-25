@@ -22,13 +22,29 @@ import {
   addFx,
   addLayer,
   fxListOf,
+  insertLayer,
   patchFx,
   patchLayer,
   removeFx,
   removeLayer,
+  replaceFxChain,
   setFxParam,
   type MixState,
 } from "@/core/sound/mix";
+import {
+  deletePreset,
+  listPresets,
+  savePreset,
+  MAX_PRESETS,
+  type SoundPreset,
+} from "@/core/sound/library";
+import {
+  HAND_SOURCES,
+  HAND_TARGETS,
+  type HandControl,
+  type HandSource,
+  type HandTargetId,
+} from "@/core/sound/handControl";
 
 const VIEW = 320;
 const C = VIEW / 2;
