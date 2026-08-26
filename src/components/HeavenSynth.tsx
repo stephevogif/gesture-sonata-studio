@@ -33,6 +33,14 @@ import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import { useSongMode } from "@/hooks/useSongMode";
 import SongModeHud from "@/components/songs/SongModeHud";
 import { updateSongSession } from "@/core/songs/session";
+import {
+  DEFAULT_ONE_HAND,
+  ONE_HAND_SLOTS,
+  readOneHand,
+  slotsFromSong,
+  writeOneHand,
+  type OneHandConfig,
+} from "@/core/gesture/oneHand";
 import TutorialArt from "@/components/TutorialArt";
 import FloatingWindow from "@/components/ui/FloatingWindow";
 import SoundConstellation from "@/components/sound/SoundConstellation";
@@ -46,7 +54,7 @@ import {
 } from "@/core/sound/handControl";
 import { detectKey } from "@/lib/keyDetect";
 
-type PanelId = null | "sound" | "scale" | "arp" | "help";
+type PanelId = null | "sound" | "scale" | "arp" | "help" | "onehand";
 
 type Hud = {
   volume: number;
@@ -157,7 +165,7 @@ export default function HeavenSynth() {
     filter: 8000,
   });
 
-  const heavensDeb = useRef(new Debouncer<number | null>(150));
+  const heavensDeb = useRef(new Debouncer<number | null>(90));
   const volSm = useRef(new Smoother(0.16));
   const cutSm = useRef(new Smoother(0.14));
 
@@ -183,6 +191,19 @@ export default function HeavenSynth() {
   panelOpenRef.current = panel !== null;
   const [hud, setHud] = useState<Hud>({ volume: 0, filter: 8000, heavens: null, fps: 0 });
 
+  // ————— ONE HAND: una sola mano, dita 1..5 = slot assegnabili a qualsiasi grado —————
+  const [oneHand, setOneHand] = useState<OneHandConfig>(DEFAULT_ONE_HAND);
+  const oneHandRef = useRef<OneHandConfig>(DEFAULT_ONE_HAND);
+  oneHandRef.current = oneHand;
+  useEffect(() => setOneHand(readOneHand()), []);
+  const updateOneHand = useCallback((patch: Partial<OneHandConfig>) => {
+    setOneHand((prev) => {
+      const next = { ...prev, ...patch };
+      writeOneHand(next);
+      return next;
+    });
+  }, []);
+
   // ————— SONG MODE (Heaven Songs) —————
   const songMode = useSongMode();
   const songId = songMode.song?.id ?? null;
@@ -196,6 +217,15 @@ export default function HeavenSynth() {
     setMode(songScale);
     if (songBpm) setBpm(songBpm);
   }, [songId, songRootPc, songScale, songBpm]);
+
+  /** con una song attiva gli slot seguono la progressione: 1° accordo → 1 dito */
+  const songSectionDegrees = songMode.degrees.join(",");
+  useEffect(() => {
+    if (!oneHandRef.current.enabled || !oneHandRef.current.followSong) return;
+    const slots = slotsFromSong(songMode.song, songMode.sectionIndex);
+    if (slots) updateOneHand({ slots });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songId, songMode.sectionIndex, songSectionDegrees, oneHand.enabled, oneHand.followSong]);
 
   // ————— filtro gestuale + legato —————
   const [cutMax, setCutMax] = useState(8000);
