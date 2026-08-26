@@ -5,6 +5,7 @@ import {
   Eye,
   EyeOff,
   Contrast,
+  Hand,
   HelpCircle,
   ListMusic,
   Mic,
