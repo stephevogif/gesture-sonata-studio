@@ -787,11 +787,21 @@ export default function HeavenSynth() {
       // 7 HEAVENS: dita totali (sinistra + destra) = grado dell'accordo diatonico
       const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
       const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
-      const total = lc + rc;
+      const oh = oneHandRef.current;
+      const oneHandOn = oh.enabled;
+      /** ONE HAND: conta le dita di una sola mano (1..5 = slot) */
+      const soloCount = !oneHandOn
+        ? 0
+        : oh.hand === "left"
+          ? lc
+          : oh.hand === "right"
+            ? rc
+            : Math.max(lc, rc);
+      const total = oneHandOn ? soloCount : lc + rc;
 
       // gesto arp: entrambe le mani chiuse e subito riaperte
       const nowGesture = performance.now();
-      if (left && right) {
+      if (!oneHandOn && left && right) {
         if (lc === 0 && rc === 0) {
           if (!armedRef.current) {
             armedRef.current = true;
@@ -813,15 +823,27 @@ export default function HeavenSynth() {
         armedRef.current = false;
       }
 
-      const stable = heavensDeb.current.push(total >= 1 && total <= 10 ? total : null);
+      const maxTotal = oneHandOn ? ONE_HAND_SLOTS : 10;
+      const stable = heavensDeb.current.push(total >= 1 && total <= maxTotal ? total : null);
       if (stable !== lastStableRef.current) {
         lastStableRef.current = stable;
-        if (stable === 10) setVolFollow((v) => !v);
+        if (!oneHandOn && stable === 10) setVolFollow((v) => !v);
       }
 
       let deg: number | null = null;
-      if (hands.length && stable && stable <= 7) {
-        deg = stable - 1;
+      /** slot → grado 0-based (One Hand) oppure dita totali → grado */
+      const mapped =
+        stable == null
+          ? null
+          : oneHandOn
+            ? stable >= 1 && stable <= ONE_HAND_SLOTS
+              ? (oh.slots[stable - 1] ?? null)
+              : null
+            : stable <= 7
+              ? stable
+              : null;
+      if (hands.length && mapped != null) {
+        deg = Math.min(6, Math.max(0, mapped - 1));
         chord = buildChord({
           rootPc: root,
           mode: md,
