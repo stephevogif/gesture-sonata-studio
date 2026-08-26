@@ -131,7 +131,7 @@ export class FingerAnalyzer {
     pinky: false,
   };
 
-  constructor(private readonly responsiveness = 0.45) {}
+  constructor(private readonly responsiveness = 0.62) {}
 
   read(lm: Landmark[]): { fingers: FingerState; count: number; scores: Record<FingerId, number> } {
     const raw = fingerScores(lm);

@@ -5,6 +5,7 @@ import {
   Eye,
   EyeOff,
   Contrast,
+  Hand,
   HelpCircle,
   ListMusic,
   Mic,
@@ -32,6 +33,14 @@ import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import { useSongMode } from "@/hooks/useSongMode";
 import SongModeHud from "@/components/songs/SongModeHud";
 import { updateSongSession } from "@/core/songs/session";
+import {
+  DEFAULT_ONE_HAND,
+  ONE_HAND_SLOTS,
+  readOneHand,
+  slotsFromSong,
+  writeOneHand,
+  type OneHandConfig,
+} from "@/core/gesture/oneHand";
 import TutorialArt from "@/components/TutorialArt";
 import FloatingWindow from "@/components/ui/FloatingWindow";
 import SoundConstellation from "@/components/sound/SoundConstellation";
@@ -45,7 +54,7 @@ import {
 } from "@/core/sound/handControl";
 import { detectKey } from "@/lib/keyDetect";
 
-type PanelId = null | "sound" | "scale" | "arp" | "help";
+type PanelId = null | "sound" | "scale" | "arp" | "help" | "onehand";
 
 type Hud = {
   volume: number;
@@ -156,7 +165,7 @@ export default function HeavenSynth() {
     filter: 8000,
   });
 
-  const heavensDeb = useRef(new Debouncer<number | null>(150));
+  const heavensDeb = useRef(new Debouncer<number | null>(90));
   const volSm = useRef(new Smoother(0.16));
   const cutSm = useRef(new Smoother(0.14));
 
@@ -182,6 +191,19 @@ export default function HeavenSynth() {
   panelOpenRef.current = panel !== null;
   const [hud, setHud] = useState<Hud>({ volume: 0, filter: 8000, heavens: null, fps: 0 });
 
+  // ————— ONE HAND: una sola mano, dita 1..5 = slot assegnabili a qualsiasi grado —————
+  const [oneHand, setOneHand] = useState<OneHandConfig>(DEFAULT_ONE_HAND);
+  const oneHandRef = useRef<OneHandConfig>(DEFAULT_ONE_HAND);
+  oneHandRef.current = oneHand;
+  useEffect(() => setOneHand(readOneHand()), []);
+  const updateOneHand = useCallback((patch: Partial<OneHandConfig>) => {
+    setOneHand((prev) => {
+      const next = { ...prev, ...patch };
+      writeOneHand(next);
+      return next;
+    });
+  }, []);
+
   // ————— SONG MODE (Heaven Songs) —————
   const songMode = useSongMode();
   const songId = songMode.song?.id ?? null;
@@ -195,6 +217,15 @@ export default function HeavenSynth() {
     setMode(songScale);
     if (songBpm) setBpm(songBpm);
   }, [songId, songRootPc, songScale, songBpm]);
+
+  /** con una song attiva gli slot seguono la progressione: 1° accordo → 1 dito */
+  const songSectionDegrees = songMode.degrees.join(",");
+  useEffect(() => {
+    if (!oneHandRef.current.enabled || !oneHandRef.current.followSong) return;
+    const slots = slotsFromSong(songMode.song, songMode.sectionIndex);
+    if (slots) updateOneHand({ slots });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songId, songMode.sectionIndex, songSectionDegrees, oneHand.enabled, oneHand.followSong]);
 
   // ————— filtro gestuale + legato —————
   const [cutMax, setCutMax] = useState(8000);
@@ -756,11 +787,21 @@ export default function HeavenSynth() {
       // 7 HEAVENS: dita totali (sinistra + destra) = grado dell'accordo diatonico
       const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
       const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
-      const total = lc + rc;
+      const oh = oneHandRef.current;
+      const oneHandOn = oh.enabled;
+      /** ONE HAND: conta le dita di una sola mano (1..5 = slot) */
+      const soloCount = !oneHandOn
+        ? 0
+        : oh.hand === "left"
+          ? lc
+          : oh.hand === "right"
+            ? rc
+            : Math.max(lc, rc);
+      const total = oneHandOn ? soloCount : lc + rc;
 
       // gesto arp: entrambe le mani chiuse e subito riaperte
       const nowGesture = performance.now();
-      if (left && right) {
+      if (!oneHandOn && left && right) {
         if (lc === 0 && rc === 0) {
           if (!armedRef.current) {
             armedRef.current = true;
@@ -782,15 +823,27 @@ export default function HeavenSynth() {
         armedRef.current = false;
       }
 
-      const stable = heavensDeb.current.push(total >= 1 && total <= 10 ? total : null);
+      const maxTotal = oneHandOn ? ONE_HAND_SLOTS : 10;
+      const stable = heavensDeb.current.push(total >= 1 && total <= maxTotal ? total : null);
       if (stable !== lastStableRef.current) {
         lastStableRef.current = stable;
-        if (stable === 10) setVolFollow((v) => !v);
+        if (!oneHandOn && stable === 10) setVolFollow((v) => !v);
       }
 
       let deg: number | null = null;
-      if (hands.length && stable && stable <= 7) {
-        deg = stable - 1;
+      /** slot → grado 0-based (One Hand) oppure dita totali → grado */
+      const mapped =
+        stable == null
+          ? null
+          : oneHandOn
+            ? stable >= 1 && stable <= ONE_HAND_SLOTS
+              ? (oh.slots[stable - 1] ?? null)
+              : null
+            : stable <= 7
+              ? stable
+              : null;
+      if (hands.length && mapped != null) {
+        deg = Math.min(6, Math.max(0, mapped - 1));
         chord = buildChord({
           rootPc: root,
           mode: md,
@@ -991,6 +1044,14 @@ export default function HeavenSynth() {
               <Contrast className="h-4 w-4" />
             </button>
             <button
+              onClick={() => setPanel((p) => (p === "onehand" ? null : "onehand"))}
+              aria-label="One Hand"
+              aria-pressed={oneHand.enabled}
+              className={`heaven-orb-btn ${oneHand.enabled ? "heaven-nav-on" : ""}`}
+            >
+              <Hand className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => setPanel((p) => (p === "help" ? null : "help"))}
               aria-label="Guida"
               className="heaven-orb-btn"
@@ -1030,7 +1091,14 @@ export default function HeavenSynth() {
         )}
 
         {/* Song Mode */}
-        {songMode.song && <SongModeHud state={songMode} rootPc={rootPc} mode={mode} />}
+        {songMode.song && (
+          <SongModeHud
+            state={songMode}
+            rootPc={rootPc}
+            mode={mode}
+            slots={oneHand.enabled ? oneHand.slots : null}
+          />
+        )}
 
         {/* i sette cieli */}
         <div className="relative mt-7 flex items-start justify-between px-1">
@@ -1360,6 +1428,108 @@ export default function HeavenSynth() {
               <p className="text-[11px] text-slate-500">
                 Gesto: chiudi e riapri velocemente entrambe le mani per accendere o spegnere
                 l&apos;arp (tasto A). Nessun numero di dita attiva più l&apos;arpeggiatore.
+              </p>
+            </div>
+          </FloatingWindow>
+        )}
+
+        {panel === "onehand" && (
+          <FloatingWindow
+            title="One Hand"
+            subtitle={oneHand.enabled ? "Attivo · dita 1–5" : "Spento · due mani 1–7"}
+            onClose={() => setPanel(null)}
+          >
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  onClick={() => updateOneHand({ enabled: !oneHand.enabled })}
+                  className={chip(oneHand.enabled)}
+                >
+                  {oneHand.enabled ? "One Hand ON" : "One Hand OFF"}
+                </button>
+                <button
+                  onClick={() => updateOneHand({ followSong: !oneHand.followSong })}
+                  className={chip(oneHand.followSong)}
+                >
+                  Segui la song
+                </button>
+              </div>
+
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f0f6ff]/90 drop-shadow-sm">
+                Mano
+                <select
+                  value={oneHand.hand}
+                  onChange={(e) =>
+                    updateOneHand({ hand: e.target.value as OneHandConfig["hand"] })
+                  }
+                  className={field}
+                  aria-label="Mano che suona"
+                >
+                  <option value="any">Quella visibile</option>
+                  <option value="left">Sinistra</option>
+                  <option value="right">Destra</option>
+                </select>
+              </label>
+
+              <div className="space-y-2 border-t border-white/20 pt-3">
+                <h3 className="text-xs font-bold text-[#f8fbff] drop-shadow-sm">
+                  Accordo per ogni numero di dita
+                </h3>
+                {oneHand.slots.map((degree, i) => (
+                  <label
+                    key={i}
+                    className="flex items-center gap-3 text-[11px] font-semibold text-[#f0f6ff]/90 drop-shadow-sm"
+                  >
+                    <span className="heaven-node !h-8 !w-8 !text-[13px]">{i + 1}</span>
+                    <select
+                      value={degree}
+                      onChange={(e) => {
+                        const slots = [...oneHand.slots];
+                        slots[i] = Number(e.target.value);
+                        updateOneHand({ slots, followSong: false });
+                      }}
+                      className={`${field} !mt-0 flex-1`}
+                      aria-label={`Accordo per ${i + 1} dita`}
+                    >
+                      {Array.from({ length: 7 }, (_, d) => (
+                        <option key={d} value={d + 1}>
+                          {ROMAN[d]} · {degreeChordLabels[d]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+
+              {songMode.song && (
+                <div className="space-y-2 border-t border-white/20 pt-3">
+                  <h3 className="text-xs font-bold text-[#f8fbff] drop-shadow-sm">
+                    {songMode.song.title} · {songMode.sectionName}
+                  </h3>
+                  <p className="text-[11px] text-[#f0f6ff]/85 drop-shadow-sm">
+                    Sequenza:{" "}
+                    {songMode.degrees
+                      .map((d) => {
+                        const slot = oneHand.slots.indexOf(d);
+                        return slot < 0 ? "–" : `${slot + 1} dita`;
+                      })
+                      .join(" → ")}
+                  </p>
+                  <button
+                    onClick={() => {
+                      const slots = slotsFromSong(songMode.song, songMode.sectionIndex);
+                      if (slots) updateOneHand({ slots, enabled: true });
+                    }}
+                    className={chip(false)}
+                  >
+                    Assegna gli accordi della song
+                  </button>
+                </div>
+              )}
+
+              <p className="text-[11px] text-[#f0f6ff]/80 drop-shadow-sm">
+                In One Hand basta una mano: 1 dito = primo accordo, 2 dita = secondo, e così via.
+                Con una song attiva gli accordi si assegnano da soli in ordine di apparizione.
               </p>
             </div>
           </FloatingWindow>

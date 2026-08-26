@@ -30,6 +30,8 @@ export function useHandTracking(onFrame: (frame: TrackingFrame) => void) {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
+  const usingVfcRef = useRef(false);
+
   const loop = useCallback(() => {
     const video = videoRef.current;
     const provider = providerRef.current;
@@ -44,11 +46,25 @@ export function useHandTracking(onFrame: (frame: TrackingFrame) => void) {
 
     const hands = provider.detect(video, now);
     callbackRef.current({ hands, video, fps: fpsRef.current, timestamp: now });
-    rafRef.current = requestAnimationFrame(loop);
+    // ogni frame viene analizzato appena la camera lo consegna: meno ritardo
+    // e nessuna detection ripetuta sullo stesso frame
+    const vfc = (video as any).requestVideoFrameCallback?.bind(video);
+    if (vfc) {
+      usingVfcRef.current = true;
+      rafRef.current = vfc(() => loop());
+    } else {
+      usingVfcRef.current = false;
+      rafRef.current = requestAnimationFrame(loop);
+    }
   }, []);
 
   const stop = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (rafRef.current) {
+      const video = videoRef.current as any;
+      if (usingVfcRef.current && video?.cancelVideoFrameCallback)
+        video.cancelVideoFrameCallback(rafRef.current);
+      else cancelAnimationFrame(rafRef.current);
+    }
     rafRef.current = null;
     cameraRef.current?.stop();
     cameraRef.current = null;
