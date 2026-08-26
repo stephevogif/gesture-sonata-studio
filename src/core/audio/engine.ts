@@ -97,7 +97,7 @@ export class HeavenAudioEngine {
       if (this.ctx.state === "suspended") await this.ctx.resume();
       return;
     }
-    const ctx = new AudioContext();
+    const ctx = new AudioContext({ latencyHint: "interactive" });
     this.ctx = ctx;
     this.rack = new MasterRack(ctx);
     this.masterChain = new FxChain(ctx, this.rack.master, this.rack.postMaster);

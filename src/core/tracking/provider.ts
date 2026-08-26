@@ -62,7 +62,12 @@ export function cameraErrorFrom(error: unknown): CameraError {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const IDEAL: MediaStreamConstraints = {
-  video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+  video: {
+    facingMode: "user",
+    width: { ideal: 480 },
+    height: { ideal: 360 },
+    frameRate: { ideal: 60 },
+  },
   audio: false,
 };
 const SIMPLE: MediaStreamConstraints = { video: true, audio: false };
