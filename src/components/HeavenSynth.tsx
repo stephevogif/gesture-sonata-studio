@@ -53,7 +53,6 @@ import FloatingWindow from "@/components/ui/FloatingWindow";
 import OneHandScreen from "@/components/heaven/OneHandScreen";
 import {
   drawStars,
-  drawTarotBack,
   spawnStars,
   type StarParticle,
 } from "@/components/heaven/tarotScene";
@@ -157,7 +156,6 @@ export default function HeavenSynth() {
   /** canvas secondario: anteprima tracking dentro One Hand */
   const trackCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const ohStarsRef = useRef<StarParticle[]>([]);
-  const ohTimeRef = useRef(0);
 
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
@@ -985,9 +983,7 @@ export default function HeavenSynth() {
         }
         const tctx = tc.getContext("2d");
         if (tctx) {
-          ohTimeRef.current += dt;
           tctx.clearRect(0, 0, w, h);
-          drawTarotBack(tctx, w, h, ohTimeRef.current);
           if (chord) {
             const tips: { x: number; y: number }[] = [];
             for (const hand of hands) {
