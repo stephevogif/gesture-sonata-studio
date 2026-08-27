@@ -39,7 +39,7 @@ import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gesture
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import { useSongMode } from "@/hooks/useSongMode";
 import SongModeHud from "@/components/songs/SongModeHud";
-import { updateSongSession } from "@/core/songs/session";
+import { startSongSession, updateSongSession } from "@/core/songs/session";
 import {
   DEFAULT_ONE_HAND,
   ONE_HAND_SLOTS,
