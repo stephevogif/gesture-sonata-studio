@@ -1700,6 +1700,11 @@ export default function HeavenSynth() {
           running={running}
           onTogglePlay={running ? stop : start}
           onClose={() => setOneHandScreen(false)}
+          trackCanvasRef={trackCanvasRef}
+          setPlayMode={setPlayMode}
+          camStatus={status}
+          camError={camError}
+
         />
       )}
 
