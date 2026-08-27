@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from "react";
-import { ArrowLeft, Play, Square, Wand2 } from "lucide-react";
+import { ArrowLeft, Camera, Play, Square, Wand2 } from "lucide-react";
 import { allSongs } from "@/core/songs/catalog";
 import { startSongSession } from "@/core/songs/session";
 import { slotsFromSong, type OneHandConfig } from "@/core/gesture/oneHand";
