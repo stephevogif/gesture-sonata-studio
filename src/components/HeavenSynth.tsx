@@ -208,7 +208,7 @@ export default function HeavenSynth() {
   oneHandRef.current = oneHand;
   useEffect(() => setOneHand(readOneHand()), []);
   useEffect(() => {
-    if (search.oneHand) {
+    if (search["oneHand"]) {
       setOneHandScreen(true);
       updateOneHand({ enabled: true });
       // pulisce il parametro così un refresh non riapre forzatamente la schermata
