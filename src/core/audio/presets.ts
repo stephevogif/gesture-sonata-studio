@@ -27,9 +27,18 @@ export type InstrumentId =
   | "glocken"
   | "choir"
   | "pluckAmb"
-  | "subpad";
+  | "subpad"
+  | "chamberStrings"
+  | "cineStrings"
+  | "viola"
+  | "cello"
+  | "grandPiano"
+  | "feltPiano"
+  | "rhodes"
+  | "celesta";
 
-export type InstrumentGroup = "zen" | "electro";
+export type InstrumentGroup = "zen" | "electro" | "strings" | "keys";
+
 
 export type PartialSpec = {
   wave: OscillatorType;
