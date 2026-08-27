@@ -968,6 +968,30 @@ export default function HeavenSynth() {
 
       if (cfg.current.showDebug) for (const hand of hands) drawHand(ctx, hand, w, h);
 
+      // ————— anteprima tracking (One Hand) —————
+      const tc = trackCanvasRef.current;
+      if (tc) {
+        if (tc.width !== w || tc.height !== h) {
+          tc.width = w;
+          tc.height = h;
+        }
+        const tctx = tc.getContext("2d");
+        if (tctx) {
+          tctx.save();
+          tctx.clearRect(0, 0, w, h);
+          tctx.translate(w, 0);
+          tctx.scale(-1, 1);
+          tctx.drawImage(video, 0, 0, w, h);
+          tctx.restore();
+          tctx.save();
+          tctx.fillStyle = "rgba(8,12,24,0.42)";
+          tctx.fillRect(0, 0, w, h);
+          tctx.restore();
+          for (const hand of hands) drawHand(tctx, hand, w, h);
+        }
+      }
+
+
       // ————— HUD (throttle) —————
       const now = performance.now();
       if (now - hudTick.current > 110) {
