@@ -69,6 +69,23 @@ export class HeavenAudioEngine {
   hold = false;
   bpm = 100;
 
+  /** piano-family controls (pedal / brightness / lid) */
+  private keys: KeysOptions = { ...DEFAULT_KEYS };
+  /** BPM-locked repeated notes */
+  private pulse: { enabled: boolean; division: DivisionId; gate: number } = {
+    enabled: false,
+    division: "1/4",
+    gate: 0.6,
+  };
+  private pulseTimer: number | null = null;
+  /** last sustained note per voice id, so the pulse can retrigger them */
+  private sustained = new Map<
+    string,
+    { freq: number; amount: number; bright: number; inst?: InstrumentId }
+  >();
+
+
+
   // effects state (mirrored so the UI can read it back)
   reverbAmount = 0.35;
   eqType: BiquadFilterType = "lowpass";
