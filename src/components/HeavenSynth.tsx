@@ -1069,11 +1069,13 @@ export default function HeavenSynth() {
     [rootPc, mode],
   );
 
-  /* Song Mode: confronta il grado atteso con quello riconosciuto (manual follow) */
+  /* Song Mode: confronta il grado atteso con quello riconosciuto (solo in cover) */
   const observeSong = songMode.observe;
   useEffect(() => {
+    if (!coverMode) return;
     observeSong(activeDegree == null ? null : activeDegree + 1);
-  }, [activeDegree, observeSong]);
+  }, [activeDegree, observeSong, coverMode]);
+
 
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
