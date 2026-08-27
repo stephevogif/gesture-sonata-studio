@@ -11,6 +11,9 @@ import type { Song } from "@/core/songs/types";
 
 export const ONE_HAND_SLOTS = 5;
 
+/** SCALE = accordi liberi assegnati alle dita · COVER = progressione di una song */
+export type PlayMode = "scale" | "cover";
+
 export type OneHandConfig = {
   enabled: boolean;
   /** grado (1..7) assegnato a ogni slot, indice 0 = 1 dito */
@@ -19,6 +22,8 @@ export type OneHandConfig = {
   hand: "any" | "left" | "right";
   /** true = gli slot seguono automaticamente la song attiva */
   followSong: boolean;
+  /** modo di gioco condiviso con Seven Heavens */
+  playMode: PlayMode;
 };
 
 export const DEFAULT_ONE_HAND: OneHandConfig = {
@@ -26,6 +31,7 @@ export const DEFAULT_ONE_HAND: OneHandConfig = {
   slots: [1, 4, 5, 6, 2],
   hand: "any",
   followSong: true,
+  playMode: "scale",
 };
 
 const KEY = "sky.heaven.oneHand";
@@ -40,8 +46,10 @@ function sanitize(raw: Partial<OneHandConfig> | null | undefined): OneHandConfig
     slots,
     hand: raw?.hand === "left" || raw?.hand === "right" ? raw.hand : "any",
     followSong: raw?.followSong !== false,
+    playMode: raw?.playMode === "cover" ? "cover" : "scale",
   };
 }
+
 
 export function readOneHand(): OneHandConfig {
   if (typeof window === "undefined") return { ...DEFAULT_ONE_HAND };

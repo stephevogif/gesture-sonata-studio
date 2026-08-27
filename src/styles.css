@@ -2603,83 +2603,240 @@
   opacity: 1;
 }
 
-/* ============ MAIOLICA — One Hand ============ */
-.maiolica-frame {
-  background-repeat: repeat;
-  background-size: 190px 190px;
+/* ============ SEVEN HEAVENS — segmented scale/cover ============ */
+.heaven-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(12, 20, 40, 0.35);
+  backdrop-filter: blur(8px);
 }
-.maiolica-paper {
+.heaven-seg-btn {
+  border-radius: 999px;
+  padding: 0.4rem 1.1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  transition: all 0.2s ease;
+}
+.heaven-seg-on {
+  background: linear-gradient(180deg, rgba(255, 240, 205, 0.95), rgba(240, 214, 150, 0.9));
+  color: #22305a;
+  box-shadow: 0 6px 18px -10px rgba(0, 0, 0, 0.8);
+}
+
+/* ============ ONE HAND — modern dark + maiolica accents ============ */
+.oh-screen {
+  --oh-gold: #d9b45f;
   background:
-    radial-gradient(120% 90% at 50% 0%, rgba(255, 252, 243, 0.98), rgba(245, 238, 222, 0.96)),
-    linear-gradient(180deg, #f8f2e4, #efe6d2);
-  border: 1px solid rgba(180, 150, 90, 0.45);
+    radial-gradient(120% 80% at 50% -10%, rgba(46, 68, 122, 0.55), transparent 70%),
+    linear-gradient(180deg, #070b16, #0b1020 55%, #070a13);
+  color: #eef2ff;
+}
+.oh-frame {
+  position: relative;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(217, 180, 95, 0.28);
+  background: rgba(255, 255, 255, 0.04);
   box-shadow:
-    0 24px 60px -30px rgba(20, 32, 60, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  color: #16264c;
+    0 40px 90px -50px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
-.maiolica-title {
+/* accento maiolica: piccoli angoli dorati */
+.oh-corners::before,
+.oh-corners::after {
+  content: "";
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--oh-gold);
+  opacity: 0.65;
+  pointer-events: none;
+}
+.oh-corners::before {
+  top: 10px;
+  left: 10px;
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 12px;
+}
+.oh-corners::after {
+  bottom: 10px;
+  right: 10px;
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: 12px;
+}
+.oh-title {
   font-family: var(--font-display);
-  color: #14224a;
-  letter-spacing: 0.06em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.08em;
+  color: #fdf6e3;
 }
-.maiolica-rule {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(190, 155, 70, 0.75), transparent);
+.oh-kicker {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--oh-gold);
 }
-.maiolica-slot {
+.oh-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  height: 2.4rem;
+  width: 2.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef2ff;
+  transition: all 0.2s ease;
+  &:hover { background: rgba(255, 255, 255, 0.12); }
+}
+.oh-icon-btn-primary {
+  border-color: var(--oh-gold);
+  background: linear-gradient(180deg, rgba(217, 180, 95, 0.28), rgba(217, 180, 95, 0.12));
+  color: #ffeec2;
+}
+.oh-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+.oh-seg-btn {
+  border-radius: 999px;
+  padding: 0.42rem 1.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(238, 242, 255, 0.6);
+  transition: all 0.2s ease;
+}
+.oh-seg-on {
+  background: linear-gradient(180deg, #21365f, #16233f);
+  color: #ffeec2;
+  box-shadow: inset 0 0 0 1px rgba(217, 180, 95, 0.55);
+}
+.oh-viewport {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(217, 180, 95, 0.3);
+  background: #05080f;
+}
+.oh-viewport-hint {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+.oh-viewport-bar {
+  position: absolute;
+  inset-inline: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.oh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(6, 10, 20, 0.6);
+  padding: 0.25rem 0.6rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(6px);
+}
+.oh-card {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.9rem;
+}
+.oh-slot {
   display: grid;
   place-items: center;
+  gap: 2px;
   width: 100%;
   aspect-ratio: 3 / 4;
-  border-radius: 999px / 46%;
-  border: 2px solid rgba(190, 155, 70, 0.75);
-  background: linear-gradient(180deg, #fffaf0, #f4ead4);
-  color: #14224a;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px rgba(20, 32, 60, 0.6);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #eef2ff;
   transition: all 0.22s ease;
 }
-.maiolica-slot-on {
-  border-color: #c9a227;
-  background: linear-gradient(180deg, #fff8e0, #f6e3ab);
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.28), 0 12px 26px -12px rgba(20, 32, 60, 0.7);
+.oh-slot-on {
+  border-color: var(--oh-gold);
+  background: linear-gradient(180deg, rgba(217, 180, 95, 0.3), rgba(217, 180, 95, 0.08));
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 3px rgba(217, 180, 95, 0.18), 0 16px 30px -18px rgba(217, 180, 95, 0.8);
 }
-.maiolica-btn {
+.oh-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   border-radius: 999px;
-  border: 1px solid rgba(180, 150, 90, 0.55);
-  background: linear-gradient(180deg, #fffaf0, #f2e8d3);
-  color: #14224a;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #eef2ff;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-size: 0.68rem;
-  padding: 0.65rem 1.1rem;
+  font-size: 0.66rem;
+  padding: 0.6rem 1rem;
   transition: all 0.2s ease;
-  &:hover { background: linear-gradient(180deg, #fff, #f7efe0); }
+  &:hover { background: rgba(255, 255, 255, 0.11); }
 }
-.maiolica-btn-primary {
-  border-color: #c9a227;
-  background: linear-gradient(180deg, #1e3160, #10203f);
-  color: #fdf6e3;
-  box-shadow: 0 10px 26px -14px rgba(16, 32, 63, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  &:hover { background: linear-gradient(180deg, #26407c, #14284f); }
+.oh-btn-on {
+  border-color: var(--oh-gold);
+  background: linear-gradient(180deg, rgba(217, 180, 95, 0.28), rgba(217, 180, 95, 0.1));
+  color: #ffeec2;
 }
-.maiolica-field {
+.oh-btn-primary {
+  border-color: var(--oh-gold);
+  background: linear-gradient(180deg, #22376a, #142343);
+  color: #ffeec2;
+  letter-spacing: 0.26em;
+  box-shadow: 0 18px 40px -22px rgba(217, 180, 95, 0.8);
+}
+.oh-dot {
+  display: grid;
+  place-items: center;
+  height: 1.75rem;
+  width: 1.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 180, 95, 0.45);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffeec2;
+}
+.oh-field {
   width: 100%;
   appearance: none;
-  border-radius: 0.9rem;
-  border: 1px solid rgba(180, 150, 90, 0.5);
-  background: rgba(255, 253, 246, 0.95);
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 16, 30, 0.9);
   padding: 0.6rem 0.75rem;
   font-size: 13px;
   font-weight: 600;
-  color: #16264c;
+  color: #eef2ff;
   outline: none;
-  &:focus { border-color: #c9a227; }
+  &:focus { border-color: var(--oh-gold); }
 }
+

@@ -39,7 +39,7 @@ import { Debouncer, heightToGain, Smoother, type HandFrame } from "@/lib/gesture
 import { useHandTracking, type TrackingFrame } from "@/hooks/useHandTracking";
 import { useSongMode } from "@/hooks/useSongMode";
 import SongModeHud from "@/components/songs/SongModeHud";
-import { updateSongSession } from "@/core/songs/session";
+import { startSongSession, updateSongSession } from "@/core/songs/session";
 import {
   DEFAULT_ONE_HAND,
   ONE_HAND_SLOTS,
@@ -148,6 +148,9 @@ export default function HeavenSynth() {
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as Record<string, unknown>;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  /** canvas secondario: anteprima tracking dentro One Hand */
+  const trackCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
   const sunRef = useRef({ p: -0.25, y: 0.3 });
@@ -230,22 +233,50 @@ export default function HeavenSynth() {
   const songRootPc = songMode.rootPc;
   const songScale = songMode.song?.scale ?? null;
   const songBpm = songMode.song?.bpm ?? null;
+
+  /** SCALE = scala libera · COVER = progressione di una song */
+  const playMode = oneHand.playMode;
+  const coverMode = playMode === "cover";
+  const lastSongIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (songId) lastSongIdRef.current = songId;
+  }, [songId]);
+  const setPlayMode = useCallback(
+    (next: "scale" | "cover") => {
+      updateOneHand({ playMode: next });
+      if (next === "scale") {
+        songMode.exit();
+      } else if (!songId && lastSongIdRef.current) {
+        startSongSession(lastSongIdRef.current);
+      }
+    },
+    [songId, songMode, updateOneHand],
+  );
+
   /** la song imposta automaticamente tonica, scala e tempo: nessun setup manuale */
   useEffect(() => {
-    if (!songId || songRootPc == null || !songScale) return;
+    if (!coverMode || !songId || songRootPc == null || !songScale) return;
     setRootPc(songRootPc);
     setMode(songScale);
     if (songBpm) setBpm(songBpm);
-  }, [songId, songRootPc, songScale, songBpm]);
+  }, [coverMode, songId, songRootPc, songScale, songBpm]);
 
-  /** con una song attiva gli slot seguono la progressione: 1° accordo → 1 dito */
+  /** solo in cover mode gli slot seguono la progressione: 1° accordo → 1 dito */
   const songSectionDegrees = songMode.degrees.join(",");
   useEffect(() => {
-    if (!oneHandRef.current.enabled || !oneHandRef.current.followSong) return;
+    if (!coverMode || !oneHandRef.current.enabled || !oneHandRef.current.followSong) return;
     const slots = slotsFromSong(songMode.song, songMode.sectionIndex);
     if (slots) updateOneHand({ slots });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songId, songMode.sectionIndex, songSectionDegrees, oneHand.enabled, oneHand.followSong]);
+  }, [
+    coverMode,
+    songId,
+    songMode.sectionIndex,
+    songSectionDegrees,
+    oneHand.enabled,
+    oneHand.followSong,
+  ]);
+
 
   // ————— filtro gestuale + legato —————
   const [cutMax, setCutMax] = useState(8000);
@@ -937,6 +968,30 @@ export default function HeavenSynth() {
 
       if (cfg.current.showDebug) for (const hand of hands) drawHand(ctx, hand, w, h);
 
+      // ————— anteprima tracking (One Hand) —————
+      const tc = trackCanvasRef.current;
+      if (tc) {
+        if (tc.width !== w || tc.height !== h) {
+          tc.width = w;
+          tc.height = h;
+        }
+        const tctx = tc.getContext("2d");
+        if (tctx) {
+          tctx.save();
+          tctx.clearRect(0, 0, w, h);
+          tctx.translate(w, 0);
+          tctx.scale(-1, 1);
+          tctx.drawImage(video, 0, 0, w, h);
+          tctx.restore();
+          tctx.save();
+          tctx.fillStyle = "rgba(8,12,24,0.42)";
+          tctx.fillRect(0, 0, w, h);
+          tctx.restore();
+          for (const hand of hands) drawHand(tctx, hand, w, h);
+        }
+      }
+
+
       // ————— HUD (throttle) —————
       const now = performance.now();
       if (now - hudTick.current > 110) {
@@ -1014,11 +1069,13 @@ export default function HeavenSynth() {
     [rootPc, mode],
   );
 
-  /* Song Mode: confronta il grado atteso con quello riconosciuto (manual follow) */
+  /* Song Mode: confronta il grado atteso con quello riconosciuto (solo in cover) */
   const observeSong = songMode.observe;
   useEffect(() => {
+    if (!coverMode) return;
     observeSong(activeDegree == null ? null : activeDegree + 1);
-  }, [activeDegree, observeSong]);
+  }, [activeDegree, observeSong, coverMode]);
+
 
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
@@ -1127,10 +1184,41 @@ export default function HeavenSynth() {
           </p>
         )}
 
+        {/* SCALE / COVER */}
+        <div className="mt-3 flex items-center justify-center">
+          <div className="heaven-seg" role="tablist" aria-label="Modo di gioco">
+            <button
+              role="tab"
+              aria-selected={!coverMode}
+              onClick={() => setPlayMode("scale")}
+              className={`heaven-seg-btn ${!coverMode ? "heaven-seg-on" : ""}`}
+            >
+              Scale
+            </button>
+            <button
+              role="tab"
+              aria-selected={coverMode}
+              onClick={() => setPlayMode("cover")}
+              className={`heaven-seg-btn ${coverMode ? "heaven-seg-on" : ""}`}
+            >
+              Cover
+            </button>
+          </div>
+        </div>
+        {coverMode && !songMode.song && (
+          <Link
+            to="/songs"
+            className="heaven-pill mx-auto mt-3 block w-fit text-center"
+          >
+            Scegli una canzone
+          </Link>
+        )}
+
         {/* Song Mode */}
-        {songMode.song && (
+        {coverMode && songMode.song && (
           <SongModeHud
             state={songMode}
+
             rootPc={rootPc}
             mode={mode}
             slots={oneHand.enabled ? oneHand.slots : null}
@@ -1612,6 +1700,11 @@ export default function HeavenSynth() {
           running={running}
           onTogglePlay={running ? stop : start}
           onClose={() => setOneHandScreen(false)}
+          trackCanvasRef={trackCanvasRef}
+          setPlayMode={setPlayMode}
+          camStatus={status}
+          camError={camError}
+
         />
       )}
 
