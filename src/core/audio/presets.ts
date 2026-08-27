@@ -27,9 +27,18 @@ export type InstrumentId =
   | "glocken"
   | "choir"
   | "pluckAmb"
-  | "subpad";
+  | "subpad"
+  | "chamberStrings"
+  | "cineStrings"
+  | "viola"
+  | "cello"
+  | "grandPiano"
+  | "feltPiano"
+  | "rhodes"
+  | "celesta";
 
-export type InstrumentGroup = "zen" | "electro";
+export type InstrumentGroup = "zen" | "electro" | "strings" | "keys";
+
 
 export type PartialSpec = {
   wave: OscillatorType;
@@ -68,6 +77,9 @@ export type PresetSpec = {
   glide: number;
   /** bass patches stay dry and get more headroom */
   bass?: boolean;
+  /** piano-family patch: reacts to the pedal / brightness / lid controls */
+  keys?: boolean;
+
 };
 
 const PRESET_LIST: PresetSpec[] = [
@@ -409,7 +421,186 @@ const PRESET_LIST: PresetSpec[] = [
     vibrato: { rate: 4, cents: 2 },
     glide: 0.08,
   },
+  /* ————— archi realistici e calmi ————— */
+  {
+    id: "chamberStrings",
+    name: "Archi da camera",
+    blurb: "Quartetto morbido, arco lento",
+    group: "strings",
+    transpose: 0,
+    partials: [
+      { wave: "sawtooth", detune: -6, level: 0.22 },
+      { wave: "sawtooth", detune: 5, level: 0.22 },
+      { wave: "triangle", level: 0.26 },
+      { wave: "sine", ratio: 2, detune: 3, level: 0.12 },
+    ],
+    filter: { type: "lowpass", cutoff: 2200, q: 1.4 },
+    env: { attack: 0.32, release: 1.1 },
+    vibrato: { rate: 4.6, cents: 9 },
+    noise: { level: 0.02, ratio: 3.2, q: 1.6 },
+    glide: 0.1,
+  },
+  {
+    id: "cineStrings",
+    name: "Archi cinematici",
+    blurb: "Sezione ampia, respiro lungo",
+    group: "strings",
+    transpose: 0,
+    partials: [
+      { wave: "sawtooth", detune: -12, level: 0.16 },
+      { wave: "sawtooth", detune: -4, level: 0.18 },
+      { wave: "sawtooth", detune: 4, level: 0.18 },
+      { wave: "sawtooth", detune: 12, level: 0.16 },
+      { wave: "sine", ratio: 0.5, level: 0.14 },
+    ],
+    filter: { type: "lowpass", cutoff: 1900, q: 1.1 },
+    env: { attack: 0.8, release: 2.2 },
+    vibrato: { rate: 3.6, cents: 7 },
+    noise: { level: 0.018, ratio: 2.4, q: 1.2 },
+    glide: 0.16,
+  },
+  {
+    id: "viola",
+    name: "Viola calda",
+    blurb: "Legno scuro, arco intimo",
+    group: "strings",
+    transpose: -5,
+    partials: [
+      { wave: "sawtooth", level: 0.42 },
+      { wave: "triangle", detune: -5, level: 0.26 },
+      { wave: "sine", ratio: 2, level: 0.12 },
+    ],
+    filter: { type: "lowpass", cutoff: 1700, q: 2.2 },
+    env: { attack: 0.2, release: 0.7 },
+    vibrato: { rate: 5, cents: 12 },
+    noise: { level: 0.028, ratio: 3, q: 1.4 },
+    glide: 0.09,
+  },
+  {
+    id: "cello",
+    name: "Violoncello",
+    blurb: "Corpo profondo, arco espressivo",
+    group: "strings",
+    transpose: -12,
+    partials: [
+      { wave: "sawtooth", level: 0.4 },
+      { wave: "triangle", detune: 4, level: 0.28 },
+      { wave: "sine", ratio: 0.5, level: 0.18 },
+    ],
+    filter: { type: "lowpass", cutoff: 1300, q: 2.4 },
+    env: { attack: 0.24, release: 1 },
+    vibrato: { rate: 4.4, cents: 11 },
+    noise: { level: 0.03, ratio: 2.2, q: 1.2 },
+    glide: 0.1,
+  },
+  /* ————— tastiere realistiche ————— */
+  {
+    id: "grandPiano",
+    name: "Gran coda",
+    blurb: "Pianoforte acustico, martelletti vivi",
+    group: "keys",
+    transpose: 0,
+    partials: [
+      { wave: "triangle", level: 0.5 },
+      { wave: "sine", ratio: 2, detune: 2, level: 0.26 },
+      { wave: "sine", ratio: 3, detune: -3, level: 0.12 },
+      { wave: "sine", ratio: 5.02, level: 0.06 },
+    ],
+    filter: { type: "lowpass", cutoff: 4200, q: 0.8 },
+    env: { attack: 0.004, release: 1.8, sustain: 0.16, decay: 0.9 },
+    vibrato: { rate: 0.6, cents: 1 },
+    glide: 0.04,
+    keys: true,
+  },
+  {
+    id: "feltPiano",
+    name: "Piano feltro",
+    blurb: "Martelletti smorzati, molto calmo",
+    group: "keys",
+    transpose: 0,
+    partials: [
+      { wave: "triangle", level: 0.52 },
+      { wave: "sine", ratio: 2, level: 0.22 },
+      { wave: "sine", ratio: 4, detune: 4, level: 0.05 },
+    ],
+    filter: { type: "lowpass", cutoff: 2200, q: 0.7 },
+    env: { attack: 0.02, release: 2.2, sustain: 0.2, decay: 1.2 },
+    vibrato: { rate: 0.5, cents: 1 },
+    noise: { level: 0.012, ratio: 1.5, q: 0.9 },
+    glide: 0.05,
+    keys: true,
+  },
+  {
+    id: "rhodes",
+    name: "Rhodes",
+    blurb: "Piano elettrico vellutato",
+    group: "keys",
+    transpose: 0,
+    partials: [
+      { wave: "sine", level: 0.55 },
+      { wave: "sine", ratio: 2, detune: 5, level: 0.2 },
+    ],
+    fm: { ratio: 4, index: 1.1 },
+    filter: { type: "lowpass", cutoff: 2600, q: 0.9 },
+    env: { attack: 0.008, release: 1.6, sustain: 0.24, decay: 1 },
+    vibrato: { rate: 4.2, cents: 3 },
+    glide: 0.05,
+    keys: true,
+  },
+  {
+    id: "celesta",
+    name: "Celesta",
+    blurb: "Tastiera cristallina, dolce",
+    group: "keys",
+    transpose: 12,
+    partials: [
+      { wave: "sine", level: 0.5 },
+      { wave: "sine", ratio: 4.01, level: 0.18 },
+      { wave: "sine", ratio: 8.1, level: 0.06 },
+    ],
+    filter: { type: "lowpass", cutoff: 6500, q: 0.9 },
+    env: { attack: 0.004, release: 1.5, sustain: 0.1, decay: 0.6 },
+    vibrato: { rate: 1.2, cents: 1 },
+    glide: 0.05,
+    keys: true,
+  },
 ];
+
+/* ————— controlli pianoforte (pedale / brillantezza / coperchio) ————— */
+
+export type KeysOptions = {
+  /** pedale di risonanza: coda lunga e sustain più pieno */
+  pedal: boolean;
+  /** 0..1 timbro: scuro → brillante */
+  bright: number;
+  /** 0..1 coperchio chiuso → aperto: corpo, armoniche e dinamica */
+  open: number;
+};
+
+export const DEFAULT_KEYS: KeysOptions = { pedal: true, bright: 0.5, open: 0.6 };
+
+/** Applies the piano controls to a keys patch; other patches pass through. */
+export function withKeysOptions(spec: PresetSpec, keys: KeysOptions): PresetSpec {
+  if (!spec.keys) return spec;
+  const brightFactor = 0.55 + keys.bright * 1.5 + keys.open * 0.35;
+  const releaseFactor = keys.pedal ? 1 : 0.28;
+  const sustain = spec.env.sustain ?? 0.18;
+  return {
+    ...spec,
+    partials: spec.partials.map((p, i) => ({
+      ...p,
+      level: i === 0 ? p.level : p.level * (0.4 + keys.open * 0.9 + keys.bright * 0.4),
+    })),
+    filter: { ...spec.filter, cutoff: Math.min(12000, spec.filter.cutoff * brightFactor) },
+    env: {
+      ...spec.env,
+      release: Math.max(0.15, spec.env.release * releaseFactor),
+      sustain: keys.pedal ? Math.min(0.45, sustain * 1.6) : sustain * 0.7,
+      decay: (spec.env.decay ?? 0.8) * (keys.pedal ? 1.5 : 0.6),
+    },
+  };
+}
+
 
 export const PRESETS: Record<InstrumentId, PresetSpec> = PRESET_LIST.reduce(
   (map, preset) => {

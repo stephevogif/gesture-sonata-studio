@@ -16,7 +16,14 @@ import {
   Sliders,
   Square,
 } from "lucide-react";
-import { GestureSynthEngine, INSTRUMENTS, INSTRUMENT_SHIFT, type InstrumentId } from "@/lib/synth";
+import {
+  GestureSynthEngine,
+  INSTRUMENTS,
+  INSTRUMENT_SHIFT,
+  DIVISIONS,
+  type DivisionId,
+  type InstrumentId,
+} from "@/lib/synth";
 import {
   buildChord,
   KEYS,
@@ -235,6 +242,13 @@ export default function HeavenSynth() {
   /** legato: tempo di scivolamento fra un accordo e l'altro, in ms */
   const [legato, setLegatoMs] = useState(15);
 
+  // ————— pianoforte + pulsazione a tempo —————
+  const [pedal, setPedal] = useState(true);
+  const [brightKeys, setBrightKeys] = useState(0.5);
+  const [lidOpen, setLidOpen] = useState(0.6);
+  const [pulseOn, setPulseOn] = useState(false);
+  const [pulseDiv, setPulseDiv] = useState<DivisionId>("1/4");
+
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
 
@@ -285,6 +299,12 @@ export default function HeavenSynth() {
   useEffect(() => {
     engineRef.current?.setLegato(legato / 1000);
   }, [legato]);
+  useEffect(() => {
+    engineRef.current?.setKeys({ pedal, bright: brightKeys, open: lidOpen });
+  }, [pedal, brightKeys, lidOpen]);
+  useEffect(() => {
+    engineRef.current?.setPulse({ enabled: pulseOn, division: pulseDiv });
+  }, [pulseOn, pulseDiv]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1229,6 +1249,73 @@ export default function HeavenSynth() {
                   aria-label="Velocità legato fra accordi"
                 />
               </label>
+              <div className="space-y-2 rounded-xl border border-white/40 p-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-70">
+                  Pianoforte
+                </p>
+                <label className="flex items-center justify-between text-[11px] font-semibold">
+                  Pedale di risonanza
+                  <input
+                    type="checkbox"
+                    checked={pedal}
+                    onChange={(e) => setPedal(e.target.checked)}
+                    aria-label="Pedale di risonanza"
+                  />
+                </label>
+                <label className="block text-[11px] font-semibold">
+                  Brillantezza: <b>{Math.round(brightKeys * 100)}%</b>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(brightKeys * 100)}
+                    onChange={(e) => setBrightKeys(Number(e.target.value) / 100)}
+                    className="sc-range"
+                    aria-label="Brillantezza del pianoforte"
+                  />
+                </label>
+                <label className="block text-[11px] font-semibold">
+                  Coperchio {lidOpen > 0.5 ? "aperto" : "chiuso"}: <b>{Math.round(lidOpen * 100)}%</b>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(lidOpen * 100)}
+                    onChange={(e) => setLidOpen(Number(e.target.value) / 100)}
+                    className="sc-range"
+                    aria-label="Apertura del coperchio"
+                  />
+                </label>
+              </div>
+              <div className="space-y-2 rounded-xl border border-white/40 p-2">
+                <label className="flex items-center justify-between text-[11px] font-semibold">
+                  Pulsazione a tempo ({bpm} BPM)
+                  <input
+                    type="checkbox"
+                    checked={pulseOn}
+                    onChange={(e) => setPulseOn(e.target.checked)}
+                    aria-label="Pulsazione ritmica sincronizzata al BPM"
+                  />
+                </label>
+                <label className="block text-[11px] font-semibold">
+                  Suddivisione
+                  <select
+                    value={pulseDiv}
+                    onChange={(e) => setPulseDiv(e.target.value as DivisionId)}
+                    className="sc-field"
+                    aria-label="Suddivisione della pulsazione"
+                  >
+                    {DIVISIONS.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-[10px] opacity-70">
+                  Le note tenute si ripetono a tempo: più alto il BPM, più veloce la pulsazione.
+                </p>
+              </div>
               <label className="block text-[11px] font-semibold">
                 Volume
                 <select

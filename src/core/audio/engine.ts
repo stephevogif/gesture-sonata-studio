@@ -17,7 +17,14 @@ import { Arpeggiator, type ArpEvent } from "./arpeggiator";
 import { MasterRack } from "./effects";
 import { InstrumentChannel } from "./channel";
 import { FxChain, type FxSpec } from "./fx";
-import { INSTRUMENT_SHIFT, presetOf, type InstrumentId } from "./presets";
+import {
+  DEFAULT_KEYS,
+  INSTRUMENT_SHIFT,
+  presetOf,
+  withKeysOptions,
+  type InstrumentId,
+  type KeysOptions,
+} from "./presets";
 import { SynthVoice, type VoiceBuses } from "./voice";
 
 /** one layered instrument: gain + its own insert FX chain */
@@ -61,6 +68,23 @@ export class HeavenAudioEngine {
   chordMode: ChordId = "off";
   hold = false;
   bpm = 100;
+
+  /** piano-family controls (pedal / brightness / lid) */
+  private keys: KeysOptions = { ...DEFAULT_KEYS };
+  /** BPM-locked repeated notes */
+  private pulse: { enabled: boolean; division: DivisionId; gate: number } = {
+    enabled: false,
+    division: "1/4",
+    gate: 0.6,
+  };
+  private pulseTimer: number | null = null;
+  /** last sustained note per voice id, so the pulse can retrigger them */
+  private sustained = new Map<
+    string,
+    { freq: number; amount: number; bright: number; inst?: InstrumentId | undefined }
+  >();
+
+
 
   // effects state (mirrored so the UI can read it back)
   reverbAmount = 0.35;
@@ -117,6 +141,8 @@ export class HeavenAudioEngine {
 
   async dispose() {
     this.allOff();
+    if (this.pulseTimer !== null) window.clearInterval(this.pulseTimer);
+    this.pulseTimer = null;
     this.arp.stop();
     this.channels.forEach((c) => c.dispose());
     this.channels.clear();
@@ -195,7 +221,7 @@ export class HeavenAudioEngine {
       voice = undefined;
     }
     if (!voice) {
-      const spec = presetOf(instrument);
+      const spec = withKeysOptions(presetOf(instrument), this.keys);
       voice = new SynthVoice(
         this.ctx,
         spec,
@@ -234,6 +260,15 @@ export class HeavenAudioEngine {
 
   /** sustained note — amount 0..1 loudness, bright 0..1 timbre */
   noteOn(id: string, freq: number, amount: number, bright = 0.5, inst?: InstrumentId) {
+    this.sustained.set(id, { freq, amount, bright, inst });
+    if (this.pulse.enabled) {
+      this.strikeNote(id, freq, amount, bright, inst, this.pulseGateSeconds());
+      return;
+    }
+    this.holdNote(id, freq, amount, bright, inst);
+  }
+
+  private holdNote(id: string, freq: number, amount: number, bright: number, inst?: InstrumentId) {
     if (this.channels.size) {
       for (const [cid, channel] of this.channels) {
         const voice = this.voiceFor(`${id}@${cid}`, freq, channel.instrument, {
@@ -246,6 +281,83 @@ export class HeavenAudioEngine {
     const voice = this.voiceFor(id, freq, inst ?? this.instrument);
     voice?.hold(freq, amount, bright, this.legato ?? undefined);
   }
+
+  private strikeNote(
+    id: string,
+    freq: number,
+    amount: number,
+    bright: number,
+    inst: InstrumentId | undefined,
+    gate: number,
+  ) {
+    if (this.channels.size) {
+      for (const [cid, channel] of this.channels) {
+        const voice = this.voiceFor(`${id}@${cid}`, freq, channel.instrument, {
+          dry: channel.input,
+        });
+        voice?.strike(freq, amount, bright, gate);
+      }
+      return;
+    }
+    const voice = this.voiceFor(id, freq, inst ?? this.instrument);
+    voice?.strike(freq, amount, bright, gate);
+  }
+
+  /* ————— pulse (ritmo sincronizzato al BPM) ————— */
+
+  private pulseGateSeconds() {
+    const period = divisionSeconds(this.pulse.division, this.bpm);
+    return Math.max(0.05, period * clamp(this.pulse.gate, 0.1, 1));
+  }
+
+  /** repeated notes ("tan tan tan") locked to the tempo; off = normal sustain */
+  setPulse(opts: { enabled?: boolean; division?: DivisionId; gate?: number }) {
+    if (opts.division) this.pulse.division = opts.division;
+    if (opts.gate !== undefined) this.pulse.gate = clamp(opts.gate, 0.1, 1);
+    if (opts.enabled !== undefined) this.pulse.enabled = opts.enabled;
+    this.restartPulse();
+  }
+
+  get pulseEnabled() {
+    return this.pulse.enabled;
+  }
+  get pulseDivision() {
+    return this.pulse.division;
+  }
+
+  private restartPulse() {
+    if (this.pulseTimer !== null) {
+      window.clearInterval(this.pulseTimer);
+      this.pulseTimer = null;
+    }
+    if (!this.pulse.enabled) return;
+    const period = divisionSeconds(this.pulse.division, this.bpm) * 1000;
+    this.pulseTimer = window.setInterval(() => this.pulseTick(), Math.max(60, period));
+  }
+
+  private pulseTick() {
+    if (!this.ctx || !this.sustained.size) return;
+    const gate = this.pulseGateSeconds();
+    for (const [id, note] of this.sustained) {
+      this.strikeNote(id, note.freq, note.amount, note.bright, note.inst, gate);
+    }
+  }
+
+  /* ————— piano controls ————— */
+
+  /** sustain pedal / brightness / lid for the piano-family patches */
+  setKeys(opts: Partial<KeysOptions>) {
+    this.keys = { ...this.keys, ...opts };
+    // rebuild keys voices so the new timbre is heard immediately
+    for (const [key, voice] of [...this.voices]) {
+      if (presetOf(voice.instrument).keys) this.releaseVoice(key);
+    }
+  }
+
+  get keysOptions(): KeysOptions {
+    return this.keys;
+  }
+
 
   /** short retriggered note used by the arpeggiator */
   pluck(
@@ -302,6 +414,7 @@ export class HeavenAudioEngine {
 
   noteOff(id: string, force = false) {
     if (this.hold && !force) return;
+    this.sustained.delete(id);
     for (const key of [...this.voices.keys()]) {
       const base = baseKey(key);
       if (base === id || base.startsWith(`${id}~`)) this.releaseVoice(key);
@@ -318,6 +431,7 @@ export class HeavenAudioEngine {
 
   allOff() {
     this.arp.clear();
+    this.sustained.clear();
     [...this.voices.keys()].forEach((key) => this.releaseVoice(key));
   }
 
@@ -350,6 +464,7 @@ export class HeavenAudioEngine {
     this.arp.setTempo(this.bpm);
     this.channels.forEach((c) => c.setTempo(this.bpm));
     this.masterChain?.setTempo(this.bpm);
+    this.restartPulse();
   }
 
   /** midi note a degree maps to for the given instrument */
