@@ -92,10 +92,10 @@ export default function OneHandScreen({
       <div className="heaven-bottom-shade" />
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-40 pt-5">
-        {/* header */}
+        {/* header — angoli: Seven Heavens | Night */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-          <button onClick={onClose} aria-label="Torna a Seven Heavens" className="heaven-orb-btn">
-            <ArrowLeft className="h-4 w-4" />
+          <button onClick={onClose} aria-label="Seven Heavens" className="heaven-orb-btn">
+            <Sparkles className="h-4 w-4" />
           </button>
           <div className="min-w-0 text-center">
             <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/85 drop-shadow">
@@ -105,9 +105,9 @@ export default function OneHandScreen({
               Heaven Synth
             </p>
           </div>
-          <span className="heaven-orb-btn" aria-hidden>
-            <Hand className="h-4 w-4" />
-          </span>
+          <Link to="/night" aria-label="Night Sky" className="heaven-orb-btn">
+            <Moon className="h-4 w-4" />
+          </Link>
         </header>
 
         <h1 className="heaven-title mt-5 text-center text-[2.1rem] leading-none sm:text-5xl">
@@ -119,6 +119,15 @@ export default function OneHandScreen({
           <span className="heaven-pill !px-4">
             {config.hand === "any" ? "Auto" : config.hand}
           </span>
+          {/* setup come icona sullo schermo */}
+          <button
+            onClick={() => setSetup((v) => !v)}
+            aria-pressed={setup}
+            aria-label="Setup"
+            className={`heaven-orb-btn ${setup ? "heaven-orb-btn-on" : ""}`}
+          >
+            <ListMusic className="h-4 w-4" />
+          </button>
         </div>
 
         {/* SCALE / COVER */}
