@@ -110,7 +110,7 @@ function TapHand({ delay }: { delay: string }) {
 export default function SkyHome() {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("intro");
-  const [leaving, setLeaving] = useState<null | "night" | "heaven">(null);
+  const [leaving, setLeaving] = useState<null | "night" | "heaven" | "onehand">(null);
   const [showHint, setShowHint] = useState(true);
 
   useEffect(() => {
