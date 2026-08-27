@@ -173,7 +173,12 @@ export default function SkyHome() {
                 <span className="sky-aura sky-aura-onehand" aria-hidden />
                 <span className="sky-orbit sky-orbit-onehand" aria-hidden />
                 <span className="sky-content">
-                  <FatimaHand className="h-[74px] w-[74px] text-[#fff5e6] drop-shadow-[0_0_18px_rgba(255,205,160,0.85)]" />
+                  <img
+                    src={oneHandIcon.url}
+                    alt=""
+                    className="h-[74px] w-[74px] object-contain drop-shadow-[0_0_18px_rgba(255,205,160,0.85)]"
+                    aria-hidden
+                  />
                   <span className="sky-portal-title">ONE HAND</span>
                   <span className="sky-portal-rule" aria-hidden>
                     ✦
@@ -183,7 +188,7 @@ export default function SkyHome() {
                     <br />
                     Five fingers, five chords.
                   </span>
-                  <span className="sky-portal-meta sky-meta-onehand">FATIMA · SONGS · COVER</span>
+                  <span className="sky-portal-meta sky-meta-onehand">SONGS · COVER · EASY</span>
                 </span>
                 {showHint && <TapHand delay="1.3s" />}
               </button>
