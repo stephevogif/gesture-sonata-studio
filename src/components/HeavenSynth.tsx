@@ -235,6 +235,13 @@ export default function HeavenSynth() {
   /** legato: tempo di scivolamento fra un accordo e l'altro, in ms */
   const [legato, setLegatoMs] = useState(15);
 
+  // ————— pianoforte + pulsazione a tempo —————
+  const [pedal, setPedal] = useState(true);
+  const [brightKeys, setBrightKeys] = useState(0.5);
+  const [lidOpen, setLidOpen] = useState(0.6);
+  const [pulseOn, setPulseOn] = useState(false);
+  const [pulseDiv, setPulseDiv] = useState<DivisionId>("1/4");
+
   const [onboard, setOnboard] = useState(0);
   const [showOnboard, setShowOnboard] = useState(false);
 
