@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Eye,
@@ -145,6 +145,8 @@ function makeSunSprite(size: number) {
 }
 
 export default function HeavenSynth() {
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
@@ -205,6 +207,15 @@ export default function HeavenSynth() {
   const oneHandRef = useRef<OneHandConfig>(DEFAULT_ONE_HAND);
   oneHandRef.current = oneHand;
   useEffect(() => setOneHand(readOneHand()), []);
+  useEffect(() => {
+    if (search["oneHand"]) {
+      setOneHandScreen(true);
+      updateOneHand({ enabled: true });
+      // pulisce il parametro così un refresh non riapre forzatamente la schermata
+      void navigate({ to: "/studio", search: {}, replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const updateOneHand = useCallback((patch: Partial<OneHandConfig>) => {
     setOneHand((prev) => {
       const next = { ...prev, ...patch };

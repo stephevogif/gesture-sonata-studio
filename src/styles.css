@@ -1030,7 +1030,7 @@
 
 /* ==================== SKY HOME (choose your sky) ==================== */
 
-@source inline("sky-warp-night sky-warp-heaven sky-arrive-night sky-arrive-heaven sky-leave-night sky-leave-heaven");
+@source inline("sky-warp-night sky-warp-heaven sky-warp-onehand sky-arrive-night sky-arrive-heaven sky-arrive-onehand sky-leave-night sky-leave-heaven sky-leave-onehand");
 
 @utility sky-home {
   position: relative;
@@ -1267,6 +1267,11 @@
   box-shadow: inset 0 0 60px rgba(255, 220, 170, 0.18);
 }
 
+@utility sky-aura-onehand {
+  background: radial-gradient(circle, rgba(255, 175, 175, 0.28), rgba(60, 30, 30, 0) 68%);
+  box-shadow: inset 0 0 60px rgba(255, 200, 185, 0.2);
+}
+
 /* energia luminosa che scorre lungo l'orbita (conic gradient + mask) */
 @utility sky-orbit {
   position: absolute;
@@ -1347,6 +1352,32 @@
       transparent 32%,
       transparent 68%,
       rgba(255, 220, 160, 0.35) 88%,
+      transparent
+    );
+  }
+}
+
+@utility sky-orbit-onehand {
+  &::before {
+    background: conic-gradient(
+      from 70deg,
+      rgba(255, 200, 185, 0.06),
+      rgba(255, 225, 210, 0.9) 14%,
+      rgba(255, 185, 175, 0.1) 28%,
+      rgba(255, 185, 175, 0.03) 50%,
+      rgba(255, 235, 220, 0.6) 68%,
+      rgba(255, 185, 175, 0.05) 84%,
+      rgba(255, 200, 185, 0.06)
+    );
+  }
+  &::after {
+    background: conic-gradient(
+      from 250deg,
+      transparent,
+      rgba(255, 220, 205, 0.5) 16%,
+      transparent 32%,
+      transparent 68%,
+      rgba(255, 200, 180, 0.35) 88%,
       transparent
     );
   }
@@ -1489,6 +1520,10 @@
   color: rgba(255, 215, 155, 0.95);
 }
 
+@utility sky-meta-onehand {
+  color: rgba(255, 205, 190, 0.95);
+}
+
 /* ---- hint dito ---- */
 
 @utility sky-hint-wrap {
@@ -1571,16 +1606,18 @@
 @media (min-width: 768px) {
   .sky-portals {
     flex-direction: row;
-    gap: clamp(2rem, 6vw, 5rem);
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(1.4rem, 3.2vw, 3rem);
   }
   .sky-portal {
-    width: min(38vw, 360px);
+    width: min(28vw, 300px);
   }
 }
 
 @media (min-width: 1280px) {
   .sky-portal {
-    width: 400px;
+    width: 320px;
   }
 }
 
@@ -1646,6 +1683,12 @@
   background:
     radial-gradient(circle at 50% 54%, rgba(255, 214, 150, 0.6), transparent 62%),
     linear-gradient(180deg, #7fb3e8, #f7ddb8 100%);
+}
+
+@utility sky-warp-onehand {
+  background:
+    radial-gradient(circle at 50% 54%, rgba(255, 195, 185, 0.6), transparent 62%),
+    linear-gradient(180deg, #7fb3e8, #f7d4c8 100%);
 }
 
 @keyframes sky-warp-in {

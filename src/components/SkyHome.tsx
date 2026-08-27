@@ -2,6 +2,71 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { SKY_WARP_KEY } from "./SkyArrival";
 
+function FatimaHand({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      fill="none"
+      className={className}
+      aria-hidden
+    >
+      {/* palmo */}
+      <path
+        d="M32 58c8 0 14-5 14-13V36c0-3-2-5-4-5s-4 2-4 5v6h-2v-6c0-3-2-5-4-5s-4 2-4 5v6h-2v-6c0-3-2-5-4-5s-4 2-4 5v6h-2v-6c0-3-2-5-4-5s-4 2-4 5v9c0 8 6 13 14 13z"
+        fill="currentColor"
+        fillOpacity="0.18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      {/* pollice sinistro */}
+      <path
+        d="M18 34c-4-3-7-9-6-14 1-4 5-5 8-3 3 2 4 7 2 11"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* dito indice */}
+      <path
+        d="M22 34V18c0-4 2-8 6-8s6 4 6 8v16"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* dito medio */}
+      <path
+        d="M32 34V14c0-4 2-8 6-8s6 4 6 8v20"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* dito anulare */}
+      <path
+        d="M42 34V18c0-4 2-8 6-8s6 4 6 8v16"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* dito mignolo */}
+      <path
+        d="M52 34c3-2 5-6 4-10-1-3-4-4-7-3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* occhio di Fatima */}
+      <circle cx="32" cy="42" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="32" cy="42" r="2.2" fill="currentColor" fillOpacity="0.35" />
+      <path d="M24 42c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 type Phase = "intro" | "home";
 
 const HINT_KEY = "sky-home-hint-seen";
@@ -45,7 +110,7 @@ function TapHand({ delay }: { delay: string }) {
 export default function SkyHome() {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("intro");
-  const [leaving, setLeaving] = useState<null | "night" | "heaven">(null);
+  const [leaving, setLeaving] = useState<null | "night" | "heaven" | "onehand">(null);
   const [showHint, setShowHint] = useState(true);
 
   useEffect(() => {
@@ -70,7 +135,7 @@ export default function SkyHome() {
     [],
   );
 
-  const enter = (which: "night" | "heaven") => {
+  const enter = (which: "night" | "heaven" | "onehand") => {
     if (leaving) return;
     if (typeof window !== "undefined") {
       localStorage.setItem(HINT_KEY, "1");
@@ -83,7 +148,13 @@ export default function SkyHome() {
     setShowHint(false);
     setLeaving(which);
     window.setTimeout(() => {
-      void navigate({ to: which === "night" ? "/night" : "/studio" });
+      if (which === "night") {
+        void navigate({ to: "/night" });
+      } else if (which === "onehand") {
+        void navigate({ to: "/studio", search: { oneHand: 1 } });
+      } else {
+        void navigate({ to: "/studio" });
+      }
     }, 720);
   };
 
@@ -154,14 +225,41 @@ export default function SkyHome() {
                 {showHint && <TapHand delay="0s" />}
               </button>
 
+              {/* ONE HAND */}
+              <button
+                type="button"
+                onClick={() => enter("onehand")}
+                aria-label="Entra in One Hand Easy Cover Mode"
+                className={`sky-portal sky-portal-onehand sky-reveal-2 ${
+                  leaving === "onehand" ? "sky-portal-chosen" : ""
+                } ${leaving && leaving !== "onehand" ? "sky-portal-dimmed" : ""}`}
+              >
+                <span className="sky-aura sky-aura-onehand" aria-hidden />
+                <span className="sky-orbit sky-orbit-onehand" aria-hidden />
+                <span className="sky-content">
+                  <FatimaHand className="h-[74px] w-[74px] text-[#fff5e6] drop-shadow-[0_0_18px_rgba(255,205,160,0.85)]" />
+                  <span className="sky-portal-title">ONE HAND</span>
+                  <span className="sky-portal-rule" aria-hidden>
+                    ✦
+                  </span>
+                  <span className="sky-portal-sub">
+                    One Hand Easy Cover Mode.
+                    <br />
+                    Five fingers, five chords.
+                  </span>
+                  <span className="sky-portal-meta sky-meta-onehand">FATIMA · SONGS · COVER</span>
+                </span>
+                {showHint && <TapHand delay="1.3s" />}
+              </button>
+
               {/* NIGHT SKY */}
               <button
                 type="button"
                 onClick={() => enter("night")}
                 aria-label="Entra in Night Sky"
-                className={`sky-portal sky-portal-night sky-reveal-2 ${
+                className={`sky-portal sky-portal-night sky-reveal-3 ${
                   leaving === "night" ? "sky-portal-chosen" : ""
-                } ${leaving === "heaven" ? "sky-portal-dimmed" : ""}`}
+                } ${leaving && leaving !== "night" ? "sky-portal-dimmed" : ""}`}
               >
                 <span className="sky-aura sky-aura-night" aria-hidden />
                 <span className="sky-orbit sky-orbit-night" aria-hidden />
@@ -185,7 +283,7 @@ export default function SkyHome() {
 
             <div className="sky-hint-wrap sky-reveal-3">
               <p className="sky-tap">TAP A SKY TO ENTER</p>
-              <p className="sky-foot">TWO SKIES. ONE SOUND.</p>
+              <p className="sky-foot">THREE SKIES. ONE SOUND.</p>
             </div>
           </>
         )}
