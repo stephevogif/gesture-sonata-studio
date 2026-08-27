@@ -116,6 +116,9 @@ type Props = {
   masterOnly?: boolean;
   handControl?: HandControl;
   onHandControlChange?: (next: HandControl) => void;
+  /** tempo di legato fra gli accordi, in ms */
+  legatoMs?: number;
+  onLegatoChange?: (ms: number) => void;
 };
 
 export default function SoundConstellation({
@@ -125,7 +128,10 @@ export default function SoundConstellation({
   masterOnly = false,
   handControl,
   onHandControlChange,
+  legatoMs,
+  onLegatoChange,
 }: Props) {
+
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<Drag | null>(null);
   const initial: Anchor =
