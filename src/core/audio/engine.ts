@@ -234,6 +234,15 @@ export class HeavenAudioEngine {
 
   /** sustained note — amount 0..1 loudness, bright 0..1 timbre */
   noteOn(id: string, freq: number, amount: number, bright = 0.5, inst?: InstrumentId) {
+    this.sustained.set(id, { freq, amount, bright, inst });
+    if (this.pulse.enabled) {
+      this.strikeNote(id, freq, amount, bright, inst, this.pulseGateSeconds());
+      return;
+    }
+    this.holdNote(id, freq, amount, bright, inst);
+  }
+
+  private holdNote(id: string, freq: number, amount: number, bright: number, inst?: InstrumentId) {
     if (this.channels.size) {
       for (const [cid, channel] of this.channels) {
         const voice = this.voiceFor(`${id}@${cid}`, freq, channel.instrument, {
@@ -246,6 +255,83 @@ export class HeavenAudioEngine {
     const voice = this.voiceFor(id, freq, inst ?? this.instrument);
     voice?.hold(freq, amount, bright, this.legato ?? undefined);
   }
+
+  private strikeNote(
+    id: string,
+    freq: number,
+    amount: number,
+    bright: number,
+    inst: InstrumentId | undefined,
+    gate: number,
+  ) {
+    if (this.channels.size) {
+      for (const [cid, channel] of this.channels) {
+        const voice = this.voiceFor(`${id}@${cid}`, freq, channel.instrument, {
+          dry: channel.input,
+        });
+        voice?.strike(freq, amount, bright, gate);
+      }
+      return;
+    }
+    const voice = this.voiceFor(id, freq, inst ?? this.instrument);
+    voice?.strike(freq, amount, bright, gate);
+  }
+
+  /* ————— pulse (ritmo sincronizzato al BPM) ————— */
+
+  private pulseGateSeconds() {
+    const period = divisionSeconds(this.pulse.division, this.bpm);
+    return Math.max(0.05, period * clamp(this.pulse.gate, 0.1, 1));
+  }
+
+  /** repeated notes ("tan tan tan") locked to the tempo; off = normal sustain */
+  setPulse(opts: { enabled?: boolean; division?: DivisionId; gate?: number }) {
+    if (opts.division) this.pulse.division = opts.division;
+    if (opts.gate !== undefined) this.pulse.gate = clamp(opts.gate, 0.1, 1);
+    if (opts.enabled !== undefined) this.pulse.enabled = opts.enabled;
+    this.restartPulse();
+  }
+
+  get pulseEnabled() {
+    return this.pulse.enabled;
+  }
+  get pulseDivision() {
+    return this.pulse.division;
+  }
+
+  private restartPulse() {
+    if (this.pulseTimer !== null) {
+      window.clearInterval(this.pulseTimer);
+      this.pulseTimer = null;
+    }
+    if (!this.pulse.enabled) return;
+    const period = divisionSeconds(this.pulse.division, this.bpm) * 1000;
+    this.pulseTimer = window.setInterval(() => this.pulseTick(), Math.max(60, period));
+  }
+
+  private pulseTick() {
+    if (!this.ctx || !this.sustained.size) return;
+    const gate = this.pulseGateSeconds();
+    for (const [id, note] of this.sustained) {
+      this.strikeNote(id, note.freq, note.amount, note.bright, note.inst, gate);
+    }
+  }
+
+  /* ————— piano controls ————— */
+
+  /** sustain pedal / brightness / lid for the piano-family patches */
+  setKeys(opts: Partial<KeysOptions>) {
+    this.keys = { ...this.keys, ...opts };
+    // rebuild keys voices so the new timbre is heard immediately
+    for (const [key, voice] of [...this.voices]) {
+      if (presetOf(voice.instrument).keys) this.releaseVoice(key);
+    }
+  }
+
+  get keysOptions(): KeysOptions {
+    return this.keys;
+  }
+
 
   /** short retriggered note used by the arpeggiator */
   pluck(
