@@ -43,6 +43,7 @@ import {
   MAX_PRESETS,
   type SoundPreset,
 } from "@/core/sound/library";
+import { FACTORY_PRESETS } from "@/core/sound/factoryPresets";
 import {
   HAND_SOURCES,
   HAND_TARGETS,
@@ -828,6 +829,23 @@ export default function SoundConstellation({
             <button className="sc-chip sc-chip-on" onClick={saveCurrentPreset}>
               <Save className="h-3.5 w-3.5" /> Salva
             </button>
+          </div>
+
+          <div className="sc-field-label">Preset di fabbrica</div>
+          <div className="flex flex-col gap-1.5">
+            {FACTORY_PRESETS.map((p) => (
+              <button
+                key={p.id}
+                className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left"
+                onClick={() => {
+                  onChange(p.build());
+                  setPresetsOpen(false);
+                }}
+              >
+                <span className="min-w-0 flex-1 truncate text-xs font-semibold">{p.name}</span>
+                <span className="shrink-0 text-[10px] opacity-60">{p.hint}</span>
+              </button>
+            ))}
           </div>
 
           <div className="flex gap-1.5">
