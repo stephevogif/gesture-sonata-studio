@@ -2632,18 +2632,20 @@
 .oh-screen {
   --oh-gold: #d9b45f;
   background:
-    radial-gradient(120% 80% at 50% -10%, rgba(46, 68, 122, 0.55), transparent 70%),
-    linear-gradient(180deg, #070b16, #0b1020 55%, #070a13);
-  color: #eef2ff;
+    radial-gradient(120% 70% at 50% -5%, rgba(94, 72, 26, 0.35), transparent 68%),
+    radial-gradient(90% 60% at 50% 110%, rgba(94, 72, 26, 0.22), transparent 70%),
+    #050508;
+  color: #f6efdd;
 }
 .oh-frame {
   position: relative;
-  border-radius: 1.75rem;
-  border: 1px solid rgba(217, 180, 95, 0.28);
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0.6rem;
+  border: 1px solid rgba(217, 180, 95, 0.55);
+  background: rgba(255, 240, 200, 0.02);
   box-shadow:
-    0 40px 90px -50px rgba(0, 0, 0, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    0 40px 90px -50px rgba(0, 0, 0, 1),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 5px rgba(217, 180, 95, 0.22);
 }
 /* accento maiolica: piccoli angoli dorati */
 .oh-corners::before,
@@ -2725,9 +2727,10 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 4 / 3;
-  border-radius: 1.25rem;
-  border: 1px solid rgba(217, 180, 95, 0.3);
-  background: #05080f;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(217, 180, 95, 0.55);
+  box-shadow: inset 0 0 0 4px rgba(217, 180, 95, 0.14);
+  background: #05050a;
 }
 .oh-viewport-hint {
   position: absolute;
@@ -2762,7 +2765,7 @@
   backdrop-filter: blur(6px);
 }
 .oh-card {
-  border-radius: 1.1rem;
+  border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   padding: 0.9rem;
@@ -2773,7 +2776,7 @@
   gap: 2px;
   width: 100%;
   aspect-ratio: 3 / 4;
-  border-radius: 1rem;
+  border-radius: 0.5rem 0.5rem 0.5rem 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
   color: #eef2ff;
