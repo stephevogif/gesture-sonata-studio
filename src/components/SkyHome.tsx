@@ -135,7 +135,7 @@ export default function SkyHome() {
     [],
   );
 
-  const enter = (which: "night" | "heaven") => {
+  const enter = (which: "night" | "heaven" | "onehand") => {
     if (leaving) return;
     if (typeof window !== "undefined") {
       localStorage.setItem(HINT_KEY, "1");
@@ -148,7 +148,13 @@ export default function SkyHome() {
     setShowHint(false);
     setLeaving(which);
     window.setTimeout(() => {
-      void navigate({ to: which === "night" ? "/night" : "/studio" });
+      if (which === "night") {
+        void navigate({ to: "/night" });
+      } else if (which === "onehand") {
+        void navigate({ to: "/studio", search: { oneHand: 1 } });
+      } else {
+        void navigate({ to: "/studio" });
+      }
     }, 720);
   };
 
