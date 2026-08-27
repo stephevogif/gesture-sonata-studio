@@ -1706,9 +1706,15 @@ export default function HeavenSynth() {
           arpOn={arpOn}
           onToggleArp={() => setArpOn((v) => !v)}
           onOpenSound={() => setPanel("sound")}
-
-
+          instrument={instrument}
+          onInstrumentChange={(id) =>
+            setMix((prev) => {
+              const first = prev.instruments[0];
+              return first ? patchLayer(prev, first.id, { instrument: id }) : prev;
+            })
+          }
         />
+
       )}
 
       {/* onboarding */}
