@@ -225,14 +225,41 @@ export default function SkyHome() {
                 {showHint && <TapHand delay="0s" />}
               </button>
 
+              {/* ONE HAND */}
+              <button
+                type="button"
+                onClick={() => enter("onehand")}
+                aria-label="Entra in One Hand Easy Cover Mode"
+                className={`sky-portal sky-portal-onehand sky-reveal-2 ${
+                  leaving === "onehand" ? "sky-portal-chosen" : ""
+                } ${leaving && leaving !== "onehand" ? "sky-portal-dimmed" : ""}`}
+              >
+                <span className="sky-aura sky-aura-onehand" aria-hidden />
+                <span className="sky-orbit sky-orbit-onehand" aria-hidden />
+                <span className="sky-content">
+                  <FatimaHand className="h-[74px] w-[74px] text-[#fff5e6] drop-shadow-[0_0_18px_rgba(255,205,160,0.85)]" />
+                  <span className="sky-portal-title">ONE HAND</span>
+                  <span className="sky-portal-rule" aria-hidden>
+                    ✦
+                  </span>
+                  <span className="sky-portal-sub">
+                    Easy Cover Mode.
+                    <br />
+                    Five fingers, five chords.
+                  </span>
+                  <span className="sky-portal-meta sky-meta-onehand">FATIMA · SONGS · COVER</span>
+                </span>
+                {showHint && <TapHand delay="1.3s" />}
+              </button>
+
               {/* NIGHT SKY */}
               <button
                 type="button"
                 onClick={() => enter("night")}
                 aria-label="Entra in Night Sky"
-                className={`sky-portal sky-portal-night sky-reveal-2 ${
+                className={`sky-portal sky-portal-night sky-reveal-3 ${
                   leaving === "night" ? "sky-portal-chosen" : ""
-                } ${leaving === "heaven" ? "sky-portal-dimmed" : ""}`}
+                } ${leaving && leaving !== "night" ? "sky-portal-dimmed" : ""}`}
               >
                 <span className="sky-aura sky-aura-night" aria-hidden />
                 <span className="sky-orbit sky-orbit-night" aria-hidden />
