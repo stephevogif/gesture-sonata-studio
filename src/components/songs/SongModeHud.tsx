@@ -27,10 +27,13 @@ export default function SongModeHud({
   state,
   rootPc,
   mode,
+  slots = null,
 }: {
   state: SongModeState;
   rootPc: number;
   mode: ModeId;
+  /** One Hand: mappa dita 1..5 -> grado, per mostrare quante dita alzare */
+  slots?: number[] | null;
 }) {
   const { song, degrees, stepIndex, current, next, sectionName, matched } = state;
   if (!song || current == null) return null;
@@ -97,6 +100,11 @@ export default function SongModeHud({
           <p className="mt-1 text-[13px] uppercase tracking-[0.24em] text-white/85">
             {chordLabel(rootPc, mode, current)}
           </p>
+          {slots && slots.indexOf(current) >= 0 && (
+            <p className="mt-0.5 text-[10px] uppercase tracking-[0.24em] text-[#ffe9bd]">
+              {slots.indexOf(current) + 1} dita
+            </p>
+          )}
         </div>
         {next != null && (
           <div className="text-right opacity-80">
