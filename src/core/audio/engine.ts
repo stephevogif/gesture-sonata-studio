@@ -141,6 +141,8 @@ export class HeavenAudioEngine {
 
   async dispose() {
     this.allOff();
+    if (this.pulseTimer !== null) window.clearInterval(this.pulseTimer);
+    this.pulseTimer = null;
     this.arp.stop();
     this.channels.forEach((c) => c.dispose());
     this.channels.clear();
