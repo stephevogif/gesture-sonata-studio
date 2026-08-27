@@ -9,7 +9,7 @@ import { ArrowLeft, Camera, Hand, Play, Square, Wand2 } from "lucide-react";
 import { allSongs } from "@/core/songs/catalog";
 import { startSongSession } from "@/core/songs/session";
 import { slotsFromSong, type OneHandConfig, type PlayMode } from "@/core/gesture/oneHand";
-import { ROMAN } from "@/lib/theory";
+import { ROMAN } from "@/core/music/chords";
 import type { SongModeState } from "@/hooks/useSongMode";
 
 const FINGER_NAMES = ["POLLICE", "INDICE", "MEDIO", "ANULARE", "MIGNOLO"];
