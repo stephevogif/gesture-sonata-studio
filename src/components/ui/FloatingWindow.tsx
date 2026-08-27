@@ -47,4 +47,7 @@ export default function FloatingWindow({
       </section>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(sheet, document.body);
 }
