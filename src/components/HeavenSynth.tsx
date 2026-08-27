@@ -1184,10 +1184,41 @@ export default function HeavenSynth() {
           </p>
         )}
 
+        {/* SCALE / COVER */}
+        <div className="mt-3 flex items-center justify-center">
+          <div className="heaven-seg" role="tablist" aria-label="Modo di gioco">
+            <button
+              role="tab"
+              aria-selected={!coverMode}
+              onClick={() => setPlayMode("scale")}
+              className={`heaven-seg-btn ${!coverMode ? "heaven-seg-on" : ""}`}
+            >
+              Scale
+            </button>
+            <button
+              role="tab"
+              aria-selected={coverMode}
+              onClick={() => setPlayMode("cover")}
+              className={`heaven-seg-btn ${coverMode ? "heaven-seg-on" : ""}`}
+            >
+              Cover
+            </button>
+          </div>
+        </div>
+        {coverMode && !songMode.song && (
+          <Link
+            to="/songs"
+            className="heaven-pill mx-auto mt-3 block w-fit text-center"
+          >
+            Scegli una canzone
+          </Link>
+        )}
+
         {/* Song Mode */}
-        {songMode.song && (
+        {coverMode && songMode.song && (
           <SongModeHud
             state={songMode}
+
             rootPc={rootPc}
             mode={mode}
             slots={oneHand.enabled ? oneHand.slots : null}
