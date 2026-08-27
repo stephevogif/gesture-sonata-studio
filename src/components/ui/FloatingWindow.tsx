@@ -7,7 +7,8 @@
  */
 
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   title: string;
