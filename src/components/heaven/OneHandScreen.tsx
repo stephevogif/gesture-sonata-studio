@@ -1,7 +1,7 @@
 /**
  * One Hand — schermata dedicata dentro Seven Heavens.
- * Si suona con una sola mano: 1–5 dita = 5 accordi assegnabili.
- * Le song vengono mappate automaticamente sulle dita, in ordine di apparizione.
+ * UX ispirata alle maioliche siciliane: cornice a piastrelle, pannelli in carta
+ * avorio, slot ovali dorati per le cinque dita.
  */
 
 import { useMemo } from "react";
@@ -11,6 +11,9 @@ import { startSongSession } from "@/core/songs/session";
 import { slotsFromSong, type OneHandConfig } from "@/core/gesture/oneHand";
 import { ROMAN } from "@/lib/theory";
 import type { SongModeState } from "@/hooks/useSongMode";
+import tilePattern from "@/assets/maiolica-pattern.jpg";
+
+const FINGER_NAMES = ["POLLICE", "INDICE", "MEDIO", "ANULARE", "MIGNOLO"];
 
 type Props = {
   config: OneHandConfig;
@@ -39,220 +42,263 @@ export default function OneHandScreen({
   const activeSlot =
     activeDegree == null ? null : config.slots.indexOf(activeDegree + 1) + 1 || null;
 
-  const field =
-    "mt-1.5 w-full appearance-none rounded-xl border border-white/60 bg-white/75 px-3 py-2.5 text-[13px] font-semibold text-[#2b3855] shadow-sm outline-none focus:border-[rgba(255,222,160,0.95)]";
-  const chip = (active: boolean) =>
-    `rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
-      active
-        ? "border-[rgba(255,222,160,0.95)] bg-[rgba(255,238,200,0.32)] text-[#2b1f0a]"
-        : "border-white/50 bg-white/15 text-[#f0f6ff] hover:bg-white/25"
-    }`;
+  const handChip = (active: boolean) =>
+    `maiolica-btn flex-1 ${active ? "maiolica-btn-primary" : ""}`;
 
   return (
-    <div className="fixed inset-0 z-40 overflow-y-auto bg-[rgba(9,18,38,0.62)] backdrop-blur-[2px]">
-      <div className="mx-auto flex min-h-full w-full max-w-xl flex-col px-5 pb-12 pt-5">
-        <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-          <button onClick={onClose} aria-label="Torna a Seven Heavens" className="heaven-orb-btn">
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <div className="min-w-0 text-center">
-            <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/85">
-              Seven Heavens
-            </p>
-            <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/85">
+    <div
+      className="maiolica-frame fixed inset-0 z-40 overflow-y-auto"
+      style={{ backgroundImage: `url(${tilePattern})` }}
+    >
+      <div className="mx-auto w-full max-w-xl p-3 sm:p-6">
+        <div className="maiolica-paper rounded-[1.8rem] p-4 sm:p-6">
+          {/* header */}
+          <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+            <button
+              onClick={onClose}
+              aria-label="Torna a Seven Heavens"
+              className="maiolica-btn !px-3"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className="min-w-0 text-center">
+              <h1 className="maiolica-title text-[1.9rem] leading-none sm:text-4xl">ONE HAND</h1>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.34em] text-[#8a6d2f]">
+                Easy Cover Mode
+              </p>
+            </div>
+            <button
+              onClick={onTogglePlay}
+              aria-label={running ? "Stop" : "Play"}
+              className="maiolica-btn maiolica-btn-primary !px-3"
+            >
+              {running ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </button>
+          </header>
+
+          <div className="maiolica-rule my-4" />
+
+          {/* fotocamera / tutorial */}
+          <div className="flex items-start gap-3 rounded-2xl border border-[rgba(180,150,90,0.4)] bg-[rgba(255,253,246,0.75)] p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(180,150,90,0.5)] bg-[#f6ead0] text-[#14224a]">
+              <Camera className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8a6d2f]">
+                Fotocamera e tracciamento
+              </p>
+              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-[#25335a]">
+                Concedi l&apos;accesso alla fotocamera. Alza 1–5 dita davanti allo schermo: ogni
+                dito suona l&apos;accordo dello slot corrispondente.
+              </p>
+            </div>
+          </div>
+
+          {/* song corrente */}
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-[rgba(180,150,90,0.4)] bg-[rgba(255,253,246,0.75)] px-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-bold text-[#14224a]">
+                {songMode.song?.title ?? "Accordi liberi"}
+              </p>
+              <p className="truncate text-[11px] font-semibold text-[#6b7591]">
+                {songMode.song?.artist ?? "Nessuna canzone"}
+              </p>
+            </div>
+            <p className="shrink-0 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8a6d2f]">
               {keyLabel}
             </p>
           </div>
-          <button
-            onClick={onTogglePlay}
-            aria-label={running ? "Stop" : "Play"}
-            className="heaven-orb-btn"
-          >
-            {running ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          </button>
-        </header>
 
-        <h1 className="heaven-title mt-5 text-center text-[2.1rem] leading-none sm:text-5xl">
-          ONE HAND
-        </h1>
-        <p className="mt-2 text-center text-[11px] font-semibold text-white/80">
-          Una sola mano: 1 dito = primo accordo, 5 dita = quinto.
-        </p>
-
-        {/* tutorial + accesso camera */}
-        <div className="heaven-glass mt-5 flex items-start gap-3 rounded-2xl p-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(255,222,160,0.18)] text-[#fff3d2]">
-            <Camera className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#fff3d2]">
-              Fotocamera e tracciamento
-            </p>
-            <p className="mt-1 text-[11px] font-semibold leading-relaxed text-[#f0f6ff]/85">
-              Concedi l&apos;accesso alla fotocamera. Alza 1–5 dita davanti allo
-              schermo: ogni dito suona l&apos;accordo dello slot corrispondente.
+          {/* slot dita */}
+          <div className="mt-5 text-center">
+            <p className="maiolica-title text-sm font-semibold tracking-[0.28em]">FINGER SLOTS</p>
+            <p className="mt-1 text-[11px] font-semibold text-[#6b7591]">
+              Ogni dito è uno slot. Assegna qualsiasi grado.
             </p>
           </div>
-        </div>
-
-        {/* i cinque slot */}
-        <div className="mt-6 flex items-start justify-between gap-1">
-          {config.slots.map((degree, i) => (
-            <div key={i} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-              <div className={`heaven-node ${activeSlot === i + 1 ? "heaven-node-on" : ""}`}>
-                {i + 1}
+          <div className="mt-4 grid grid-cols-5 gap-1.5 sm:gap-2">
+            {config.slots.map((degree, i) => (
+              <div key={i} className="flex min-w-0 flex-col items-center gap-1">
+                <div className={`maiolica-slot ${activeSlot === i + 1 ? "maiolica-slot-on" : ""}`}>
+                  <span className="maiolica-title text-xl leading-none sm:text-2xl">{i + 1}</span>
+                  <span className="text-[11px] font-bold leading-none text-[#9b1c1c]">
+                    {ROMAN[degree - 1]}
+                  </span>
+                  <span className="text-[10px] font-semibold leading-none text-[#25335a]">
+                    {degreeChordLabels[degree - 1]}
+                  </span>
+                </div>
+                <span className="truncate text-[8px] font-bold tracking-[0.14em] text-[#8a6d2f]">
+                  {FINGER_NAMES[i]}
+                </span>
               </div>
-              <span
-                className={`truncate text-[9px] font-semibold ${
-                  activeSlot === i + 1 ? "text-[#fff3d2]" : "text-white/75"
-                }`}
-              >
-                {degreeChordLabels[degree - 1]}
-              </span>
-              <span className="text-[8px] font-bold uppercase tracking-widest text-white/50">
-                {ROMAN[degree - 1]}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* accordo corrente */}
-        <div className="mt-5 min-h-[4.5rem] text-center">
-          {activeSlot ? (
-            <div className="animate-fade-in">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/70">
-                {activeSlot} {activeSlot === 1 ? "dito" : "dita"}
-              </p>
-              <p className="heaven-title text-4xl leading-none">
-                {degreeChordLabels[(config.slots[activeSlot - 1] ?? 1) - 1]}
-              </p>
-            </div>
-          ) : (
-            <p className="pt-3 text-[11px] font-semibold text-white/50">
-              Aspettando la mano…
-            </p>
-          )}
-        </div>
+          {/* accordo corrente */}
+          <div className="mt-4 min-h-[3.75rem] text-center">
+            {activeSlot ? (
+              <div className="animate-fade-in">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#8a6d2f]">
+                  {activeSlot} {activeSlot === 1 ? "dito" : "dita"}
+                </p>
+                <p className="maiolica-title text-3xl leading-none">
+                  {degreeChordLabels[(config.slots[activeSlot - 1] ?? 1) - 1]}
+                </p>
+              </div>
+            ) : (
+              <p className="pt-3 text-[11px] font-semibold text-[#6b7591]">Alza la mano…</p>
+            )}
+          </div>
 
-        {/* song */}
-        <div className="heaven-glass mt-4 space-y-3 rounded-2xl p-4">
-          <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f0f6ff]/90">
-            Canzone
-            <select
-              value={songMode.song?.id ?? ""}
-              onChange={(e) => {
-                const id = e.target.value;
-                if (!id) {
-                  songMode.exit();
-                  return;
-                }
-                startSongSession(id);
-                const song = songs.find((s) => s.id === id) ?? null;
-                const slots = slotsFromSong(song, 0);
-                if (slots) update({ slots, enabled: true, followSong: true });
-              }}
-              className={field}
-              aria-label="Scegli una canzone"
-            >
-              <option value="">Nessuna · accordi liberi</option>
-              {songs.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title} — {s.artist}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {songMode.song && (
-            <>
-              <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f0f6ff]/90">
-                Sezione
-                <select
-                  value={songMode.sectionIndex}
-                  onChange={(e) => songMode.setSectionIndex(Number(e.target.value))}
-                  className={field}
-                  aria-label="Sezione della canzone"
-                >
-                  {songMode.song.sections.map((sec, i) => (
-                    <option key={sec.id} value={i}>
-                      {sec.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="text-[11px] font-semibold text-[#f0f6ff]/85">
-                Sequenza:{" "}
-                {songMode.degrees
-                  .map((d) => {
-                    const slot = config.slots.indexOf(d);
-                    return slot < 0 ? "–" : `${slot + 1}`;
-                  })
-                  .join(" → ")}{" "}
-                dita
-              </p>
-              <button
-                onClick={() => {
-                  const slots = slotsFromSong(songMode.song, songMode.sectionIndex);
-                  if (slots) update({ slots, enabled: true });
-                }}
-                className={chip(false)}
-              >
-                <Wand2 className="mr-1 inline h-3.5 w-3.5" />
-                Rimappa sulle dita
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* mappatura manuale */}
-        <div className="heaven-glass mt-4 space-y-2 rounded-2xl p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xs font-bold text-[#f8fbff]">Accordo per numero di dita</h2>
+          {/* mano */}
+          <div className="mt-2 flex items-center gap-2 rounded-2xl border border-[rgba(180,150,90,0.4)] bg-[rgba(255,253,246,0.75)] p-2">
+            <span className="px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8a6d2f]">
+              Mano
+            </span>
             <button
-              onClick={() => update({ followSong: !config.followSong })}
-              className={chip(config.followSong)}
+              onClick={() => update({ hand: "left" })}
+              className={handChip(config.hand === "left")}
             >
-              Segui la song
+              Left
+            </button>
+            <button
+              onClick={() => update({ hand: "right" })}
+              className={handChip(config.hand === "right")}
+            >
+              Right
+            </button>
+            <button
+              onClick={() => update({ hand: "any" })}
+              className={handChip(config.hand === "any")}
+            >
+              Auto
             </button>
           </div>
-          {config.slots.map((degree, i) => (
-            <label
-              key={i}
-              className="flex items-center gap-3 text-[11px] font-semibold text-[#f0f6ff]/90"
-            >
-              <span className="heaven-node !h-8 !w-8 !text-[13px]">{i + 1}</span>
+
+          {/* song */}
+          <div className="mt-4 space-y-3 rounded-2xl border border-[rgba(180,150,90,0.4)] bg-[rgba(255,253,246,0.75)] p-4">
+            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#8a6d2f]">
+              Canzone
               <select
-                value={degree}
+                value={songMode.song?.id ?? ""}
                 onChange={(e) => {
-                  const slots = [...config.slots];
-                  slots[i] = Number(e.target.value);
-                  update({ slots, followSong: false });
+                  const id = e.target.value;
+                  if (!id) {
+                    songMode.exit();
+                    return;
+                  }
+                  startSongSession(id);
+                  const song = songs.find((s) => s.id === id) ?? null;
+                  const slots = slotsFromSong(song, 0);
+                  if (slots) update({ slots, enabled: true, followSong: true });
                 }}
-                className={`${field} !mt-0 flex-1`}
-                aria-label={`Accordo per ${i + 1} dita`}
+                className="maiolica-field mt-1.5"
+                aria-label="Scegli una canzone"
               >
-                {Array.from({ length: 7 }, (_, d) => (
-                  <option key={d} value={d + 1}>
-                    {ROMAN[d]} · {degreeChordLabels[d]}
+                <option value="">Nessuna · accordi liberi</option>
+                {songs.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title} — {s.artist}
                   </option>
                 ))}
               </select>
             </label>
-          ))}
 
-          <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#f0f6ff]/90">
-            Mano
-            <select
-              value={config.hand}
-              onChange={(e) => update({ hand: e.target.value as OneHandConfig["hand"] })}
-              className={field}
-              aria-label="Mano che suona"
-            >
-              <option value="any">Quella visibile</option>
-              <option value="left">Sinistra</option>
-              <option value="right">Destra</option>
-            </select>
-          </label>
+            {songMode.song && (
+              <>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#8a6d2f]">
+                  Sezione
+                  <select
+                    value={songMode.sectionIndex}
+                    onChange={(e) => songMode.setSectionIndex(Number(e.target.value))}
+                    className="maiolica-field mt-1.5"
+                    aria-label="Sezione della canzone"
+                  >
+                    {songMode.song.sections.map((sec, i) => (
+                      <option key={sec.id} value={i}>
+                        {sec.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8a6d2f]">
+                    Progressione
+                  </span>
+                  {songMode.degrees.map((d, i) => {
+                    const slot = config.slots.indexOf(d);
+                    return (
+                      <span
+                        key={i}
+                        className="grid h-7 w-7 place-items-center rounded-full border border-[rgba(180,150,90,0.6)] bg-[#fffaf0] text-[11px] font-bold text-[#14224a]"
+                      >
+                        {slot < 0 ? "–" : slot + 1}
+                      </span>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => {
+                    const slots = slotsFromSong(songMode.song, songMode.sectionIndex);
+                    if (slots) update({ slots, enabled: true });
+                  }}
+                  className="maiolica-btn"
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Auto map song
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* mappatura manuale */}
+          <div className="mt-4 space-y-2 rounded-2xl border border-[rgba(180,150,90,0.4)] bg-[rgba(255,253,246,0.75)] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="maiolica-title text-xs font-bold tracking-[0.2em]">SLOT EDITOR</h2>
+              <button
+                onClick={() => update({ followSong: !config.followSong })}
+                className={`maiolica-btn ${config.followSong ? "maiolica-btn-primary" : ""}`}
+              >
+                Segui la song
+              </button>
+            </div>
+            {config.slots.map((degree, i) => (
+              <label
+                key={i}
+                className="flex items-center gap-3 text-[11px] font-semibold text-[#25335a]"
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(180,150,90,0.6)] bg-[#fffaf0] text-[13px] font-bold text-[#14224a]">
+                  {i + 1}
+                </span>
+                <select
+                  value={degree}
+                  onChange={(e) => {
+                    const slots = [...config.slots];
+                    slots[i] = Number(e.target.value);
+                    update({ slots, followSong: false });
+                  }}
+                  className="maiolica-field flex-1"
+                  aria-label={`Accordo per ${i + 1} dita`}
+                >
+                  {Array.from({ length: 7 }, (_, d) => (
+                    <option key={d} value={d + 1}>
+                      {ROMAN[d]} · {degreeChordLabels[d]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+
+          {/* play */}
+          <button
+            onClick={onTogglePlay}
+            className="maiolica-btn maiolica-btn-primary mt-5 w-full !py-4 !text-sm !tracking-[0.26em]"
+          >
+            {running ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            Play / Stop
+          </button>
         </div>
       </div>
     </div>
