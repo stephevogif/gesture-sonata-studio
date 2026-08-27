@@ -983,7 +983,6 @@ export default function HeavenSynth() {
         }
         const tctx = tc.getContext("2d");
         if (tctx) {
-          ohTimeRef.current += dt;
           tctx.clearRect(0, 0, w, h);
           if (chord) {
             const tips: { x: number; y: number }[] = [];
