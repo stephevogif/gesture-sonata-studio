@@ -17,7 +17,14 @@ import { Arpeggiator, type ArpEvent } from "./arpeggiator";
 import { MasterRack } from "./effects";
 import { InstrumentChannel } from "./channel";
 import { FxChain, type FxSpec } from "./fx";
-import { INSTRUMENT_SHIFT, presetOf, type InstrumentId } from "./presets";
+import {
+  DEFAULT_KEYS,
+  INSTRUMENT_SHIFT,
+  presetOf,
+  withKeysOptions,
+  type InstrumentId,
+  type KeysOptions,
+} from "./presets";
 import { SynthVoice, type VoiceBuses } from "./voice";
 
 /** one layered instrument: gain + its own insert FX chain */
