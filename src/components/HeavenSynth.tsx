@@ -986,7 +986,6 @@ export default function HeavenSynth() {
         if (tctx) {
           ohTimeRef.current += dt;
           tctx.clearRect(0, 0, w, h);
-          drawTarotBack(tctx, w, h, ohTimeRef.current);
           if (chord) {
             const tips: { x: number; y: number }[] = [];
             for (const hand of hands) {
