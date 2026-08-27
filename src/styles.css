@@ -1267,6 +1267,11 @@
   box-shadow: inset 0 0 60px rgba(255, 220, 170, 0.18);
 }
 
+@utility sky-aura-onehand {
+  background: radial-gradient(circle, rgba(255, 175, 175, 0.28), rgba(60, 30, 30, 0) 68%);
+  box-shadow: inset 0 0 60px rgba(255, 200, 185, 0.2);
+}
+
 /* energia luminosa che scorre lungo l'orbita (conic gradient + mask) */
 @utility sky-orbit {
   position: absolute;
