@@ -156,7 +156,6 @@ export default function HeavenSynth() {
   /** canvas secondario: anteprima tracking dentro One Hand */
   const trackCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const ohStarsRef = useRef<StarParticle[]>([]);
-  const ohTimeRef = useRef(0);
 
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
