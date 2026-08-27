@@ -79,6 +79,22 @@ export default function OneHandScreen({
           Una sola mano: 1 dito = primo accordo, 5 dita = quinto.
         </p>
 
+        {/* tutorial + accesso camera */}
+        <div className="heaven-glass mt-5 flex items-start gap-3 rounded-2xl p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(255,222,160,0.18)] text-[#fff3d2]">
+            <Camera className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#fff3d2]">
+              Fotocamera e tracciamento
+            </p>
+            <p className="mt-1 text-[11px] font-semibold leading-relaxed text-[#f0f6ff]/85">
+              Concedi l&apos;accesso alla fotocamera. Alza 1–5 dita davanti allo
+              schermo: ogni dito suona l&apos;accordo dello slot corrispondente.
+            </p>
+          </div>
+        </div>
+
         {/* i cinque slot */}
         <div className="mt-6 flex items-start justify-between gap-1">
           {config.slots.map((degree, i) => (
@@ -101,7 +117,7 @@ export default function OneHandScreen({
         </div>
 
         {/* accordo corrente */}
-        <div className="mt-6 min-h-[4.5rem] text-center">
+        <div className="mt-5 min-h-[4.5rem] text-center">
           {activeSlot ? (
             <div className="animate-fade-in">
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/70">
@@ -112,8 +128,8 @@ export default function OneHandScreen({
               </p>
             </div>
           ) : (
-            <p className="pt-6 text-[12px] font-semibold text-white/60">
-              Alza le dita davanti alla camera…
+            <p className="pt-3 text-[11px] font-semibold text-white/50">
+              Aspettando la mano…
             </p>
           )}
         </div>
