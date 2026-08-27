@@ -81,7 +81,7 @@ export class HeavenAudioEngine {
   /** last sustained note per voice id, so the pulse can retrigger them */
   private sustained = new Map<
     string,
-    { freq: number; amount: number; bright: number; inst?: InstrumentId }
+    { freq: number; amount: number; bright: number; inst?: InstrumentId | undefined }
   >();
 
 
