@@ -243,7 +243,7 @@ export default function SkyHome() {
                     ✦
                   </span>
                   <span className="sky-portal-sub">
-                    Easy Cover Mode.
+                    One Hand Easy Cover Mode.
                     <br />
                     Five fingers, five chords.
                   </span>
