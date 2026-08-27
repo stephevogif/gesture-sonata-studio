@@ -26,7 +26,11 @@ export default function FloatingWindow({
   children,
   tone = "light",
 }: Props) {
-  return (
+  /** portal to <body>: nessun contenitore può più coprire il pannello */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const sheet = (
     <div className="fw-layer" role="dialog" aria-label={title}>
       <button className="fw-scrim" aria-label="Chiudi" onClick={onClose} />
       <section className={`fw-sheet ${tone === "dark" ? "fw-dark" : "fw-light"}`}>
