@@ -53,7 +53,6 @@ import FloatingWindow from "@/components/ui/FloatingWindow";
 import OneHandScreen from "@/components/heaven/OneHandScreen";
 import {
   drawStars,
-  drawTarotBack,
   spawnStars,
   type StarParticle,
 } from "@/components/heaven/tarotScene";
