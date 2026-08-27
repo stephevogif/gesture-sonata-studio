@@ -43,6 +43,7 @@ import {
   MAX_PRESETS,
   type SoundPreset,
 } from "@/core/sound/library";
+import { FACTORY_PRESETS } from "@/core/sound/factoryPresets";
 import {
   HAND_SOURCES,
   HAND_TARGETS,
