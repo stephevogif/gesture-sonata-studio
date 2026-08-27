@@ -21,6 +21,7 @@ import { allSongs } from "@/core/songs/catalog";
 import { startSongSession } from "@/core/songs/session";
 import { slotsFromSong, type OneHandConfig, type PlayMode } from "@/core/gesture/oneHand";
 import { ROMAN } from "@/core/music/chords";
+import { INSTRUMENTS, type InstrumentId } from "@/core/audio/presets";
 import type { SongModeState } from "@/hooks/useSongMode";
 
 const FINGER_NAMES = ["POLLICE", "INDICE", "MEDIO", "ANULARE", "MIGNOLO"];
@@ -42,6 +43,8 @@ type Props = {
   arpOn?: boolean;
   onToggleArp?: () => void;
   onOpenSound?: () => void;
+  instrument?: InstrumentId;
+  onInstrumentChange?: (id: InstrumentId) => void;
 };
 
 export default function OneHandScreen({
@@ -61,6 +64,8 @@ export default function OneHandScreen({
   arpOn = false,
   onToggleArp,
   onOpenSound,
+  instrument,
+  onInstrumentChange,
 }: Props) {
   const songs = useMemo(() => allSongs(), []);
   const cover = config.playMode === "cover";
@@ -346,6 +351,38 @@ export default function OneHandScreen({
                 </button>
               ))}
             </div>
+
+            {instrument && onInstrumentChange && (
+              <label className="flex items-center gap-3">
+                <span className="text-[9px] uppercase tracking-[0.3em] text-white/70">Suono</span>
+                <select
+                  value={instrument}
+                  onChange={(e) => onInstrumentChange(e.target.value as InstrumentId)}
+                  className="oh-field flex-1"
+                  aria-label="Strumento"
+                >
+                  {["violin", "winds", "pads"].map((id) => {
+                    const it = INSTRUMENTS.find((i) => i.id === id);
+                    return it ? (
+                      <option key={it.id} value={it.id}>
+                        {it.name}
+                      </option>
+                    ) : null;
+                  })}
+                  <optgroup label="Altri">
+                    {INSTRUMENTS.filter((i) => !["violin", "winds", "pads"].includes(i.id)).map(
+                      (i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.name}
+                        </option>
+                      ),
+                    )}
+                  </optgroup>
+                </select>
+              </label>
+            )}
+
+
 
             {!cover && (
               <div className="space-y-2">

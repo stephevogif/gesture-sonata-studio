@@ -57,7 +57,7 @@ import {
   type StarParticle,
 } from "@/components/heaven/tarotScene";
 import SoundConstellation from "@/components/sound/SoundConstellation";
-import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
+import { defaultMix, patchLayer, toMixSpec, type MixState } from "@/core/sound/mix";
 import {
   DEFAULT_HAND_CONTROL,
   readHandControl,
@@ -1706,9 +1706,15 @@ export default function HeavenSynth() {
           arpOn={arpOn}
           onToggleArp={() => setArpOn((v) => !v)}
           onOpenSound={() => setPanel("sound")}
-
-
+          instrument={instrument}
+          onInstrumentChange={(id) =>
+            setMix((prev) => {
+              const first = prev.instruments[0];
+              return first ? patchLayer(prev, first.id, { instrument: id }) : prev;
+            })
+          }
         />
+
       )}
 
       {/* onboarding */}

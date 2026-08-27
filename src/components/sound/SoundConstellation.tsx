@@ -153,6 +153,7 @@ export default function SoundConstellation({
   const [presetTarget, setPresetTarget] = useState("console");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [presetsOpen, setPresetsOpen] = useState(false);
+  const [presetQuery, setPresetQuery] = useState("");
   useEffect(() => setPresets(listPresets()), []);
 
   const layers = state.instruments;
