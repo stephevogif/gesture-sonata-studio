@@ -42,6 +42,8 @@ type Props = {
   arpOn?: boolean;
   onToggleArp?: () => void;
   onOpenSound?: () => void;
+  instrument?: InstrumentId;
+  onInstrumentChange?: (id: InstrumentId) => void;
 };
 
 export default function OneHandScreen({
@@ -61,6 +63,8 @@ export default function OneHandScreen({
   arpOn = false,
   onToggleArp,
   onOpenSound,
+  instrument,
+  onInstrumentChange,
 }: Props) {
   const songs = useMemo(() => allSongs(), []);
   const cover = config.playMode === "cover";
