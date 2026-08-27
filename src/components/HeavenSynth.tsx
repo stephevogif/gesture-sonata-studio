@@ -57,7 +57,7 @@ import {
   type StarParticle,
 } from "@/components/heaven/tarotScene";
 import SoundConstellation from "@/components/sound/SoundConstellation";
-import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
+import { defaultMix, patchLayer, toMixSpec, type MixState } from "@/core/sound/mix";
 import {
   DEFAULT_HAND_CONTROL,
   readHandControl,
