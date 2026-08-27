@@ -1685,6 +1685,12 @@
     linear-gradient(180deg, #7fb3e8, #f7ddb8 100%);
 }
 
+@utility sky-warp-onehand {
+  background:
+    radial-gradient(circle at 50% 54%, rgba(255, 195, 185, 0.6), transparent 62%),
+    linear-gradient(180deg, #7fb3e8, #f7d4c8 100%);
+}
+
 @keyframes sky-warp-in {
   0% {
     opacity: 0;
