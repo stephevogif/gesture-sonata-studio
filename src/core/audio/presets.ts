@@ -77,6 +77,9 @@ export type PresetSpec = {
   glide: number;
   /** bass patches stay dry and get more headroom */
   bass?: boolean;
+  /** piano-family patch: reacts to the pedal / brightness / lid controls */
+  keys?: boolean;
+
 };
 
 const PRESET_LIST: PresetSpec[] = [
