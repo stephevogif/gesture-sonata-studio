@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from "react";
-import { ArrowLeft, Camera, Hand, Play, Square, Wand2 } from "lucide-react";
+import { ArrowLeft, Hand, Play, Square, Sparkles, Wand2 } from "lucide-react";
 import { allSongs } from "@/core/songs/catalog";
 import { startSongSession } from "@/core/songs/session";
 import { slotsFromSong, type OneHandConfig, type PlayMode } from "@/core/gesture/oneHand";
@@ -61,7 +61,7 @@ export default function OneHandScreen({
             </button>
             <div className="min-w-0 text-center">
               <h1 className="oh-title text-[1.7rem] leading-none sm:text-3xl">ONE HAND</h1>
-              <p className="oh-kicker mt-1">{cover ? "Cover mode" : "Scale mode"}</p>
+              <p className="oh-kicker mt-1">{cover ? "Easy cover mode" : "Scale mode"}</p>
             </div>
             <button
               onClick={onTogglePlay}
@@ -100,9 +100,10 @@ export default function OneHandScreen({
             {!running && (
               <div className="absolute inset-0 grid place-items-center gap-2 px-6 text-center">
                 <div>
-                  <Camera className="mx-auto h-5 w-5 text-[color:var(--oh-gold)]" />
-                  <p className="mt-2 text-[11px] font-semibold leading-relaxed text-white/80">
-                    {camError ?? "Premi play e concedi l'accesso alla fotocamera."}
+                  <Sparkles className="mx-auto h-5 w-5 text-[color:var(--oh-gold)]" />
+                  <p className="oh-kicker mt-2">Raise your hand</p>
+                  <p className="mt-1 text-[11px] font-semibold leading-relaxed text-white/70">
+                    {camError ?? "Premi play: la mano diventa costellazione."}
                   </p>
                 </div>
               </div>
