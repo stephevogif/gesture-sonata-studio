@@ -7,10 +7,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Hand,
   ListMusic,
   Moon,
   Play,
@@ -92,10 +90,10 @@ export default function OneHandScreen({
       <div className="heaven-bottom-shade" />
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-40 pt-5">
-        {/* header */}
+        {/* header — angoli: Seven Heavens | Night */}
         <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-          <button onClick={onClose} aria-label="Torna a Seven Heavens" className="heaven-orb-btn">
-            <ArrowLeft className="h-4 w-4" />
+          <button onClick={onClose} aria-label="Seven Heavens" className="heaven-orb-btn">
+            <Sparkles className="h-4 w-4" />
           </button>
           <div className="min-w-0 text-center">
             <p className="text-[10px] font-medium uppercase tracking-[0.42em] text-white/85 drop-shadow">
@@ -105,9 +103,9 @@ export default function OneHandScreen({
               Heaven Synth
             </p>
           </div>
-          <span className="heaven-orb-btn" aria-hidden>
-            <Hand className="h-4 w-4" />
-          </span>
+          <Link to="/night" aria-label="Night Sky" className="heaven-orb-btn">
+            <Moon className="h-4 w-4" />
+          </Link>
         </header>
 
         <h1 className="heaven-title mt-5 text-center text-[2.1rem] leading-none sm:text-5xl">
@@ -119,6 +117,15 @@ export default function OneHandScreen({
           <span className="heaven-pill !px-4">
             {config.hand === "any" ? "Auto" : config.hand}
           </span>
+          {/* setup come icona sullo schermo */}
+          <button
+            onClick={() => setSetup((v) => !v)}
+            aria-pressed={setup}
+            aria-label="Setup"
+            className={`heaven-orb-btn ${setup ? "heaven-orb-btn-on" : ""}`}
+          >
+            <ListMusic className="h-4 w-4" />
+          </button>
         </div>
 
         {/* SCALE / COVER */}
@@ -380,20 +387,12 @@ export default function OneHandScreen({
         )}
       </div>
 
-      {/* barra inferiore, come in Seven Heavens */}
+      {/* barra inferiore: Sound — Play — Arp */}
       <nav className="heaven-navbar">
-        <div className="heaven-glass mx-auto grid max-w-md grid-cols-6 items-center gap-1 px-3 py-2">
+        <div className="heaven-glass mx-auto grid max-w-md grid-cols-3 items-center gap-2 px-4 py-2">
           <button onClick={onOpenSound} className="heaven-nav">
             <Sliders className="h-5 w-5" />
             Sound
-          </button>
-          <button
-            onClick={onToggleArp}
-            aria-pressed={arpOn}
-            className={`heaven-nav ${arpOn ? "heaven-nav-on" : ""}`}
-          >
-            <Repeat className="h-5 w-5" />
-            Arp
           </button>
           <button
             onClick={onTogglePlay}
@@ -403,21 +402,13 @@ export default function OneHandScreen({
             {running ? <Square className="h-6 w-6" /> : <Play className="h-6 w-6" />}
           </button>
           <button
-            onClick={() => setSetup((v) => !v)}
-            aria-pressed={setup}
-            className={`heaven-nav ${setup ? "heaven-nav-on" : ""}`}
+            onClick={onToggleArp}
+            aria-pressed={arpOn}
+            className={`heaven-nav ${arpOn ? "heaven-nav-on" : ""}`}
           >
-            <ListMusic className="h-5 w-5" />
-            Setup
+            <Repeat className="h-5 w-5" />
+            Arp
           </button>
-          <button onClick={onClose} className="heaven-nav">
-            <Sparkles className="h-5 w-5" />
-            7 Heavens
-          </button>
-          <Link to="/night" className="heaven-nav">
-            <Moon className="h-5 w-5" />
-            Night
-          </Link>
         </div>
       </nav>
     </div>
