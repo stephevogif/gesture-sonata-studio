@@ -2602,3 +2602,84 @@
 .hc .heaven-bottom-shade {
   opacity: 1;
 }
+
+/* ============ MAIOLICA — One Hand ============ */
+.maiolica-frame {
+  background-repeat: repeat;
+  background-size: 190px 190px;
+}
+.maiolica-paper {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 252, 243, 0.98), rgba(245, 238, 222, 0.96)),
+    linear-gradient(180deg, #f8f2e4, #efe6d2);
+  border: 1px solid rgba(180, 150, 90, 0.45);
+  box-shadow:
+    0 24px 60px -30px rgba(20, 32, 60, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #16264c;
+}
+.maiolica-title {
+  font-family: var(--font-display);
+  color: #14224a;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.maiolica-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(190, 155, 70, 0.75), transparent);
+}
+.maiolica-slot {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 999px / 46%;
+  border: 2px solid rgba(190, 155, 70, 0.75);
+  background: linear-gradient(180deg, #fffaf0, #f4ead4);
+  color: #14224a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 16px -10px rgba(20, 32, 60, 0.6);
+  transition: all 0.22s ease;
+}
+.maiolica-slot-on {
+  border-color: #c9a227;
+  background: linear-gradient(180deg, #fff8e0, #f6e3ab);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.28), 0 12px 26px -12px rgba(20, 32, 60, 0.7);
+}
+.maiolica-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 150, 90, 0.55);
+  background: linear-gradient(180deg, #fffaf0, #f2e8d3);
+  color: #14224a;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  padding: 0.65rem 1.1rem;
+  transition: all 0.2s ease;
+  &:hover { background: linear-gradient(180deg, #fff, #f7efe0); }
+}
+.maiolica-btn-primary {
+  border-color: #c9a227;
+  background: linear-gradient(180deg, #1e3160, #10203f);
+  color: #fdf6e3;
+  box-shadow: 0 10px 26px -14px rgba(16, 32, 63, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  &:hover { background: linear-gradient(180deg, #26407c, #14284f); }
+}
+.maiolica-field {
+  width: 100%;
+  appearance: none;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(180, 150, 90, 0.5);
+  background: rgba(255, 253, 246, 0.95);
+  padding: 0.6rem 0.75rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16264c;
+  outline: none;
+  &:focus { border-color: #c9a227; }
+}
