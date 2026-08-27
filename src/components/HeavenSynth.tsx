@@ -233,22 +233,50 @@ export default function HeavenSynth() {
   const songRootPc = songMode.rootPc;
   const songScale = songMode.song?.scale ?? null;
   const songBpm = songMode.song?.bpm ?? null;
+
+  /** SCALE = scala libera · COVER = progressione di una song */
+  const playMode = oneHand.playMode;
+  const coverMode = playMode === "cover";
+  const lastSongIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (songId) lastSongIdRef.current = songId;
+  }, [songId]);
+  const setPlayMode = useCallback(
+    (next: "scale" | "cover") => {
+      updateOneHand({ playMode: next });
+      if (next === "scale") {
+        songMode.exit();
+      } else if (!songId && lastSongIdRef.current) {
+        startSongSession(lastSongIdRef.current);
+      }
+    },
+    [songId, songMode, updateOneHand],
+  );
+
   /** la song imposta automaticamente tonica, scala e tempo: nessun setup manuale */
   useEffect(() => {
-    if (!songId || songRootPc == null || !songScale) return;
+    if (!coverMode || !songId || songRootPc == null || !songScale) return;
     setRootPc(songRootPc);
     setMode(songScale);
     if (songBpm) setBpm(songBpm);
-  }, [songId, songRootPc, songScale, songBpm]);
+  }, [coverMode, songId, songRootPc, songScale, songBpm]);
 
-  /** con una song attiva gli slot seguono la progressione: 1° accordo → 1 dito */
+  /** solo in cover mode gli slot seguono la progressione: 1° accordo → 1 dito */
   const songSectionDegrees = songMode.degrees.join(",");
   useEffect(() => {
-    if (!oneHandRef.current.enabled || !oneHandRef.current.followSong) return;
+    if (!coverMode || !oneHandRef.current.enabled || !oneHandRef.current.followSong) return;
     const slots = slotsFromSong(songMode.song, songMode.sectionIndex);
     if (slots) updateOneHand({ slots });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [songId, songMode.sectionIndex, songSectionDegrees, oneHand.enabled, oneHand.followSong]);
+  }, [
+    coverMode,
+    songId,
+    songMode.sectionIndex,
+    songSectionDegrees,
+    oneHand.enabled,
+    oneHand.followSong,
+  ]);
+
 
   // ————— filtro gestuale + legato —————
   const [cutMax, setCutMax] = useState(8000);
