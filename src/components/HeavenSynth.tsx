@@ -148,6 +148,9 @@ export default function HeavenSynth() {
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as Record<string, unknown>;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  /** canvas secondario: anteprima tracking dentro One Hand */
+  const trackCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
   const sunRef = useRef({ p: -0.25, y: 0.3 });
