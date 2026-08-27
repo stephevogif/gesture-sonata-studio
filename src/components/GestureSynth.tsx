@@ -62,8 +62,10 @@ import {
 
 
 
-const INSTRUMENT_GROUPS: { id: "zen" | "electro"; label: string }[] = [
+const INSTRUMENT_GROUPS: { id: "zen" | "strings" | "keys" | "electro"; label: string }[] = [
   { id: "zen", label: "Zen / Calmi" },
+  { id: "strings", label: "Archi" },
+  { id: "keys", label: "Tastiere / Piano" },
   { id: "electro", label: "Elettronici / Bass" },
 ];
 
