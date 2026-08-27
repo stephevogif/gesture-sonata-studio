@@ -9,7 +9,6 @@ import { Link } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
-  ListMusic,
   Moon,
   Play,
   Repeat,
