@@ -16,7 +16,14 @@ import {
   Sliders,
   Square,
 } from "lucide-react";
-import { GestureSynthEngine, INSTRUMENTS, INSTRUMENT_SHIFT, type InstrumentId } from "@/lib/synth";
+import {
+  GestureSynthEngine,
+  INSTRUMENTS,
+  INSTRUMENT_SHIFT,
+  DIVISIONS,
+  type DivisionId,
+  type InstrumentId,
+} from "@/lib/synth";
 import {
   buildChord,
   KEYS,
