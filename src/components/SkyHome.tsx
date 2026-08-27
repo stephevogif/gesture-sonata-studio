@@ -1,71 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { SKY_WARP_KEY } from "./SkyArrival";
-
-function FatimaHand({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 64 64"
-      fill="none"
-      className={className}
-      aria-hidden
-    >
-      {/* palmo */}
-      <path
-        d="M32 58c8 0 14-5 14-13V36c0-3-2-5-4-5s-4 2-4 5v6h-2v-6c0-3-2-5-4-5s-4 2-4 5v6h-2v-6c0-3-2-5-4-5s-4 2-4 5v6h-2v-6c0-3-2-5-4-5s-4 2-4 5v9c0 8 6 13 14 13z"
-        fill="currentColor"
-        fillOpacity="0.18"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      {/* pollice sinistro */}
-      <path
-        d="M18 34c-4-3-7-9-6-14 1-4 5-5 8-3 3 2 4 7 2 11"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* dito indice */}
-      <path
-        d="M22 34V18c0-4 2-8 6-8s6 4 6 8v16"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* dito medio */}
-      <path
-        d="M32 34V14c0-4 2-8 6-8s6 4 6 8v20"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* dito anulare */}
-      <path
-        d="M42 34V18c0-4 2-8 6-8s6 4 6 8v16"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* dito mignolo */}
-      <path
-        d="M52 34c3-2 5-6 4-10-1-3-4-4-7-3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* occhio di Fatima */}
-      <circle cx="32" cy="42" r="4.5" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="32" cy="42" r="2.2" fill="currentColor" fillOpacity="0.35" />
-      <path d="M24 42c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  );
-}
+import oneHandIcon from "@/assets/one-hand-icon.png.asset.json";
 
 type Phase = "intro" | "home";
 
@@ -237,7 +173,12 @@ export default function SkyHome() {
                 <span className="sky-aura sky-aura-onehand" aria-hidden />
                 <span className="sky-orbit sky-orbit-onehand" aria-hidden />
                 <span className="sky-content">
-                  <FatimaHand className="h-[74px] w-[74px] text-[#fff5e6] drop-shadow-[0_0_18px_rgba(255,205,160,0.85)]" />
+                  <img
+                    src={oneHandIcon.url}
+                    alt=""
+                    className="h-[74px] w-[74px] object-contain drop-shadow-[0_0_18px_rgba(255,205,160,0.85)]"
+                    aria-hidden
+                  />
                   <span className="sky-portal-title">ONE HAND</span>
                   <span className="sky-portal-rule" aria-hidden>
                     ✦
@@ -247,7 +188,7 @@ export default function SkyHome() {
                     <br />
                     Five fingers, five chords.
                   </span>
-                  <span className="sky-portal-meta sky-meta-onehand">FATIMA · SONGS · COVER</span>
+                  <span className="sky-portal-meta sky-meta-onehand">SONGS · COVER · EASY</span>
                 </span>
                 {showHint && <TapHand delay="1.3s" />}
               </button>
