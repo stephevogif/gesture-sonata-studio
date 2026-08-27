@@ -968,7 +968,7 @@ export default function HeavenSynth() {
 
       if (cfg.current.showDebug) for (const hand of hands) drawHand(ctx, hand, w, h);
 
-      // ————— anteprima tracking (One Hand) —————
+      // ————— schermo One Hand: nessuna camera, scena tarocco + tracking —————
       const tc = trackCanvasRef.current;
       if (tc) {
         if (tc.width !== w || tc.height !== h) {
@@ -977,19 +977,24 @@ export default function HeavenSynth() {
         }
         const tctx = tc.getContext("2d");
         if (tctx) {
-          tctx.save();
+          ohTimeRef.current += dt;
           tctx.clearRect(0, 0, w, h);
-          tctx.translate(w, 0);
-          tctx.scale(-1, 1);
-          tctx.drawImage(video, 0, 0, w, h);
-          tctx.restore();
-          tctx.save();
-          tctx.fillStyle = "rgba(8,12,24,0.42)";
-          tctx.fillRect(0, 0, w, h);
-          tctx.restore();
+          drawTarotBack(tctx, w, h, ohTimeRef.current);
+          if (chord) {
+            const tips: { x: number; y: number }[] = [];
+            for (const hand of hands) {
+              for (const idx of [4, 8, 12, 16, 20]) {
+                const lm = hand.landmarks[idx];
+                if (lm) tips.push({ x: (1 - lm.x) * w, y: lm.y * h });
+              }
+            }
+            spawnStars(ohStarsRef.current, tips, 0.3 + Math.min(1, volume) * 0.7);
+          }
           for (const hand of hands) drawHand(tctx, hand, w, h);
+          drawStars(tctx, ohStarsRef.current, dt);
         }
       }
+
 
 
       // ————— HUD (throttle) —————
