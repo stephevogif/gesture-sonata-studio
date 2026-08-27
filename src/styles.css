@@ -1520,6 +1520,10 @@
   color: rgba(255, 215, 155, 0.95);
 }
 
+@utility sky-meta-onehand {
+  color: rgba(255, 205, 190, 0.95);
+}
+
 /* ---- hint dito ---- */
 
 @utility sky-hint-wrap {
