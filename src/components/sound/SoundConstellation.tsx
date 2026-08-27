@@ -116,6 +116,9 @@ type Props = {
   masterOnly?: boolean;
   handControl?: HandControl;
   onHandControlChange?: (next: HandControl) => void;
+  /** tempo di legato fra gli accordi, in ms */
+  legatoMs?: number;
+  onLegatoChange?: (ms: number) => void;
 };
 
 export default function SoundConstellation({
@@ -125,7 +128,10 @@ export default function SoundConstellation({
   masterOnly = false,
   handControl,
   onHandControlChange,
+  legatoMs,
+  onLegatoChange,
 }: Props) {
+
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragRef = useRef<Drag | null>(null);
   const initial: Anchor =
@@ -774,6 +780,23 @@ export default function SoundConstellation({
       <p className="sc-hint">
         Tocca un nodo per selezionarlo e aprire i parametri · trascina per regolare volume o quantità.
       </p>
+
+      {legatoMs != null && onLegatoChange && (
+        <label className="mt-2 block text-[11px] font-semibold">
+          Legato fra accordi: <b>{legatoMs} ms</b>
+          <input
+            type="range"
+            min={0}
+            max={600}
+            step={10}
+            value={legatoMs}
+            onChange={(e) => onLegatoChange(Number(e.target.value))}
+            className="sc-range"
+            aria-label="Velocità legato fra accordi"
+          />
+        </label>
+      )}
+
 
       {/* ————— libreria preset: finestra a parte (icona salva in alto) ————— */}
       {presetsOpen && (

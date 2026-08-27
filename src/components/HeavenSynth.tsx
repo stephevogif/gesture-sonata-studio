@@ -1346,21 +1346,11 @@ export default function HeavenSynth() {
               onChange={setMix}
               handControl={handControl}
               onHandControlChange={updateHandControl}
+              legatoMs={legato}
+              onLegatoChange={setLegatoMs}
             />
             <div className="mt-3 space-y-3 border-t border-white/40 pt-3">
-              <label className="block text-[11px] font-semibold">
-                Legato fra accordi: <b>{legato} ms</b>
-                <input
-                  type="range"
-                  min={0}
-                  max={600}
-                  step={10}
-                  value={legato}
-                  onChange={(e) => setLegatoMs(Number(e.target.value))}
-                  className="sc-range"
-                  aria-label="Velocità legato fra accordi"
-                />
-              </label>
+
               <div className="space-y-2 rounded-xl border border-white/40 p-2">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-70">
                   Pianoforte
