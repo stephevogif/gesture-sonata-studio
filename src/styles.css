@@ -1606,16 +1606,18 @@
 @media (min-width: 768px) {
   .sky-portals {
     flex-direction: row;
-    gap: clamp(2rem, 6vw, 5rem);
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(1.4rem, 3.2vw, 3rem);
   }
   .sky-portal {
-    width: min(38vw, 360px);
+    width: min(28vw, 300px);
   }
 }
 
 @media (min-width: 1280px) {
   .sky-portal {
-    width: 400px;
+    width: 320px;
   }
 }
 
