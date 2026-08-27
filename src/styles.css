@@ -1354,7 +1354,33 @@
       rgba(255, 220, 160, 0.35) 88%,
       transparent
     );
+}
+
+@utility sky-orbit-onehand {
+  &::before {
+    background: conic-gradient(
+      from 70deg,
+      rgba(255, 200, 185, 0.06),
+      rgba(255, 225, 210, 0.9) 14%,
+      rgba(255, 185, 175, 0.1) 28%,
+      rgba(255, 185, 175, 0.03) 50%,
+      rgba(255, 235, 220, 0.6) 68%,
+      rgba(255, 185, 175, 0.05) 84%,
+      rgba(255, 200, 185, 0.06)
+    );
   }
+  &::after {
+    background: conic-gradient(
+      from 250deg,
+      transparent,
+      rgba(255, 220, 205, 0.5) 16%,
+      transparent 32%,
+      transparent 68%,
+      rgba(255, 200, 180, 0.35) 88%,
+      transparent
+    );
+  }
+}
 }
 
 @keyframes sky-flow-a {
