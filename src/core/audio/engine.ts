@@ -219,7 +219,7 @@ export class HeavenAudioEngine {
       voice = undefined;
     }
     if (!voice) {
-      const spec = presetOf(instrument);
+      const spec = withKeysOptions(presetOf(instrument), this.keys);
       voice = new SynthVoice(
         this.ctx,
         spec,
@@ -412,6 +412,7 @@ export class HeavenAudioEngine {
 
   noteOff(id: string, force = false) {
     if (this.hold && !force) return;
+    this.sustained.delete(id);
     for (const key of [...this.voices.keys()]) {
       const base = baseKey(key);
       if (base === id || base.startsWith(`${id}~`)) this.releaseVoice(key);
@@ -428,6 +429,7 @@ export class HeavenAudioEngine {
 
   allOff() {
     this.arp.clear();
+    this.sustained.clear();
     [...this.voices.keys()].forEach((key) => this.releaseVoice(key));
   }
 
@@ -460,6 +462,7 @@ export class HeavenAudioEngine {
     this.arp.setTempo(this.bpm);
     this.channels.forEach((c) => c.setTempo(this.bpm));
     this.masterChain?.setTempo(this.bpm);
+    this.restartPulse();
   }
 
   /** midi note a degree maps to for the given instrument */
