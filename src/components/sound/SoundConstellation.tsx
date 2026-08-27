@@ -781,6 +781,23 @@ export default function SoundConstellation({
         Tocca un nodo per selezionarlo e aprire i parametri · trascina per regolare volume o quantità.
       </p>
 
+      {legatoMs != null && onLegatoChange && (
+        <label className="mt-2 block text-[11px] font-semibold">
+          Legato fra accordi: <b>{legatoMs} ms</b>
+          <input
+            type="range"
+            min={0}
+            max={600}
+            step={10}
+            value={legatoMs}
+            onChange={(e) => onLegatoChange(Number(e.target.value))}
+            className="sc-range"
+            aria-label="Velocità legato fra accordi"
+          />
+        </label>
+      )}
+
+
       {/* ————— libreria preset: finestra a parte (icona salva in alto) ————— */}
       {presetsOpen && (
         <div className="sc-dock sc-dock-presets" role="dialog" aria-label="Preset">
