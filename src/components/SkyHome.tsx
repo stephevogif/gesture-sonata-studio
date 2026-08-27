@@ -283,7 +283,7 @@ export default function SkyHome() {
 
             <div className="sky-hint-wrap sky-reveal-3">
               <p className="sky-tap">TAP A SKY TO ENTER</p>
-              <p className="sky-foot">TWO SKIES. ONE SOUND.</p>
+              <p className="sky-foot">THREE SKIES. ONE SOUND.</p>
             </div>
           </>
         )}
