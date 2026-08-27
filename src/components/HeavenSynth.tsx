@@ -1717,6 +1717,10 @@ export default function HeavenSynth() {
           setPlayMode={setPlayMode}
           camStatus={status}
           camError={camError}
+          arpOn={arpOn}
+          onToggleArp={() => setArpOn((v) => !v)}
+          onOpenSound={() => setPanel("sound")}
+
 
         />
       )}
