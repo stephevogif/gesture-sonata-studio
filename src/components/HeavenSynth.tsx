@@ -51,6 +51,12 @@ import {
 import TutorialArt from "@/components/TutorialArt";
 import FloatingWindow from "@/components/ui/FloatingWindow";
 import OneHandScreen from "@/components/heaven/OneHandScreen";
+import {
+  drawStars,
+  drawTarotBack,
+  spawnStars,
+  type StarParticle,
+} from "@/components/heaven/tarotScene";
 import SoundConstellation from "@/components/sound/SoundConstellation";
 import { defaultMix, toMixSpec, type MixState } from "@/core/sound/mix";
 import {
@@ -150,6 +156,8 @@ export default function HeavenSynth() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   /** canvas secondario: anteprima tracking dentro One Hand */
   const trackCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ohStarsRef = useRef<StarParticle[]>([]);
+  const ohTimeRef = useRef(0);
 
   const engineRef = useRef<GestureSynthEngine | null>(null);
   const cloudsRef = useRef<{ x: number; y: number; r: number; v: number; a: number }[]>([]);
