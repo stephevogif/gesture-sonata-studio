@@ -9,7 +9,6 @@ import { Link } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
-  ListMusic,
   Moon,
   Play,
   Repeat,
@@ -65,7 +64,7 @@ export default function OneHandScreen({
 }: Props) {
   const songs = useMemo(() => allSongs(), []);
   const cover = config.playMode === "cover";
-  const [setup, setSetup] = useState(false);
+  const setup = true;
   const activeSlot =
     activeDegree == null ? null : config.slots.indexOf(activeDegree + 1) + 1 || null;
 
@@ -117,15 +116,6 @@ export default function OneHandScreen({
           <span className="heaven-pill !px-4">
             {config.hand === "any" ? "Auto" : config.hand}
           </span>
-          {/* setup come icona sullo schermo */}
-          <button
-            onClick={() => setSetup((v) => !v)}
-            aria-pressed={setup}
-            aria-label="Setup"
-            className={`heaven-orb-btn ${setup ? "heaven-orb-btn-on" : ""}`}
-          >
-            <ListMusic className="h-4 w-4" />
-          </button>
         </div>
 
         {/* SCALE / COVER */}
