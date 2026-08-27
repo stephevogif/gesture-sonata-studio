@@ -7,10 +7,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Hand,
   ListMusic,
   Moon,
   Play,
