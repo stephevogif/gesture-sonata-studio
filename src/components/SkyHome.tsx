@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { SKY_WARP_KEY } from "./SkyArrival";
+import oneHandIcon from "@/assets/one-hand-icon.png.asset.json";
 
 function FatimaHand({ className }: { className?: string }) {
   return (
