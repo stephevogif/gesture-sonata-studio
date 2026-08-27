@@ -1,11 +1,23 @@
 /**
  * One Hand — schermata dedicata dentro Seven Heavens.
- * UX moderna e pulita: schermo di tracking in alto, slot dita, editor accordi.
- * La maiolica siciliana resta come accento (angoli del frame, bordo dei pulsanti).
+ * Tracking a tutto schermo, UI sovrapposta e barra inferiore con
+ * FX/Sound Constellation, play, arpeggiatore e scorciatoie alle altre stanze.
  */
 
-import { useMemo } from "react";
-import { ArrowLeft, Hand, Play, Square, Sparkles, Wand2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import {
+  ArrowLeft,
+  Hand,
+  ListMusic,
+  Moon,
+  Play,
+  Repeat,
+  Sliders,
+  Sparkles,
+  Square,
+  Wand2,
+} from "lucide-react";
 import { allSongs } from "@/core/songs/catalog";
 import { startSongSession } from "@/core/songs/session";
 import { slotsFromSong, type OneHandConfig, type PlayMode } from "@/core/gesture/oneHand";
@@ -28,6 +40,9 @@ type Props = {
   setPlayMode: (mode: PlayMode) => void;
   camStatus?: string;
   camError?: string | null;
+  arpOn?: boolean;
+  onToggleArp?: () => void;
+  onOpenSound?: () => void;
 };
 
 export default function OneHandScreen({
@@ -44,123 +59,139 @@ export default function OneHandScreen({
   setPlayMode,
   camStatus,
   camError,
+  arpOn = false,
+  onToggleArp,
+  onOpenSound,
 }: Props) {
   const songs = useMemo(() => allSongs(), []);
   const cover = config.playMode === "cover";
+  const [setup, setSetup] = useState(false);
   const activeSlot =
     activeDegree == null ? null : config.slots.indexOf(activeDegree + 1) + 1 || null;
 
   return (
-    <div className="oh-screen fixed inset-0 z-40 overflow-y-auto">
-      <div className="mx-auto w-full max-w-xl px-4 pb-16 pt-4 sm:px-6">
-        <div className="oh-frame oh-corners p-4 sm:p-6">
-          {/* header */}
-          <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-            <button onClick={onClose} aria-label="Torna a Seven Heavens" className="oh-icon-btn">
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <div className="min-w-0 text-center">
-              <h1 className="oh-title text-[1.7rem] leading-none sm:text-3xl">ONE HAND</h1>
-              <p className="oh-kicker mt-1">{cover ? "Easy cover mode" : "Scale mode"}</p>
-            </div>
-            <button
-              onClick={onTogglePlay}
-              aria-label={running ? "Stop" : "Play"}
-              className="oh-icon-btn oh-icon-btn-primary"
-            >
-              {running ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            </button>
-          </header>
+    <div className="oh-screen oh-full fixed inset-0 z-40">
+      {/* tracking a tutto schermo */}
+      <canvas ref={trackCanvasRef} className="absolute inset-0 h-full w-full object-cover" />
 
-          {/* scale / cover */}
-          <div className="mt-4 flex justify-center">
-            <div className="oh-seg" role="tablist" aria-label="Modo di gioco">
-              <button
-                role="tab"
-                aria-selected={!cover}
-                onClick={() => setPlayMode("scale")}
-                className={`oh-seg-btn ${!cover ? "oh-seg-on" : ""}`}
-              >
-                Scale
-              </button>
-              <button
-                role="tab"
-                aria-selected={cover}
-                onClick={() => setPlayMode("cover")}
-                className={`oh-seg-btn ${cover ? "oh-seg-on" : ""}`}
-              >
-                Cover
-              </button>
-            </div>
+      {/* header */}
+      <header className="oh-top oh-corners">
+        <button onClick={onClose} aria-label="Torna a Seven Heavens" className="oh-icon-btn">
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <div className="min-w-0 text-center">
+          <h1 className="oh-title text-xl leading-none">ONE HAND</h1>
+          <p className="oh-kicker mt-1">{cover ? "Easy cover mode" : "Scale mode"}</p>
+        </div>
+        <div className="oh-seg" role="tablist" aria-label="Modo di gioco">
+          <button
+            role="tab"
+            aria-selected={!cover}
+            onClick={() => setPlayMode("scale")}
+            className={`oh-seg-btn !px-3 ${!cover ? "oh-seg-on" : ""}`}
+          >
+            Scale
+          </button>
+          <button
+            role="tab"
+            aria-selected={cover}
+            onClick={() => setPlayMode("cover")}
+            className={`oh-seg-btn !px-3 ${cover ? "oh-seg-on" : ""}`}
+          >
+            Cover
+          </button>
+        </div>
+      </header>
+
+      <div className="oh-viewport-bar oh-top-chips">
+        <span className="oh-chip">
+          <Hand className="h-3 w-3" /> {config.hand === "any" ? "AUTO" : config.hand.toUpperCase()}
+        </span>
+        <span className="oh-chip">{keyLabel}</span>
+      </div>
+
+      {/* accordo corrente / hint */}
+      <div className="oh-center">
+        {activeSlot ? (
+          <div className="animate-fade-in text-center">
+            <p className="oh-kicker">
+              {activeSlot} {activeSlot === 1 ? "dito" : "dita"}
+            </p>
+            <p className="oh-title text-5xl leading-none">
+              {degreeChordLabels[(config.slots[activeSlot - 1] ?? 1) - 1]}
+            </p>
           </div>
+        ) : (
+          <div className="text-center">
+            <Sparkles className="mx-auto h-5 w-5 text-[color:var(--oh-gold)]" />
+            <p className="oh-kicker mt-2">{running ? "Raise your hand" : "Premi play"}</p>
+            <p className="mt-1 text-[11px] font-semibold text-white/60">
+              {camError ?? (running ? (camStatus ?? "Alza la mano…") : "La mano diventa costellazione.")}
+            </p>
+          </div>
+        )}
+      </div>
 
-          {/* schermo di tracking */}
-          <div className="oh-viewport mt-4">
-            <canvas ref={trackCanvasRef} className="h-full w-full object-cover" />
-            {!running && (
-              <div className="absolute inset-0 grid place-items-center gap-2 px-6 text-center">
-                <div>
-                  <Sparkles className="mx-auto h-5 w-5 text-[color:var(--oh-gold)]" />
-                  <p className="oh-kicker mt-2">Raise your hand</p>
-                  <p className="mt-1 text-[11px] font-semibold leading-relaxed text-white/70">
-                    {camError ?? "Premi play: la mano diventa costellazione."}
-                  </p>
-                </div>
-              </div>
-            )}
-            {running && activeSlot == null && (
-              <p className="oh-viewport-hint">{camStatus ?? "Alza la mano…"}</p>
-            )}
-            <div className="oh-viewport-bar">
-              <span className="oh-chip">
-                <Hand className="h-3 w-3" /> {config.hand === "any" ? "AUTO" : config.hand.toUpperCase()}
+      {/* slot dita */}
+      <div className="oh-slots">
+        {config.slots.map((degree, i) => (
+          <div key={i} className="flex min-w-0 flex-col items-center gap-1">
+            <div className={`oh-slot ${activeSlot === i + 1 ? "oh-slot-on" : ""}`}>
+              <span className="text-lg font-bold leading-none">{i + 1}</span>
+              <span className="text-[10px] font-bold leading-none text-[color:var(--oh-gold)]">
+                {ROMAN[degree - 1]}
               </span>
-              <span className="oh-chip">{keyLabel}</span>
+              <span className="text-[10px] font-semibold leading-none text-white/85">
+                {degreeChordLabels[degree - 1]}
+              </span>
             </div>
+            <span className="truncate text-[8px] font-bold tracking-[0.14em] text-white/40">
+              {FINGER_NAMES[i]}
+            </span>
           </div>
+        ))}
+      </div>
 
-          {/* accordo corrente */}
-          <div className="mt-3 min-h-[3.5rem] text-center">
-            {activeSlot ? (
-              <div className="animate-fade-in">
-                <p className="oh-kicker">
-                  {activeSlot} {activeSlot === 1 ? "dito" : "dita"}
-                </p>
-                <p className="oh-title text-3xl leading-none">
-                  {degreeChordLabels[(config.slots[activeSlot - 1] ?? 1) - 1]}
-                </p>
-              </div>
-            ) : (
-              <p className="pt-4 text-[11px] font-semibold text-white/45">
-                {cover
-                  ? "Segui la progressione: ogni accordo ha il suo dito."
-                  : "Assegna un accordo a ogni dito e suona libero."}
-              </p>
-            )}
-          </div>
+      {/* barra inferiore */}
+      <nav className="oh-bar" aria-label="Controlli One Hand">
+        <button onClick={onOpenSound} className="oh-nav">
+          <Sliders className="h-5 w-5" />
+          FX / Sound
+        </button>
+        <button
+          onClick={onToggleArp}
+          aria-pressed={arpOn}
+          className={`oh-nav ${arpOn ? "oh-nav-on" : ""}`}
+        >
+          <Repeat className="h-5 w-5" />
+          Arp
+        </button>
+        <button onClick={onTogglePlay} className="oh-nav oh-nav-play">
+          {running ? <Square className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          {running ? "Stop" : "Play"}
+        </button>
+        <button
+          onClick={() => setSetup((v) => !v)}
+          aria-pressed={setup}
+          className={`oh-nav ${setup ? "oh-nav-on" : ""}`}
+        >
+          <ListMusic className="h-5 w-5" />
+          Setup
+        </button>
+        <button onClick={onClose} className="oh-nav">
+          <Sparkles className="h-5 w-5" />
+          7 Heavens
+        </button>
+        <Link to="/night" className="oh-nav">
+          <Moon className="h-5 w-5" />
+          Night Sky
+        </Link>
+      </nav>
 
-          {/* slot dita */}
-          <div className="mt-2 grid grid-cols-5 gap-1.5 sm:gap-2">
-            {config.slots.map((degree, i) => (
-              <div key={i} className="flex min-w-0 flex-col items-center gap-1">
-                <div className={`oh-slot ${activeSlot === i + 1 ? "oh-slot-on" : ""}`}>
-                  <span className="text-lg font-bold leading-none sm:text-xl">{i + 1}</span>
-                  <span className="text-[10px] font-bold leading-none text-[color:var(--oh-gold)]">
-                    {ROMAN[degree - 1]}
-                  </span>
-                  <span className="text-[10px] font-semibold leading-none text-white/85">
-                    {degreeChordLabels[degree - 1]}
-                  </span>
-                </div>
-                <span className="truncate text-[8px] font-bold tracking-[0.14em] text-white/40">
-                  {FINGER_NAMES[i]}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* mano */}
-          <div className="oh-card mt-4 flex items-center gap-2">
+      {/* pannello setup: mano, canzone, slot */}
+      {setup && (
+        <div className="oh-sheet">
+          <div className="oh-card flex items-center gap-2">
             <span className="px-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
               Mano
             </span>
@@ -176,8 +207,7 @@ export default function OneHandScreen({
           </div>
 
           {cover ? (
-            /* ————— COVER: canzone e progressione ————— */
-            <div className="oh-card mt-4 space-y-3">
+            <div className="oh-card mt-3 space-y-3">
               <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
                 Canzone
                 <select
@@ -249,8 +279,7 @@ export default function OneHandScreen({
               )}
             </div>
           ) : (
-            /* ————— SCALE: accordi liberi sulle dita ————— */
-            <div className="oh-card mt-4 space-y-2">
+            <div className="oh-card mt-3 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/70">
                   Slot editor
@@ -280,13 +309,8 @@ export default function OneHandScreen({
               ))}
             </div>
           )}
-
-          <button onClick={onTogglePlay} className="oh-btn oh-btn-primary mt-5 w-full !py-4">
-            {running ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            {running ? "Stop" : "Play"}
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
