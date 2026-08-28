@@ -1600,35 +1600,118 @@
   }
 }
 
-/* ---- layout portali (mobile / tablet / desktop) ---- */
+/* ---- carousel portale unico ---- */
 
-@utility sky-portals {
-  margin-top: 1.5rem;
+@utility sky-carousel {
+  margin-top: 1.2rem;
   display: flex;
   flex: 1;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2.6rem;
+  gap: clamp(0.2rem, 2vw, 1.2rem);
+}
+
+@utility sky-arrow {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  border-radius: 999px;
+  color: rgba(255, 248, 235, 0.72);
+  background: transparent;
+  transition:
+    color 0.25s ease,
+    transform 0.25s ease,
+    opacity 0.25s ease;
+  opacity: 0.8;
+
+  &:hover {
+    color: #fff8eb;
+    opacity: 1;
+  }
+  &:active {
+    transform: scale(0.9);
+  }
+}
+
+@utility sky-glyph {
+  width: clamp(52px, 16vw, 74px);
+  height: clamp(52px, 16vw, 74px);
+  color: rgba(255, 244, 224, 0.94);
+  filter: drop-shadow(0 0 16px rgba(255, 235, 200, 0.45));
+  animation: sky-breathe 4.6s ease-in-out infinite;
+}
+
+@utility sky-slide-next {
+  animation: sky-slide-in-next 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility sky-slide-prev {
+  animation: sky-slide-in-prev 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sky-slide-in-next {
+  from {
+    opacity: 0;
+    transform: translateX(22px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes sky-slide-in-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-22px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@utility sky-dots {
+  margin-top: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+@utility sky-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 245, 230, 0.3);
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease;
+}
+
+@utility sky-dot-on {
+  background: rgba(255, 240, 210, 0.95);
+  transform: scale(1.5);
 }
 
 @media (min-width: 768px) {
-  .sky-portals {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: clamp(1.4rem, 3.2vw, 3rem);
-  }
   .sky-portal {
-    width: min(28vw, 300px);
+    width: min(46vw, 340px);
+  }
+  .sky-arrow {
+    width: 3.25rem;
+    height: 3.25rem;
   }
 }
 
 @media (min-width: 1280px) {
   .sky-portal {
-    width: 320px;
+    width: 360px;
   }
 }
+
 
 @utility sky-portal-chosen {
   animation: sky-chosen 0.72s cubic-bezier(0.4, 0, 0.2, 1) forwards;
