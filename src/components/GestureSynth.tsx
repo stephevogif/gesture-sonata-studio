@@ -1453,6 +1453,36 @@ export default function GestureSynth() {
           </button>
         </div>
 
+        {/* overlay mappa note: bande verticali con il nome di ogni grado */}
+        {showScaleMap && mode !== "pinch" && freePitch === "scale" && (
+          <div className="pointer-events-none fixed inset-0 z-20 flex">
+            {Array.from({ length: STEPS }, (_, i) => {
+              const name = midiToName(degreeToMidi(i, scaleSteps(scale), rootPc, 0));
+              const isRoot = name.replace(/\d+$/, "") === NOTE_NAMES[rootPc];
+              return (
+                <div
+                  key={i}
+                  className="flex flex-1 flex-col items-center justify-end border-l border-white/10 pb-16"
+                  style={{
+                    background: isRoot
+                      ? "linear-gradient(to top, rgba(255,214,140,0.16), transparent 60%)"
+                      : "linear-gradient(to top, rgba(255,255,255,0.05), transparent 55%)",
+                  }}
+                >
+                  <span
+                    className={`rotate-[-90deg] whitespace-nowrap text-[10px] tracking-[0.2em] ${
+                      isRoot ? "text-[#ffe3ab]" : "text-white/60"
+                    }`}
+                  >
+                    {name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+
         {/* performance sky */}
         <div className="relative flex flex-1 flex-col items-center justify-center py-10 text-center">
           <div
