@@ -283,6 +283,9 @@ export default function GestureSynth() {
   const [mode, setMode] = useState<PlayMode>("split");
   const [freeMode, setFreeMode] = useState<Exclude<PlayMode, "pinch">>("split");
   const [freePitch, setFreePitch] = useState<"scale" | "glide">("scale");
+  /** mappa delle note: mostra dove cade ogni grado sullo schermo (solo modalità Scala) */
+  const [showScaleMap, setShowScaleMap] = useState(false);
+
 
   const [instrument, setInstrument] = useState<InstrumentId>("reese");
   const [leftInstrument, setLeftInstrument] = useState<InstrumentId>("violin");
