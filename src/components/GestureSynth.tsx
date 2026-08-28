@@ -1360,7 +1360,7 @@ export default function GestureSynth() {
           <span className="h-px w-16 bg-gradient-to-l from-transparent to-current opacity-60" />
         </div>
 
-        {/* mode selector unificato */}
+        {/* mode selector unificato: Tocco · Libero · Scala */}
         <div className="mt-5 flex justify-center">
           <div className="night-segment">
             <button
@@ -1373,13 +1373,32 @@ export default function GestureSynth() {
               Tocco
             </button>
             <button
-              onClick={() => setMode(freeMode)}
+              onClick={() => {
+                setMode(freeMode);
+                setFreePitch("glide");
+              }}
               aria-label="Libero"
-              aria-pressed={mode !== "pinch"}
-              className={`night-seg ${mode !== "pinch" ? "night-seg-on" : ""}`}
+              aria-pressed={mode !== "pinch" && freePitch === "glide"}
+              className={`night-seg ${
+                mode !== "pinch" && freePitch === "glide" ? "night-seg-on" : ""
+              }`}
             >
               <Hand className="mr-1.5 h-3.5 w-3.5" />
               Libero
+            </button>
+            <button
+              onClick={() => {
+                setMode(freeMode);
+                setFreePitch("scale");
+              }}
+              aria-label="Scala"
+              aria-pressed={mode !== "pinch" && freePitch === "scale"}
+              className={`night-seg ${
+                mode !== "pinch" && freePitch === "scale" ? "night-seg-on" : ""
+              }`}
+            >
+              <Music4 className="mr-1.5 h-3.5 w-3.5" />
+              Scala
             </button>
             <button
               onClick={toggleListen}
@@ -1398,6 +1417,22 @@ export default function GestureSynth() {
             </button>
           </div>
         </div>
+
+        {/* mappa delle note: disponibile solo in modalità Scala */}
+        {mode !== "pinch" && freePitch === "scale" && (
+          <div className="mt-3 flex justify-center">
+            <button
+              onClick={() => setShowScaleMap((v) => !v)}
+              aria-pressed={showScaleMap}
+              aria-label="Mostra la mappa delle note sullo schermo"
+              className={`night-seg ${showScaleMap ? "night-seg-on" : ""}`}
+            >
+              <KeyboardMusic className="mr-1.5 h-3.5 w-3.5" />
+              Mappa note
+            </button>
+          </div>
+        )}
+
 
         {/* hold: toggle discreto */}
         <div className="mt-3 flex justify-center">
