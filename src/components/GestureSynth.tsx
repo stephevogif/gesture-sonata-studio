@@ -224,6 +224,21 @@ const HAND_CONNECTIONS: [number, number][] = [
 
 const STEPS = 21;
 
+/** mappa note: 14 bande, 7 gradi per lato specchiati attorno al centro */
+const MAP_PER_SIDE = 7;
+const MAP_BANDS = MAP_PER_SIDE * 2;
+
+/** indice di banda 0..13 da una posizione orizzontale 0..1 */
+const positionToBand = (x: number): number => {
+  const clamped = x < 0 ? 0 : x > 1 ? 1 : x;
+  const raw = Math.floor(clamped * MAP_BANDS);
+  return raw > MAP_BANDS - 1 ? MAP_BANDS - 1 : raw;
+};
+
+/** grado della scala di una banda: sale verso il centro e torna indietro (specchiato) */
+const bandToDegree = (band: number): number =>
+  band < MAP_PER_SIDE ? band : MAP_BANDS - 1 - band;
+
 const CALIB_KEY = "cth-calibration-v1";
 const DEFAULT_CALIB = { on: 0.42, off: 0.62 };
 
@@ -965,12 +980,12 @@ export default function GestureSynth() {
 
         } else {
           active.add(id);
-          const degree = positionToDegree(x, STEPS);
+          const degree = bandToDegree(positionToBand(x));
           const shift = INSTRUMENT_SHIFT[inst] ?? 0;
           const midi = degreeToMidi(degree, engine.scale, engine.rootPc, shift);
           // glide: altezza continua tra la prima e l'ultima nota della stessa estensione
           const lowMidi = degreeToMidi(0, engine.scale, engine.rootPc, shift);
-          const highMidi = degreeToMidi(STEPS - 1, engine.scale, engine.rootPc, shift);
+          const highMidi = degreeToMidi(MAP_PER_SIDE - 1, engine.scale, engine.rootPc, shift);
           const glideMidi = lowMidi + Math.min(1, Math.max(0, x)) * (highMidi - lowMidi);
           const playMidi = fp === "glide" ? glideMidi : midi;
           // apertura della mano -> brillantezza / filtro
@@ -1456,13 +1471,16 @@ export default function GestureSynth() {
         {/* overlay mappa note: bande verticali con il nome di ogni grado */}
         {showScaleMap && mode !== "pinch" && freePitch === "scale" && (
           <div className="pointer-events-none fixed inset-0 z-20 flex">
-            {Array.from({ length: STEPS }, (_, i) => {
-              const name = midiToName(degreeToMidi(i, scaleSteps(scale), rootPc, 0));
+            {Array.from({ length: MAP_BANDS }, (_, i) => {
+              const name = midiToName(degreeToMidi(bandToDegree(i), scaleSteps(scale), rootPc, 0));
               const isRoot = name.replace(/\d+$/, "") === NOTE_NAMES[rootPc];
+              const isCenter = i === MAP_PER_SIDE;
               return (
                 <div
                   key={i}
-                  className="flex flex-1 flex-col items-center justify-end border-l border-white/10 pb-16"
+                  className={`flex flex-1 items-center justify-center ${
+                    isCenter ? "border-l border-white/25" : "border-l border-white/10"
+                  }`}
                   style={{
                     background: isRoot
                       ? "linear-gradient(to top, rgba(255,214,140,0.16), transparent 60%)"
@@ -1470,8 +1488,8 @@ export default function GestureSynth() {
                   }}
                 >
                   <span
-                    className={`rotate-[-90deg] whitespace-nowrap text-[10px] tracking-[0.2em] ${
-                      isRoot ? "text-[#ffe3ab]" : "text-white/60"
+                    className={`whitespace-nowrap text-xs tracking-[0.18em] ${
+                      isRoot ? "text-[#ffe3ab]" : "text-white/65"
                     }`}
                   >
                     {name}
