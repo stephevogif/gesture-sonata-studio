@@ -858,7 +858,9 @@ export default function HeavenSynth() {
       const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
       const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
       const oh = oneHandRef.current;
-      const oneHandOn = oh.enabled;
+      /** la mappatura One Hand vale solo nella schermata One Hand:
+       *  in Seven Heavens le dita restano il grado esatto della scala */
+      const oneHandOn = oh.enabled && oneHandScreenRef.current;
       /** ONE HAND: conta le dita di una sola mano (1..5 = slot) */
       const soloCount = !oneHandOn
         ? 0
