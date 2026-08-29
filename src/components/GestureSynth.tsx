@@ -1471,13 +1471,16 @@ export default function GestureSynth() {
         {/* overlay mappa note: bande verticali con il nome di ogni grado */}
         {showScaleMap && mode !== "pinch" && freePitch === "scale" && (
           <div className="pointer-events-none fixed inset-0 z-20 flex">
-            {Array.from({ length: STEPS }, (_, i) => {
-              const name = midiToName(degreeToMidi(i, scaleSteps(scale), rootPc, 0));
+            {Array.from({ length: MAP_BANDS }, (_, i) => {
+              const name = midiToName(degreeToMidi(bandToDegree(i), scaleSteps(scale), rootPc, 0));
               const isRoot = name.replace(/\d+$/, "") === NOTE_NAMES[rootPc];
+              const isCenter = i === MAP_PER_SIDE;
               return (
                 <div
                   key={i}
-                  className="flex flex-1 flex-col items-center justify-end border-l border-white/10 pb-16"
+                  className={`flex flex-1 items-center justify-center ${
+                    isCenter ? "border-l border-white/25" : "border-l border-white/10"
+                  }`}
                   style={{
                     background: isRoot
                       ? "linear-gradient(to top, rgba(255,214,140,0.16), transparent 60%)"
@@ -1485,8 +1488,8 @@ export default function GestureSynth() {
                   }}
                 >
                   <span
-                    className={`rotate-[-90deg] whitespace-nowrap text-[10px] tracking-[0.2em] ${
-                      isRoot ? "text-[#ffe3ab]" : "text-white/60"
+                    className={`whitespace-nowrap text-xs tracking-[0.18em] ${
+                      isRoot ? "text-[#ffe3ab]" : "text-white/65"
                     }`}
                   >
                     {name}
