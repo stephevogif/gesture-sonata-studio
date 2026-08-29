@@ -85,6 +85,8 @@ export class SynthVoice {
       osc.type = partial.wave;
       osc.frequency.value = frequency * ratio;
       osc.detune.value = partial.detune ?? 0;
+      this.baseDetunes.push(partial.detune ?? 0);
+
       const level = ctx.createGain();
       level.gain.value = partial.level;
       osc.connect(level).connect(this.filter);
