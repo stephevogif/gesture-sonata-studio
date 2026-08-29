@@ -213,6 +213,8 @@ export default function HeavenSynth() {
   // ————— ONE HAND: una sola mano, dita 1..5 = slot assegnabili a qualsiasi grado —————
   const [oneHand, setOneHand] = useState<OneHandConfig>(DEFAULT_ONE_HAND);
   const [oneHandScreen, setOneHandScreen] = useState(false);
+  const oneHandScreenRef = useRef(false);
+  oneHandScreenRef.current = oneHandScreen;
   const oneHandRef = useRef<OneHandConfig>(DEFAULT_ONE_HAND);
   oneHandRef.current = oneHand;
   useEffect(() => setOneHand(readOneHand()), []);
