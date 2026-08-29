@@ -224,6 +224,21 @@ const HAND_CONNECTIONS: [number, number][] = [
 
 const STEPS = 21;
 
+/** mappa note: 14 bande, 7 gradi per lato specchiati attorno al centro */
+const MAP_PER_SIDE = 7;
+const MAP_BANDS = MAP_PER_SIDE * 2;
+
+/** indice di banda 0..13 da una posizione orizzontale 0..1 */
+const positionToBand = (x: number): number => {
+  const clamped = x < 0 ? 0 : x > 1 ? 1 : x;
+  const raw = Math.floor(clamped * MAP_BANDS);
+  return raw > MAP_BANDS - 1 ? MAP_BANDS - 1 : raw;
+};
+
+/** grado della scala di una banda: sale verso il centro e torna indietro (specchiato) */
+const bandToDegree = (band: number): number =>
+  band < MAP_PER_SIDE ? band : MAP_BANDS - 1 - band;
+
 const CALIB_KEY = "cth-calibration-v1";
 const DEFAULT_CALIB = { on: 0.42, off: 0.62 };
 
