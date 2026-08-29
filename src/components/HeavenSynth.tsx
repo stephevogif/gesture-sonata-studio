@@ -213,6 +213,8 @@ export default function HeavenSynth() {
   // ————— ONE HAND: una sola mano, dita 1..5 = slot assegnabili a qualsiasi grado —————
   const [oneHand, setOneHand] = useState<OneHandConfig>(DEFAULT_ONE_HAND);
   const [oneHandScreen, setOneHandScreen] = useState(false);
+  const oneHandScreenRef = useRef(false);
+  oneHandScreenRef.current = oneHandScreen;
   const oneHandRef = useRef<OneHandConfig>(DEFAULT_ONE_HAND);
   oneHandRef.current = oneHand;
   useEffect(() => setOneHand(readOneHand()), []);
@@ -858,7 +860,9 @@ export default function HeavenSynth() {
       const lc = left ? Math.max(0, Math.min(5, left.count)) : 0;
       const rc = right ? Math.max(0, Math.min(5, right.count)) : 0;
       const oh = oneHandRef.current;
-      const oneHandOn = oh.enabled;
+      /** la mappatura One Hand vale solo nella schermata One Hand:
+       *  in Seven Heavens le dita restano il grado esatto della scala */
+      const oneHandOn = oh.enabled && oneHandScreenRef.current;
       /** ONE HAND: conta le dita di una sola mano (1..5 = slot) */
       const soloCount = !oneHandOn
         ? 0
