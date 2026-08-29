@@ -47,6 +47,9 @@ export class SynthVoice {
   private readonly filter: BiquadFilterNode;
   private readonly oscillators: OscillatorNode[] = [];
   private readonly ratios: number[] = [];
+  private readonly baseDetunes: number[] = [];
+  private bendCents = 0;
+
   private readonly extras: (OscillatorNode | AudioBufferSourceNode)[] = [];
   private readonly vibratoDepth: GainNode;
   private noiseGain: GainNode | null = null;
