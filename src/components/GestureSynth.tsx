@@ -912,7 +912,9 @@ export default function GestureSynth() {
           (4 * handSize);
         const openness = Math.max(0, Math.min(1, (tipSpread - 1.6) / 1.4));
         const sideHeight = Math.max(0, Math.min(1, 1 - wrist.y));
-        sides[isRight ? "right" : "left"] = { height: sideHeight, openness };
+        // rotazione del palmo: angolo wrist → nocca centrale, 0 = mano verticale
+        const tilt = Math.atan2(midMcp.x - wrist.x, wrist.y - midMcp.y) * (isRight ? 1 : -1);
+        sides[isRight ? "right" : "left"] = { height: sideHeight, openness, tilt };
         if (i === 0) liveRatioRef.current = indexRatio;
         if (calibPhaseRef.current === "open") calibSamplesRef.current.open.push(indexRatio);
         else if (calibPhaseRef.current === "closed") calibSamplesRef.current.closed.push(indexRatio);
