@@ -350,6 +350,20 @@ export default function GestureSynth() {
     writeHandControl("sky.night.handControl", next);
   }, []);
 
+  // ————— espressione della mano (rotazione / apertura / altezza): opt-in —————
+  const [expression, setExpression] = useState<Expression>(DEFAULT_EXPRESSION);
+  const expressionRef = useRef<Expression>(DEFAULT_EXPRESSION);
+  expressionRef.current = expression;
+  useEffect(() => setExpression(readExpression("sky.night.expression")), []);
+  const updateExpression = useCallback((next: Expression) => {
+    setExpression(next);
+    writeExpression("sky.night.expression", next);
+    if (!next.enabled || !next.bend) engineRef.current?.setBend(0);
+    if (!next.enabled || !next.volume) engineRef.current?.setMasterGain(1);
+  }, []);
+
+
+
 
   const [listening, setListening] = useState(false);
   const [listenProgress, setListenProgress] = useState(0);
