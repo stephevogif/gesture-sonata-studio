@@ -51,6 +51,7 @@ import {
   type HandSource,
   type HandTargetId,
 } from "@/core/sound/handControl";
+import type { Expression } from "@/core/gesture/expression";
 
 const VIEW = 320;
 const C = VIEW / 2;
