@@ -1368,6 +1368,8 @@ export default function HeavenSynth() {
               onChange={setMix}
               handControl={handControl}
               onHandControlChange={updateHandControl}
+              expression={expression}
+              onExpressionChange={updateExpression}
               legatoMs={legato}
               onLegatoChange={setLegatoMs}
             />
