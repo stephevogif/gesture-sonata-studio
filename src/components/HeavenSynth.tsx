@@ -328,6 +328,16 @@ export default function HeavenSynth() {
     writeHandControl("sky.heaven.handControl", next);
   }, []);
 
+  // ————— espressione della mano (rotazione / apertura / altezza): opt-in —————
+  const [expression, setExpression] = useState<Expression>(DEFAULT_EXPRESSION);
+  const expressionRef = useRef<Expression>(DEFAULT_EXPRESSION);
+  expressionRef.current = expression;
+  useEffect(() => setExpression(readExpression("sky.heaven.expression")), []);
+  const updateExpression = useCallback((next: Expression) => {
+    setExpression(next);
+    writeExpression("sky.heaven.expression", next);
+  }, []);
+
   // gesto "doppio pugno": chiudi e riapri entrambe le mani per accendere/spegnere l'arp
   const fistAtRef = useRef(0);
   const armedRef = useRef(false);
