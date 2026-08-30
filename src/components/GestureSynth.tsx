@@ -54,6 +54,13 @@ import {
 } from "@/lib/synth";
 import { detectKey } from "@/lib/keyDetect";
 import {
+  DEFAULT_EXPRESSION,
+  applyExpression,
+  readExpression,
+  writeExpression,
+  type Expression,
+} from "@/core/gesture/expression";
+import {
   cameraErrorFrom,
   loadHandLandmarker,
   openCamera,
