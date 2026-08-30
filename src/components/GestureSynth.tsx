@@ -1123,13 +1123,16 @@ export default function GestureSynth() {
       musicLevelRef.current = musicLevelRef.current * 0.92 + maxSoundLevel * 0.08;
       if (gm > 0) engine.setFilterMod(maxMod, gm / 100);
 
+      // ————— espressione: rotazione = bend, apertura = low pass, altezza = volume —————
+      const ex = applyExpression(engine, sides.left, sides.right, expressionRef.current);
+
       // ————— controllo con le mani (opt-in dalla Sound Constellation) —————
       const hc = handControlRef.current;
       const cutSrc = sourceValue(hc.cutoff, sides.left, sides.right);
       const volSrc = sourceValue(hc.volume, sides.left, sides.right);
       const revSrc = sourceValue(hc.reverb, sides.left, sides.right);
-      if (cutSrc !== null) engine.setEq(eqType, 220 * Math.pow(16000 / 220, cutSrc));
-      if (volSrc !== null) engine.setMasterGain(0.05 + volSrc * 0.95);
+      if (cutSrc !== null && !ex.filter) engine.setEq(eqType, 220 * Math.pow(16000 / 220, cutSrc));
+      if (volSrc !== null && !ex.volume) engine.setMasterGain(0.05 + volSrc * 0.95);
       if (revSrc !== null) engine.setReverb(revSrc);
 
       // update + draw particelle
