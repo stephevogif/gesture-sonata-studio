@@ -498,6 +498,13 @@ export class HeavenAudioEngine {
     this.applyEq();
   }
 
+  /** pitch bend espressivo su tutte le voci attive (cent, ±50 = quarto di tono) */
+  setBend(cents: number) {
+    if (Math.abs(cents - this.bendCents) < 0.5) return;
+    this.bendCents = cents;
+    for (const voice of this.voices.values()) voice.setBend(cents);
+  }
+
   /** gesture modulation of the master cutoff: value 0..1, amount 0..1 */
   setFilterMod(value: number, amount = this.filterModAmount) {
     this.filterMod = clamp(value, 0, 1);
