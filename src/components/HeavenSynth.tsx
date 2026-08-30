@@ -66,6 +66,13 @@ import {
   type HandControl,
 } from "@/core/sound/handControl";
 import { detectKey } from "@/lib/keyDetect";
+import {
+  DEFAULT_EXPRESSION,
+  applyExpression,
+  readExpression,
+  writeExpression,
+  type Expression,
+} from "@/core/gesture/expression";
 
 type PanelId = null | "sound" | "scale" | "arp" | "help";
 
