@@ -1012,6 +1012,44 @@ export default function SoundConstellation({
         </div>
       )}
 
+      {/* ————— espressione della mano: rotazione, apertura, altezza ————— */}
+      {expression && onExpressionChange && (
+        <div className="sc-editor mt-2">
+          <div className="sc-pop-head">
+            <span>ESPRESSIONE MANO</span>
+            <button
+              className="sc-chip"
+              onClick={() => onExpressionChange({ ...expression, enabled: !expression.enabled })}
+            >
+              {expression.enabled ? "Attiva" : "Spenta"}
+            </button>
+          </div>
+          {(
+            [
+              { id: "bend", label: "Rotazione → intonazione (¼ tono)" },
+              { id: "filter", label: "Apri/chiudi → low pass" },
+              { id: "volume", label: "Alza/abbassa → volume" },
+            ] as const
+          ).map((row) => (
+            <label key={row.id} className="sc-field-label">
+              {row.label}
+              <input
+                type="checkbox"
+                aria-label={row.label}
+                disabled={!expression.enabled}
+                checked={expression[row.id]}
+                onChange={(e) => onExpressionChange({ ...expression, [row.id]: e.target.checked })}
+              />
+            </label>
+          ))}
+          <p className="sc-hint">
+            Gira il palmo per piegare l&apos;intonazione, apri la mano per aprire il filtro, alza
+            la mano per alzare il volume.
+          </p>
+        </div>
+      )}
+
+
 
       {/* ————— pannello parametri: finestra laterale, non copre la console ————— */}
       {selected && (
