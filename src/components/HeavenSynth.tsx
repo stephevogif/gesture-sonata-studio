@@ -343,6 +343,8 @@ export default function HeavenSynth() {
   const updateExpression = useCallback((next: Expression) => {
     setExpression(next);
     writeExpression("sky.heaven.expression", next);
+    if (!next.enabled || !next.bend) engineRef.current?.setBend(0);
+    if (!next.enabled || !next.volume) engineRef.current?.setMasterGain(1);
   }, []);
 
   // gesto "doppio pugno": chiudi e riapri entrambe le mani per accendere/spegnere l'arp
