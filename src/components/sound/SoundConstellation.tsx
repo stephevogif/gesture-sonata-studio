@@ -116,6 +116,9 @@ type Props = {
   masterOnly?: boolean;
   handControl?: HandControl;
   onHandControlChange?: (next: HandControl) => void;
+  /** espressione continua della mano: rotazione, apertura, altezza */
+  expression?: Expression;
+  onExpressionChange?: (next: Expression) => void;
   /** tempo di legato fra gli accordi, in ms */
   legatoMs?: number;
   onLegatoChange?: (ms: number) => void;
@@ -128,6 +131,8 @@ export default function SoundConstellation({
   masterOnly = false,
   handControl,
   onHandControlChange,
+  expression,
+  onExpressionChange,
   legatoMs,
   onLegatoChange,
 }: Props) {
