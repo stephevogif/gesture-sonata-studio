@@ -862,11 +862,14 @@ export default function HeavenSynth() {
         volSrc !== null ? handVol : volFollowRef.current ? handVol : 1,
       );
 
+      // ————— espressione: rotazione = bend, apertura = low pass, altezza = volume —————
+      const ex = applyExpression(engine, left, right, expressionRef.current);
+
       // low pass risonante: fermo al massimo finché non lo assegni a una mano
       const cutTarget =
         cutSrc !== null ? 260 * Math.pow(Math.max(400, cmax) / 260, cutSrc) : cmax;
       const cutoff = cutSm.current.push(cutTarget);
-      engine.setEq("lowpass", cutoff);
+      if (!ex.filter) engine.setEq("lowpass", cutoff);
       if (revSrc !== null) engine.setReverb(revSrc);
       const bright = Math.max(0.1, Math.min(1, cutSrc !== null ? cutSrc : 0.6));
 
