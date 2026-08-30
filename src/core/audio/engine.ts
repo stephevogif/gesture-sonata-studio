@@ -54,6 +54,7 @@ export class HeavenAudioEngine {
   private ctx: AudioContext | null = null;
   private rack: MasterRack | null = null;
   private voices = new Map<string, SynthVoice>();
+  private bendCents = 0;
   private readonly arp: Arpeggiator;
   /** Sound Constellation layers; empty = classic single-instrument routing */
   private channels = new Map<string, InstrumentChannel>();
@@ -233,6 +234,7 @@ export class HeavenAudioEngine {
           chorus: this.rack.chorusSend,
         },
       );
+      if (this.bendCents) voice.setBend(this.bendCents);
       this.voices.set(id, voice);
       this.trimVoices();
     }
@@ -496,6 +498,13 @@ export class HeavenAudioEngine {
   setResonance(q: number) {
     this.eqQ = clamp(q, 0.1, 24);
     this.applyEq();
+  }
+
+  /** pitch bend espressivo su tutte le voci attive (cent, ±50 = quarto di tono) */
+  setBend(cents: number) {
+    if (Math.abs(cents - this.bendCents) < 0.5) return;
+    this.bendCents = cents;
+    for (const voice of this.voices.values()) voice.setBend(cents);
   }
 
   /** gesture modulation of the master cutoff: value 0..1, amount 0..1 */

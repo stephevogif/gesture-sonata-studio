@@ -54,6 +54,13 @@ import {
 } from "@/lib/synth";
 import { detectKey } from "@/lib/keyDetect";
 import {
+  DEFAULT_EXPRESSION,
+  applyExpression,
+  readExpression,
+  writeExpression,
+  type Expression,
+} from "@/core/gesture/expression";
+import {
   cameraErrorFrom,
   loadHandLandmarker,
   openCamera,
@@ -349,6 +356,20 @@ export default function GestureSynth() {
     setHandControl(next);
     writeHandControl("sky.night.handControl", next);
   }, []);
+
+  // ————— espressione della mano (rotazione / apertura / altezza): opt-in —————
+  const [expression, setExpression] = useState<Expression>(DEFAULT_EXPRESSION);
+  const expressionRef = useRef<Expression>(DEFAULT_EXPRESSION);
+  expressionRef.current = expression;
+  useEffect(() => setExpression(readExpression("sky.night.expression")), []);
+  const updateExpression = useCallback((next: Expression) => {
+    setExpression(next);
+    writeExpression("sky.night.expression", next);
+    if (!next.enabled || !next.bend) engineRef.current?.setBend(0);
+    if (!next.enabled || !next.volume) engineRef.current?.setMasterGain(1);
+  }, []);
+
+
 
 
   const [listening, setListening] = useState(false);
@@ -860,7 +881,8 @@ export default function GestureSynth() {
 
       let maxSoundLevel = 0;
       let maxMod = 0;
-      const sides: { left: { height: number; openness: number } | null; right: { height: number; openness: number } | null } = { left: null, right: null };
+      type SideHand = { height: number; openness: number; tilt: number };
+      const sides: { left: SideHand | null; right: SideHand | null } = { left: null, right: null };
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
         
@@ -890,7 +912,9 @@ export default function GestureSynth() {
           (4 * handSize);
         const openness = Math.max(0, Math.min(1, (tipSpread - 1.6) / 1.4));
         const sideHeight = Math.max(0, Math.min(1, 1 - wrist.y));
-        sides[isRight ? "right" : "left"] = { height: sideHeight, openness };
+        // rotazione del palmo: angolo wrist → nocca centrale, 0 = mano verticale
+        const tilt = Math.atan2(midMcp.x - wrist.x, wrist.y - midMcp.y) * (isRight ? 1 : -1);
+        sides[isRight ? "right" : "left"] = { height: sideHeight, openness, tilt };
         if (i === 0) liveRatioRef.current = indexRatio;
         if (calibPhaseRef.current === "open") calibSamplesRef.current.open.push(indexRatio);
         else if (calibPhaseRef.current === "closed") calibSamplesRef.current.closed.push(indexRatio);
@@ -1099,13 +1123,16 @@ export default function GestureSynth() {
       musicLevelRef.current = musicLevelRef.current * 0.92 + maxSoundLevel * 0.08;
       if (gm > 0) engine.setFilterMod(maxMod, gm / 100);
 
+      // ————— espressione: rotazione = bend, apertura = low pass, altezza = volume —————
+      const ex = applyExpression(engine, sides.left, sides.right, expressionRef.current);
+
       // ————— controllo con le mani (opt-in dalla Sound Constellation) —————
       const hc = handControlRef.current;
       const cutSrc = sourceValue(hc.cutoff, sides.left, sides.right);
       const volSrc = sourceValue(hc.volume, sides.left, sides.right);
       const revSrc = sourceValue(hc.reverb, sides.left, sides.right);
-      if (cutSrc !== null) engine.setEq(eqType, 220 * Math.pow(16000 / 220, cutSrc));
-      if (volSrc !== null) engine.setMasterGain(0.05 + volSrc * 0.95);
+      if (cutSrc !== null && !ex.filter) engine.setEq(eqType, 220 * Math.pow(16000 / 220, cutSrc));
+      if (volSrc !== null && !ex.volume) engine.setMasterGain(0.05 + volSrc * 0.95);
       if (revSrc !== null) engine.setReverb(revSrc);
 
       // update + draw particelle
@@ -2043,6 +2070,8 @@ export default function GestureSynth() {
               onChange={setMix}
               handControl={handControl}
               onHandControlChange={updateHandControl}
+              expression={expression}
+              onExpressionChange={updateExpression}
             />
           </div>
         </div>

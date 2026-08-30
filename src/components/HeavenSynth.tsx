@@ -66,6 +66,13 @@ import {
   type HandControl,
 } from "@/core/sound/handControl";
 import { detectKey } from "@/lib/keyDetect";
+import {
+  DEFAULT_EXPRESSION,
+  applyExpression,
+  readExpression,
+  writeExpression,
+  type Expression,
+} from "@/core/gesture/expression";
 
 type PanelId = null | "sound" | "scale" | "arp" | "help";
 
@@ -326,6 +333,18 @@ export default function HeavenSynth() {
   const updateHandControl = useCallback((next: HandControl) => {
     setHandControl(next);
     writeHandControl("sky.heaven.handControl", next);
+  }, []);
+
+  // ————— espressione della mano (rotazione / apertura / altezza): opt-in —————
+  const [expression, setExpression] = useState<Expression>(DEFAULT_EXPRESSION);
+  const expressionRef = useRef<Expression>(DEFAULT_EXPRESSION);
+  expressionRef.current = expression;
+  useEffect(() => setExpression(readExpression("sky.heaven.expression")), []);
+  const updateExpression = useCallback((next: Expression) => {
+    setExpression(next);
+    writeExpression("sky.heaven.expression", next);
+    if (!next.enabled || !next.bend) engineRef.current?.setBend(0);
+    if (!next.enabled || !next.volume) engineRef.current?.setMasterGain(1);
   }, []);
 
   // gesto "doppio pugno": chiudi e riapri entrambe le mani per accendere/spegnere l'arp
@@ -845,11 +864,14 @@ export default function HeavenSynth() {
         volSrc !== null ? handVol : volFollowRef.current ? handVol : 1,
       );
 
+      // ————— espressione: rotazione = bend, apertura = low pass, altezza = volume —————
+      const ex = applyExpression(engine, left, right, expressionRef.current);
+
       // low pass risonante: fermo al massimo finché non lo assegni a una mano
       const cutTarget =
         cutSrc !== null ? 260 * Math.pow(Math.max(400, cmax) / 260, cutSrc) : cmax;
       const cutoff = cutSm.current.push(cutTarget);
-      engine.setEq("lowpass", cutoff);
+      if (!ex.filter) engine.setEq("lowpass", cutoff);
       if (revSrc !== null) engine.setReverb(revSrc);
       const bright = Math.max(0.1, Math.min(1, cutSrc !== null ? cutSrc : 0.6));
 
@@ -1346,6 +1368,8 @@ export default function HeavenSynth() {
               onChange={setMix}
               handControl={handControl}
               onHandControlChange={updateHandControl}
+              expression={expression}
+              onExpressionChange={updateExpression}
               legatoMs={legato}
               onLegatoChange={setLegatoMs}
             />

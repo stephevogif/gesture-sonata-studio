@@ -51,6 +51,7 @@ import {
   type HandSource,
   type HandTargetId,
 } from "@/core/sound/handControl";
+import type { Expression } from "@/core/gesture/expression";
 
 const VIEW = 320;
 const C = VIEW / 2;
@@ -116,6 +117,9 @@ type Props = {
   masterOnly?: boolean;
   handControl?: HandControl;
   onHandControlChange?: (next: HandControl) => void;
+  /** espressione continua della mano: rotazione, apertura, altezza */
+  expression?: Expression;
+  onExpressionChange?: (next: Expression) => void;
   /** tempo di legato fra gli accordi, in ms */
   legatoMs?: number;
   onLegatoChange?: (ms: number) => void;
@@ -128,6 +132,8 @@ export default function SoundConstellation({
   masterOnly = false,
   handControl,
   onHandControlChange,
+  expression,
+  onExpressionChange,
   legatoMs,
   onLegatoChange,
 }: Props) {
@@ -1005,6 +1011,44 @@ export default function SoundConstellation({
           </p>
         </div>
       )}
+
+      {/* ————— espressione della mano: rotazione, apertura, altezza ————— */}
+      {expression && onExpressionChange && (
+        <div className="sc-editor mt-2">
+          <div className="sc-pop-head">
+            <span>ESPRESSIONE MANO</span>
+            <button
+              className="sc-chip"
+              onClick={() => onExpressionChange({ ...expression, enabled: !expression.enabled })}
+            >
+              {expression.enabled ? "Attiva" : "Spenta"}
+            </button>
+          </div>
+          {(
+            [
+              { id: "bend", label: "Rotazione → intonazione (¼ tono)" },
+              { id: "filter", label: "Apri/chiudi → low pass" },
+              { id: "volume", label: "Alza/abbassa → volume" },
+            ] as const
+          ).map((row) => (
+            <label key={row.id} className="sc-field-label">
+              {row.label}
+              <input
+                type="checkbox"
+                aria-label={row.label}
+                disabled={!expression.enabled}
+                checked={expression[row.id]}
+                onChange={(e) => onExpressionChange({ ...expression, [row.id]: e.target.checked })}
+              />
+            </label>
+          ))}
+          <p className="sc-hint">
+            Gira il palmo per piegare l&apos;intonazione, apri la mano per aprire il filtro, alza
+            la mano per alzare il volume.
+          </p>
+        </div>
+      )}
+
 
 
       {/* ————— pannello parametri: finestra laterale, non copre la console ————— */}
