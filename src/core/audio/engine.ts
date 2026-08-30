@@ -234,6 +234,7 @@ export class HeavenAudioEngine {
           chorus: this.rack.chorusSend,
         },
       );
+      if (this.bendCents) voice.setBend(this.bendCents);
       this.voices.set(id, voice);
       this.trimVoices();
     }
