@@ -191,6 +191,18 @@ export class SynthVoice {
     }
   }
 
+  /** Pitch bend espressivo (in cent): rotazione del palmo, max un quarto di tono. */
+  setBend(cents: number) {
+    if (this.stopped) return;
+    const value = clamp(cents, -200, 200);
+    if (Math.abs(value - this.bendCents) < 0.5) return;
+    this.bendCents = value;
+    const now = this.ctx.currentTime;
+    this.oscillators.forEach((osc, index) => {
+      osc.detune.setTargetAtTime((this.baseDetunes[index] ?? 0) + value, now, 0.04);
+    });
+  }
+
   /** Sustained note: swell to `amount`, then hold (or decay for plucky patches).
    *  `glide` overrides the preset portamento (legato speed) when provided. */
   hold(frequency: number, amount: number, brightness: number, glide?: number) {
