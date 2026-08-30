@@ -881,7 +881,8 @@ export default function GestureSynth() {
 
       let maxSoundLevel = 0;
       let maxMod = 0;
-      const sides: { left: { height: number; openness: number } | null; right: { height: number; openness: number } | null } = { left: null, right: null };
+      type SideHand = { height: number; openness: number; tilt: number };
+      const sides: { left: SideHand | null; right: SideHand | null } = { left: null, right: null };
       (res?.landmarks ?? []).forEach((pts: { x: number; y: number }[], i: number) => {
         const id = `h${i}`;
         
