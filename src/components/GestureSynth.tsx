@@ -2070,6 +2070,8 @@ export default function GestureSynth() {
               onChange={setMix}
               handControl={handControl}
               onHandControlChange={updateHandControl}
+              expression={expression}
+              onExpressionChange={updateExpression}
             />
           </div>
         </div>
