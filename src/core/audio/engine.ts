@@ -54,6 +54,7 @@ export class HeavenAudioEngine {
   private ctx: AudioContext | null = null;
   private rack: MasterRack | null = null;
   private voices = new Map<string, SynthVoice>();
+  private bendCents = 0;
   private readonly arp: Arpeggiator;
   /** Sound Constellation layers; empty = classic single-instrument routing */
   private channels = new Map<string, InstrumentChannel>();
