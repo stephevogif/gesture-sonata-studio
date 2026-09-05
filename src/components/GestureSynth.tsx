@@ -73,9 +73,6 @@ const INSTRUMENT_GROUPS: { id: InstrumentGroup; label: string }[] = GROUP_ORDER.
   id,
   label: GROUP_LABELS[id],
 }));
-  { id: "keys", label: "Tastiere / Piano" },
-  { id: "electro", label: "Elettronici / Bass" },
-];
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";
