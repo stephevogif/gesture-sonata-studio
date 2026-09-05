@@ -37,6 +37,8 @@ import {
   CHORDS,
   DIVISIONS,
   GestureSynthEngine,
+  GROUP_LABELS,
+  GROUP_ORDER,
   INSTRUMENTS,
   INSTRUMENT_SHIFT,
   NOTE_NAMES,
@@ -49,6 +51,7 @@ import {
   type ArpPatternId,
   type ChordId,
   type DivisionId,
+  type InstrumentGroup,
   type InstrumentId,
   type ScaleId,
 } from "@/lib/synth";
@@ -69,12 +72,10 @@ import {
 
 
 
-const INSTRUMENT_GROUPS: { id: "zen" | "strings" | "keys" | "electro"; label: string }[] = [
-  { id: "zen", label: "Zen / Calmi" },
-  { id: "strings", label: "Archi" },
-  { id: "keys", label: "Tastiere / Piano" },
-  { id: "electro", label: "Elettronici / Bass" },
-];
+const INSTRUMENT_GROUPS: { id: InstrumentGroup; label: string }[] = GROUP_ORDER.map((id) => ({
+  id,
+  label: GROUP_LABELS[id],
+}));
 
 type HandState = { note: string; level: number; hand: string; inst: string };
 type PlayMode = "single" | "split" | "pinch";

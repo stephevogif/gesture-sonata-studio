@@ -21,7 +21,12 @@ import { allSongs } from "@/core/songs/catalog";
 import { startSongSession } from "@/core/songs/session";
 import { slotsFromSong, type OneHandConfig, type PlayMode } from "@/core/gesture/oneHand";
 import { ROMAN } from "@/core/music/chords";
-import { INSTRUMENTS, type InstrumentId } from "@/core/audio/presets";
+import {
+  GROUP_LABELS,
+  GROUP_ORDER,
+  INSTRUMENTS,
+  type InstrumentId,
+} from "@/core/audio/presets";
 import type { SongModeState } from "@/hooks/useSongMode";
 
 const FINGER_NAMES = ["POLLICE", "INDICE", "MEDIO", "ANULARE", "MIGNOLO"];
@@ -369,15 +374,17 @@ export default function OneHandScreen({
                       </option>
                     ) : null;
                   })}
-                  <optgroup label="Altri">
-                    {INSTRUMENTS.filter((i) => !["violin", "winds", "pads"].includes(i.id)).map(
-                      (i) => (
+                  {GROUP_ORDER.map((g) => (
+                    <optgroup key={g} label={GROUP_LABELS[g]}>
+                      {INSTRUMENTS.filter(
+                        (i) => i.group === g && !["violin", "winds", "pads"].includes(i.id),
+                      ).map((i) => (
                         <option key={i.id} value={i.id}>
                           {i.name}
                         </option>
-                      ),
-                    )}
-                  </optgroup>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </label>
             )}
