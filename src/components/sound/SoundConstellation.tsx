@@ -742,21 +742,29 @@ export default function SoundConstellation({
             </div>
             <div className="sc-pop-grid">
               {picker === "sound"
-                ? INSTRUMENTS.map((it) => (
-                    <button
-                      key={it.id}
-                      className="sc-chip"
-                      onClick={() => {
-                        const updated = addLayer(state, it.id as InstrumentId);
-                        onChange(updated);
-                        const newId = updated.instruments[updated.instruments.length - 1]!.id;
-                        setAnchor({ kind: "layer", id: newId });
-                        setSelected({ kind: "layer", id: newId });
-                        setPicker(null);
-                      }}
-                    >
-                      {it.name}
-                    </button>
+                ? GROUP_ORDER.map((g) => (
+                    <div key={g} className="sc-pop-group">
+                      <span className="sc-pop-group-label">{GROUP_LABELS[g]}</span>
+                      <div className="sc-pop-group-chips">
+                        {INSTRUMENTS.filter((it) => it.group === g).map((it) => (
+                          <button
+                            key={it.id}
+                            className="sc-chip"
+                            onClick={() => {
+                              const updated = addLayer(state, it.id as InstrumentId);
+                              onChange(updated);
+                              const newId =
+                                updated.instruments[updated.instruments.length - 1]!.id;
+                              setAnchor({ kind: "layer", id: newId });
+                              setSelected({ kind: "layer", id: newId });
+                              setPicker(null);
+                            }}
+                          >
+                            {it.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))
                 : FX_CATALOG.map((def) => (
                     <button
