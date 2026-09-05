@@ -7,37 +7,40 @@
  * never means adding audio graph code.
  */
 
-export type InstrumentId =
-  | "violin"
-  | "winds"
-  | "pads"
-  | "reese"
-  | "acid"
-  | "growl"
-  | "neuro"
-  | "fmbass"
-  | "sub808"
-  | "hoover"
-  | "supersaw"
-  | "digipluck"
-  | "harp"
-  | "piano"
-  | "kalimba"
-  | "bowl"
-  | "glocken"
-  | "choir"
-  | "pluckAmb"
-  | "subpad"
-  | "chamberStrings"
-  | "cineStrings"
-  | "viola"
-  | "cello"
-  | "grandPiano"
-  | "feltPiano"
-  | "rhodes"
-  | "celesta";
+/**
+ * Strumenti: gli 28 preset originali hanno id letterali, la banca estesa
+ * (`bank.ts`, 320 patch) usa id generati `bk_<categoria>_<n>`.
+ */
+export type InstrumentId = string;
 
-export type InstrumentGroup = "zen" | "electro" | "strings" | "keys";
+export type InstrumentGroup =
+  | "keys"
+  | "winds"
+  | "bass"
+  | "arp"
+  | "osc"
+  | "pads"
+  | "brass"
+  | "realistic";
+
+export const GROUP_LABELS: Record<InstrumentGroup, string> = {
+  keys: "Keys",
+  winds: "Winds",
+  bass: "Bass",
+  arp: "Arp",
+  osc: "Osc",
+  pads: "Pads",
+  brass: "Brass",
+  realistic: "Realistic",
+};
+
+export const GROUP_ORDER: InstrumentGroup[] = [
+  "realistic",
+  "keys",
+  "winds",
+  "brass",
+  "strings" as never, // placeholder replaced below
+] as InstrumentGroup[];
 
 
 export type PartialSpec = {
