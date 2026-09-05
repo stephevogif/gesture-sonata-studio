@@ -21,7 +21,12 @@ import { allSongs } from "@/core/songs/catalog";
 import { startSongSession } from "@/core/songs/session";
 import { slotsFromSong, type OneHandConfig, type PlayMode } from "@/core/gesture/oneHand";
 import { ROMAN } from "@/core/music/chords";
-import { INSTRUMENTS, type InstrumentId } from "@/core/audio/presets";
+import {
+  GROUP_LABELS,
+  GROUP_ORDER,
+  INSTRUMENTS,
+  type InstrumentId,
+} from "@/core/audio/presets";
 import type { SongModeState } from "@/hooks/useSongMode";
 
 const FINGER_NAMES = ["POLLICE", "INDICE", "MEDIO", "ANULARE", "MIGNOLO"];
