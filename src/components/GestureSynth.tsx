@@ -69,9 +69,10 @@ import {
 
 
 
-const INSTRUMENT_GROUPS: { id: "zen" | "strings" | "keys" | "electro"; label: string }[] = [
-  { id: "zen", label: "Zen / Calmi" },
-  { id: "strings", label: "Archi" },
+const INSTRUMENT_GROUPS: { id: InstrumentGroup; label: string }[] = GROUP_ORDER.map((id) => ({
+  id,
+  label: GROUP_LABELS[id],
+}));
   { id: "keys", label: "Tastiere / Piano" },
   { id: "electro", label: "Elettronici / Bass" },
 ];
