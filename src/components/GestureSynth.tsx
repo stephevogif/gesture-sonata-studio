@@ -51,6 +51,7 @@ import {
   type ArpPatternId,
   type ChordId,
   type DivisionId,
+  type InstrumentGroup,
   type InstrumentId,
   type ScaleId,
 } from "@/lib/synth";
