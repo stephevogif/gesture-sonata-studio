@@ -11,6 +11,8 @@
  * Strumenti: gli 28 preset originali hanno id letterali, la banca estesa
  * (`bank.ts`, 320 patch) usa id generati `bk_<categoria>_<n>`.
  */
+import { buildBank } from "./bank";
+
 export type InstrumentId = string;
 
 export type InstrumentGroup =
@@ -65,26 +67,26 @@ export type PresetSpec = {
   partials: PartialSpec[];
   filter: { type: BiquadFilterType; cutoff: number; q: number };
   /** attack / release are one-pole time constants in seconds */
-  env: { attack: number; release: number; sustain?: number; decay?: number };
+  env: { attack: number; release: number; sustain?: number | undefined; decay?: number | undefined };
   vibrato: { rate: number; cents: number };
   /** simple FM operator modulating the first partial */
-  fm?: { ratio: number; index: number };
+  fm?: { ratio: number; index: number } | undefined;
   /** breath / bow noise blended into the filter input */
-  noise?: { level: number; ratio: number; q: number };
+  noise?: { level: number; ratio: number; q: number } | undefined;
   /** waveshaper saturation */
-  drive?: { amount: number; level: number };
+  drive?: { amount: number; level: number } | undefined;
   /** cutoff wobble */
-  cutoffLfo?: { wave: OscillatorType; rate: number; depth: number };
+  cutoffLfo?: { wave: OscillatorType; rate: number; depth: number } | undefined;
   /** adds a sine one octave below, straight into the voice gain */
-  subOctave?: number;
+  subOctave?: number | undefined;
   /** short downward pitch sweep at note start */
-  pitchDrop?: { from: number; seconds: number };
+  pitchDrop?: { from: number; seconds: number } | undefined;
   /** portamento time constant */
   glide: number;
   /** bass patches stay dry and get more headroom */
-  bass?: boolean;
+  bass?: boolean | undefined;
   /** piano-family patch: reacts to the pedal / brightness / lid controls */
-  keys?: boolean;
+  keys?: boolean | undefined;
 
 };
 
@@ -93,7 +95,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "harp",
     name: "Arpa di cristallo",
     blurb: "Pizzicato brillante, coda lunga",
-    group: "zen",
+    group: "realistic",
     transpose: 12,
     partials: [
       { wave: "triangle", level: 0.5 },
@@ -109,7 +111,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "piano",
     name: "Pianoforte notturno",
     blurb: "Feltro morbido, attacco dolce",
-    group: "zen",
+    group: "keys",
     transpose: 0,
     partials: [
       { wave: "triangle", level: 0.55 },
@@ -125,7 +127,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "kalimba",
     name: "Kalimba",
     blurb: "Pizzicato legnoso, meditativo",
-    group: "zen",
+    group: "realistic",
     transpose: 12,
     partials: [
       { wave: "sine", level: 0.6 },
@@ -141,7 +143,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "bowl",
     name: "Campane tibetane",
     blurb: "Metallo profondo, note infinite",
-    group: "zen",
+    group: "pads",
     transpose: 0,
     partials: [
       { wave: "sine", level: 0.5 },
@@ -158,7 +160,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "glocken",
     name: "Glockenspiel",
     blurb: "Cristallino e luminoso",
-    group: "zen",
+    group: "keys",
     transpose: 24,
     partials: [
       { wave: "sine", level: 0.5 },
@@ -174,7 +176,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "choir",
     name: "Coro etereo",
     blurb: "Voci ampie e riverberate",
-    group: "zen",
+    group: "pads",
     transpose: 0,
     partials: [
       { wave: "sawtooth", detune: -8, level: 0.18 },
@@ -191,7 +193,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "violin",
     name: "Violino",
     blurb: "Archi espressivi con vibrato",
-    group: "zen",
+    group: "realistic",
     transpose: 0,
     partials: [
       { wave: "sawtooth", level: 0.55 },
@@ -206,7 +208,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "winds",
     name: "Fiati",
     blurb: "Legni ariosi e soffiati",
-    group: "zen",
+    group: "winds",
     transpose: 0,
     partials: [
       { wave: "triangle", level: 0.6 },
@@ -222,7 +224,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "pads",
     name: "Pads",
     blurb: "Tappeti ampi e riverberati",
-    group: "zen",
+    group: "pads",
     transpose: 0,
     partials: [
       { wave: "sawtooth", detune: -9, level: 0.3 },
@@ -238,7 +240,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "pluckAmb",
     name: "Ambient pluck",
     blurb: "Pluck digitale downtempo",
-    group: "electro",
+    group: "arp",
     transpose: 12,
     partials: [
       { wave: "square", level: 0.3 },
@@ -254,7 +256,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "subpad",
     name: "Warm sub pad",
     blurb: "Basso morbido e continuo",
-    group: "electro",
+    group: "pads",
     transpose: -12,
     partials: [
       { wave: "sine", level: 0.55 },
@@ -270,7 +272,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "reese",
     name: "Reese Bass",
     blurb: "Basso detunato, sporco e profondo",
-    group: "electro",
+    group: "bass",
     transpose: -24,
     partials: [
       { wave: "sawtooth", detune: -14, level: 0.5 },
@@ -289,7 +291,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "acid",
     name: "Acid 303",
     blurb: "Squelch acido con filtro urlante",
-    group: "electro",
+    group: "bass",
     transpose: -12,
     partials: [
       { wave: "sawtooth", level: 0.7 },
@@ -307,7 +309,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "growl",
     name: "Growl / Dubstep",
     blurb: "Wobble aggressivo e distorto",
-    group: "electro",
+    group: "bass",
     transpose: -24,
     partials: [
       { wave: "square", detune: -10, level: 0.45 },
@@ -326,7 +328,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "neuro",
     name: "Neuro Bass",
     blurb: "Saw distorto con filtro formante",
-    group: "electro",
+    group: "bass",
     transpose: -24,
     partials: [
       { wave: "sawtooth", detune: -18, level: 0.4 },
@@ -346,7 +348,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "fmbass",
     name: "FM Bass",
     blurb: "FM profonda, attacco secco",
-    group: "electro",
+    group: "bass",
     transpose: -24,
     partials: [{ wave: "sine", level: 0.8 }],
     fm: { ratio: 2, index: 3 },
@@ -362,7 +364,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "sub808",
     name: "808 Sub",
     blurb: "Sub caldo con pitch drop",
-    group: "electro",
+    group: "bass",
     transpose: -24,
     partials: [{ wave: "sine", level: 0.95 }],
     filter: { type: "lowpass", cutoff: 400, q: 1 },
@@ -378,7 +380,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "hoover",
     name: "Hoover / Rave Stab",
     blurb: "Stab rave urlante",
-    group: "electro",
+    group: "osc",
     transpose: 0,
     partials: [
       { wave: "sawtooth", detune: -22, level: 0.28 },
@@ -395,7 +397,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "supersaw",
     name: "Supersaw Trance",
     blurb: "7 saw detunati, brillante",
-    group: "electro",
+    group: "osc",
     transpose: 0,
     partials: [
       { wave: "sawtooth", detune: -24, level: 0.16 },
@@ -415,7 +417,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "digipluck",
     name: "Digital Pluck",
     blurb: "Pluck secco per arp veloci",
-    group: "electro",
+    group: "arp",
     transpose: 12,
     partials: [
       { wave: "square", level: 0.45 },
@@ -432,7 +434,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "chamberStrings",
     name: "Archi da camera",
     blurb: "Quartetto morbido, arco lento",
-    group: "strings",
+    group: "realistic",
     transpose: 0,
     partials: [
       { wave: "sawtooth", detune: -6, level: 0.22 },
@@ -450,7 +452,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "cineStrings",
     name: "Archi cinematici",
     blurb: "Sezione ampia, respiro lungo",
-    group: "strings",
+    group: "realistic",
     transpose: 0,
     partials: [
       { wave: "sawtooth", detune: -12, level: 0.16 },
@@ -469,7 +471,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "viola",
     name: "Viola calda",
     blurb: "Legno scuro, arco intimo",
-    group: "strings",
+    group: "realistic",
     transpose: -5,
     partials: [
       { wave: "sawtooth", level: 0.42 },
@@ -486,7 +488,7 @@ const PRESET_LIST: PresetSpec[] = [
     id: "cello",
     name: "Violoncello",
     blurb: "Corpo profondo, arco espressivo",
-    group: "strings",
+    group: "realistic",
     transpose: -12,
     partials: [
       { wave: "sawtooth", level: 0.4 },
@@ -572,6 +574,9 @@ const PRESET_LIST: PresetSpec[] = [
   },
 ];
 
+/* la banca estesa aggiunge 320 patch (8 categorie × 40) */
+PRESET_LIST.push(...buildBank());
+
 /* ————— controlli pianoforte (pedale / brillantezza / coperchio) ————— */
 
 export type KeysOptions = {
@@ -634,5 +639,5 @@ export const INSTRUMENT_SHIFT = PRESET_LIST.reduce(
 );
 
 export function presetOf(id: InstrumentId): PresetSpec {
-  return PRESETS[id] ?? PRESETS.violin;
+  return PRESETS[id] ?? PRESETS["violin"]!;
 }
