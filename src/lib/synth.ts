@@ -10,6 +10,8 @@ export {
   INSTRUMENT_SHIFT,
   PRESETS,
   presetOf,
+  GROUP_LABELS,
+  GROUP_ORDER,
   type InstrumentGroup,
   type InstrumentId,
 } from "@/core/audio/presets";
