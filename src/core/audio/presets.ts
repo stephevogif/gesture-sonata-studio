@@ -39,8 +39,11 @@ export const GROUP_ORDER: InstrumentGroup[] = [
   "keys",
   "winds",
   "brass",
-  "strings" as never, // placeholder replaced below
-] as InstrumentGroup[];
+  "pads",
+  "arp",
+  "osc",
+  "bass",
+];
 
 
 export type PartialSpec = {
