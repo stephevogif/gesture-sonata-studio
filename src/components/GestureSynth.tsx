@@ -37,6 +37,8 @@ import {
   CHORDS,
   DIVISIONS,
   GestureSynthEngine,
+  GROUP_LABELS,
+  GROUP_ORDER,
   INSTRUMENTS,
   INSTRUMENT_SHIFT,
   NOTE_NAMES,
